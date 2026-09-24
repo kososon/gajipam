@@ -270,7 +270,7 @@
                 </div>
             </section>
 
-            <!-- TAB BARU: TAB 6 - PPH 21 AKHIR TAHUN (PASAL 17 VS TER) -->
+            <!-- TAB 6: PPH 21 AKHIR TAHUN (PASAL 17 VS TER) -->
             <section id="tab-pph-akhir" class="tab-content hidden">
                 <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-4 flex justify-between items-center">
                     <div>
@@ -342,6 +342,7 @@
                             <div class="flex justify-between"><span>Tunjangan:</span><span id="slip-tunjangan">0</span></div>
                             <div class="flex justify-between" id="slip-gratifikasi-row"><span>Gratifikasi:</span><span id="slip-gratifikasi">0</span></div>
                             <div class="flex justify-between" id="slip-thr-row"><span>THR:</span><span id="slip-thr">0</span></div>
+                            <div class="flex justify-between font-semibold text-blue-700" id="slip-tunj-pajak-row"><span>Tunjangan Pajak:</span><span id="slip-tunj-pajak">0</span></div>
                         </div>
                         <div>
                             <p class="font-bold border-b mb-1">POTONGAN</p>
@@ -349,6 +350,7 @@
                             <div class="flex justify-between"><span>BPJS Kes (1%):</span><span id="slip-bpjs-kes">0</span></div>
                             <div class="flex justify-between"><span>BPJS TK JHT (2%):</span><span id="slip-bpjs-jht">0</span></div>
                             <div class="flex justify-between"><span>BPJS TK JP (1%):</span><span id="slip-bpjs-jp">0</span></div>
+                            <div class="flex justify-between text-red-700 font-semibold" id="slip-pot-pajak-row"><span>PPh 21 TER:</span><span id="slip-pot-pajak">0</span></div>
                             <div class="flex justify-between"><span>Cicilan Pinjaman:</span><span id="slip-pinjaman">0</span></div>
                         </div>
                     </div>
@@ -554,7 +556,6 @@
         let activeTab = 'dashboard';
         let globalKaryawan = [];
         let globalPayrollMap = {};
-        let globalAnnualPayrollMap = {}; // Penyimpanan cache data tahunan
         let globalDirektur = { nama: "ABDUL HALEK", kota: "Pekanbaru" };
 
         function getSelectedPeriode() {
@@ -718,31 +719,25 @@
         function calculatePajakPasal17Tahunan(pkp) {
             if (pkp <= 0) return 0;
             
-            // Pembulatan ke bawah ribuan terdekat
             let pkpRound = Math.floor(pkp / 1000) * 1000;
             let tax = 0;
 
-            // Lapisan 1: 0 - 60 Juta (5%)
             if (pkpRound > 0) {
                 let t1 = Math.min(pkpRound, 60000000);
                 tax += t1 * 0.05;
             }
-            // Lapisan 2: 60 - 250 Juta (15%)
             if (pkpRound > 60000000) {
                 let t2 = Math.min(pkpRound - 60000000, 190000000);
                 tax += t2 * 0.15;
             }
-            // Lapisan 3: 250 - 500 Juta (25%)
             if (pkpRound > 250000000) {
                 let t3 = Math.min(pkpRound - 250000000, 250000000);
                 tax += t3 * 0.25;
             }
-            // Lapisan 4: 500 Juta - 5 Miliar (30%)
             if (pkpRound > 500000000) {
                 let t4 = Math.min(pkpRound - 500000000, 4500000000);
                 tax += t4 * 0.30;
             }
-            // Lapisan 5: > 5 Miliar (35%)
             if (pkpRound > 5000000000) {
                 let t5 = pkpRound - 5000000000;
                 tax += t5 * 0.35;
@@ -841,11 +836,12 @@
             return selectedPeriod >= kary.bpjsKesStart;
         }
 
-        function getBpjsTkComponents(kary, selectedPeriod) {
+        // KOREKSI DENGAN PARAMETER PAYROLL SPESIFIK BULAN BERJALAN
+        function getBpjsTkComponents(kary, selectedPeriod, customPayroll = null) {
             if (!isBpjsTkActive(kary, selectedPeriod)) {
                 return { jht: 0, jkk: 0, jkm: 0, jp: 0 };
             }
-            const p = getPayrollData(kary.id);
+            const p = customPayroll || getPayrollData(kary.id);
             const gp = p.gajiPokok || 0;
             const isAuto = (kary.bpjsTkAuto !== false);
             
@@ -867,11 +863,11 @@
             }
         }
 
-        function getDasarBpjsKes(kary, selectedPeriod) {
+        function getDasarBpjsKes(kary, selectedPeriod, customPayroll = null) {
             if (!isBpjsKesActive(kary, selectedPeriod)) {
                 return 0;
             }
-            const p = getPayrollData(kary.id);
+            const p = customPayroll || getPayrollData(kary.id);
             const gp = p.gajiPokok || 0;
             const isAuto = (kary.bpjsKesAuto !== false);
             const raw = isAuto ? gp : (kary.bpjsKesBase || 0);
@@ -1174,71 +1170,71 @@
             document.getElementById('dash-total-pph').innerText = `Rp ${formatRibuan(totalPPhAcc)}`;
         }
 
-        // FUNGSI TAMPILAN TABEL PPH 21 AKHIR TAHUN (PASAL 17 VS AKUMULASI TER)
+        // PPH 21 AKHIR TAHUN VIA PARALLEL PROMISE FETCH (CEPAT & AKURAT)
         async function renderPphAkhirTahunTable() {
             const tbody = document.getElementById('table-pph-akhir-body');
-            tbody.innerHTML = '<tr><td colspan="10" class="p-4 text-center text-slate-500 font-semibold">Memuat & mengkalkulasi data tahunan...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="10" class="p-4 text-center text-slate-500 font-semibold">Memuat & mengkalkulasi data tahunan secara presisi...</td></tr>';
             
             const selectedYear = document.getElementById('pph-akhir-year').value;
-            
-            // Tarik seluruh data 12 bulan (01 s.d. 12) untuk tahun terpilih dari Firestore
-            let annualMap = {}; // { karyId: { brutoSetahun, bpjsKarySetahun, pphTerSetahun, bulanAktif } }
+            let annualMap = {};
 
-            for (let k of globalKaryawan) {
-                annualMap[k.id] = { brutoSetahun: 0, bpjsKarySetahun: 0, pphTerSetahun: 0, bulanAktif: 0 };
+            const fetchPromises = [];
+
+            globalKaryawan.forEach(k => {
+                annualMap[k.id] = { brutoSetahun: 0, biayaJabatanSetahun: 0, bpjsKarySetahun: 0, pphTerSetahun: 0, bulanAktif: 0 };
 
                 for (let m = 1; m <= 12; m++) {
                     const monthStr = m < 10 ? `0${m}` : `${m}`;
                     const periodeMonth = `${selectedYear}-${monthStr}`;
 
-                    const pSnap = await db.collection('karyawan').doc(k.id).collection('payroll').doc(periodeMonth).get();
-                    if (pSnap.exists) {
-                        const p = pSnap.data();
-                        const gp = p.gajiPokok || 0;
-                        const tk = getBpjsTkComponents(k, periodeMonth);
-                        const dasarKes = getDasarBpjsKes(k, periodeMonth);
-                        const tunj = (p.tunjJab || 0) + (p.tunjMakan || 0) + (p.tunjPulsa || 0) + (p.tunjLain || 0) + (p.gratifikasi || 0) + (p.thr || 0);
-                        const brutoBulan = gp + tunj;
+                    fetchPromises.push(
+                        db.collection('karyawan').doc(k.id).collection('payroll').doc(periodeMonth).get().then(pSnap => {
+                            if (pSnap.exists) {
+                                const p = pSnap.data();
+                                const gp = p.gajiPokok || 0;
+                                const tk = getBpjsTkComponents(k, periodeMonth, p);
+                                const dasarKes = getDasarBpjsKes(k, periodeMonth, p);
+                                const tunj = (p.tunjJab || 0) + (p.tunjMakan || 0) + (p.tunjPulsa || 0) + (p.tunjLain || 0) + (p.gratifikasi || 0) + (p.thr || 0);
+                                const brutoBulan = gp + tunj;
 
-                        if (brutoBulan > 0) {
-                            const bpjsPerusahaan = (tk.jkk * 0.0054) + (tk.jkm * 0.0030) + (dasarKes * 0.04);
-                            const bpjsKaryawanBulan = (tk.jht * 0.02) + (tk.jp * 0.01);
-                            
-                            const calcBulan = calculatePajakKaryawan(k.ptkp, brutoBulan + bpjsPerusahaan, k.pajakMetode || 'NET');
+                                if (brutoBulan > 0) {
+                                    const bpjsPerusahaan = (tk.jkk * 0.0054) + (tk.jkm * 0.0030) + (dasarKes * 0.04);
+                                    const bpjsKaryawanBulan = (tk.jht * 0.02) + (tk.jp * 0.01);
+                                    const brutoPajakBulan = brutoBulan + bpjsPerusahaan;
+                                    
+                                    const calcBulan = calculatePajakKaryawan(k.ptkp, brutoPajakBulan, k.pajakMetode || 'NET');
 
-                            annualMap[k.id].brutoSetahun += (brutoBulan + bpjsPerusahaan);
-                            annualMap[k.id].bpjsKarySetahun += bpjsKaryawanBulan;
-                            annualMap[k.id].pphTerSetahun += calcBulan.pph21;
-                            annualMap[k.id].bulanAktif += 1;
-                        }
-                    }
+                                    // Biaya Jabatan per bulan (maksimal 500rb per bulan)
+                                    const biayaJabBulan = Math.min(brutoPajakBulan * 0.05, 500000);
+
+                                    annualMap[k.id].brutoSetahun += brutoPajakBulan;
+                                    annualMap[k.id].biayaJabatanSetahun += biayaJabBulan;
+                                    annualMap[k.id].bpjsKarySetahun += bpjsKaryawanBulan;
+                                    annualMap[k.id].pphTerSetahun += calcBulan.pph21;
+                                    annualMap[k.id].bulanAktif += 1;
+                                }
+                            }
+                        })
+                    );
                 }
-            }
+            });
 
+            await Promise.all(fetchPromises);
             tbody.innerHTML = '';
             
             globalKaryawan.forEach(k => {
                 const aData = annualMap[k.id];
                 const brutoAnnual = aData.brutoSetahun;
-                const bulanKerja = aData.bulanAktif || 12;
-
-                // Biaya Jabatan 5% (Maksimal 500rb/bulan)
-                const maxBiayaJabatan = 500000 * bulanKerja;
-                const biayaJabatan = Math.min(brutoAnnual * 0.05, maxBiayaJabatan);
-                
+                const biayaJabatan = aData.biayaJabatanSetahun;
                 const iuranBpjsKary = aData.bpjsKarySetahun;
                 const netoAnnual = Math.max(0, brutoAnnual - biayaJabatan - iuranBpjsKary);
                 
                 const ptkpAnnual = PTKP_DICT[k.ptkp] || 54000000;
                 const pkpAnnual = Math.max(0, netoAnnual - ptkpAnnual);
 
-                // PPh 21 Terutang Setahun (Pasal 17 Progresif)
                 const pph21Pasal17Annual = calculatePajakPasal17Tahunan(pkpAnnual);
-                
-                // PPh 21 Terpotong TER Bulanan (Jan - Des)
                 const pph21TerAnnual = aData.pphTerSetahun;
 
-                // Selisih Kurang/Lebih Bayar
                 const selisih = pph21Pasal17Annual - pph21TerAnnual;
                 
                 let statusBadge = '';
@@ -1500,27 +1496,56 @@
             const tk = getBpjsTkComponents(k, periode);
             const dasarKes = getDasarBpjsKes(k, periode);
             const tunj = (p.tunjJab || 0) + (p.tunjMakan || 0) + (p.tunjPulsa || 0) + (p.tunjLain || 0);
+            const gratifikasi = p.gratifikasi || 0;
+            const thr = p.thr || 0;
+            const potGaji = p.potGaji || 0;
             
             const bpjsKes = dasarKes * 0.01;
             const bpjsJht = tk.jht * 0.02;
             const bpjsJp = tk.jp * 0.01;
             const totalBpjsPribadi = bpjsKes + bpjsJht + bpjsJp;
 
-            const brutoTHP = (gp + tunj) - totalBpjsPribadi;
+            // Kalkulasi PPh 21
+            const bpjsPerusahaan = (tk.jkk * 0.0054) + (tk.jkm * 0.0030) + (dasarKes * 0.04);
+            const brutoAwal = gp + tunj + gratifikasi + thr + bpjsPerusahaan;
+            const calcPajak = calculatePajakKaryawan(k.ptkp, brutoAwal, k.pajakMetode || 'NET');
+
+            let tunjPajak = 0;
+            let potPajak = 0;
+
+            if ((k.pajakMetode || 'NET') === 'GROSS_UP') {
+                tunjPajak = calcPajak.pph21;
+                potPajak = calcPajak.pph21;
+            }
+
+            const totalPenerimaan = gp + tunj + gratifikasi + thr + tunjPajak;
+            const totalPotongan = potGaji + totalBpjsPribadi + potPajak;
+            const thp = totalPenerimaan - totalPotongan;
 
             document.getElementById('slip-nama').innerText = k.nama;
             document.getElementById('slip-jabatan').innerText = k.jabatan;
             document.getElementById('slip-nik').innerText = k.nik;
             document.getElementById('slip-gaji-pokok').innerText = `Rp ${formatRibuan(gp)}`;
             document.getElementById('slip-tunjangan').innerText = `Rp ${formatRibuan(tunj)}`;
+            document.getElementById('slip-gratifikasi').innerText = `Rp ${formatRibuan(gratifikasi)}`;
+            document.getElementById('slip-thr').innerText = `Rp ${formatRibuan(thr)}`;
+            
+            document.getElementById('slip-tunj-pajak-row').style.display = (k.pajakMetode === 'GROSS_UP') ? 'flex' : 'none';
+            document.getElementById('slip-tunj-pajak').innerText = `Rp ${formatRibuan(tunjPajak)}`;
+
+            document.getElementById('slip-pot-gaji').innerText = `Rp ${formatRibuan(potGaji)}`;
             document.getElementById('slip-bpjs-kes').innerText = `Rp ${formatRibuan(bpjsKes)}`;
             document.getElementById('slip-bpjs-jht').innerText = `Rp ${formatRibuan(bpjsJht)}`;
             document.getElementById('slip-bpjs-jp').innerText = `Rp ${formatRibuan(bpjsJp)}`;
-            document.getElementById('slip-thp-total').innerText = `Rp ${formatRibuan(brutoTHP)}`;
+            
+            document.getElementById('slip-pot-pajak-row').style.display = (k.pajakMetode === 'GROSS_UP') ? 'flex' : 'none';
+            document.getElementById('slip-pot-pajak').innerText = `Rp ${formatRibuan(potPajak)}`;
+
+            document.getElementById('slip-thp-total').innerText = `Rp ${formatRibuan(thp)}`;
             document.getElementById('slip-nama-karyawan-ttd').innerText = `( ${k.nama} )`;
             
             document.getElementById('slip-nama-direktur').innerText = `( ${globalDirektur.nama || 'ABDUL HALEK'} )`;
-            document.getElementById('slip-ttd-kota-tgl').innerText = `${globalDirektur.kota || 'Pekanbaru'}, 31 Januari 2026`;
+            document.getElementById('slip-ttd-kota-tgl').innerText = `${globalDirektur.kota || 'Pekanbaru'}, 31 Desember ${periode.split('-')[0]}`;
         }
 
         async function saveDirektur(e) {
