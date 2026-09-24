@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payroll & PPh 21 - PT Multisarana Argo Lestari</title>
+    <title>Payroll & PPh 21 - PT Prima Anugerah Makmur</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Firebase SDKs -->
@@ -36,7 +36,7 @@
     <div id="login-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-50">
         <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md border border-slate-200">
             <div class="text-center mb-6">
-                <h1 class="text-xl font-bold text-slate-900">PT MULTISARANA ARGO LESTARI</h1>
+                <h1 class="text-xl font-bold text-slate-900">PT PRIMA ANUGERAH MAKMUR</h1>
                 <p class="text-xs text-slate-500 mt-1">Sistem Input Payroll & PPh 21 TER</p>
             </div>
             <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
@@ -59,7 +59,7 @@
         <header class="bg-slate-900 text-white shadow-md no-print">
             <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
                 <div>
-                    <h2 class="text-lg font-bold tracking-wide">PT MULTISARANA ARGO LESTARI</h2>
+                    <h2 class="text-lg font-bold tracking-wide">PT PRIMA ANUGERAH MAKMUR</h2>
                     <p class="text-xs text-slate-400">Pengelola Payroll & Tax Gross-Up System</p>
                 </div>
                 <div class="flex items-center gap-4">
@@ -152,20 +152,21 @@
             <!-- TAB 2: DATA KARYAWAN -->
             <section id="tab-karyawan" class="tab-content hidden">
                 <div class="flex justify-between items-center mb-4">
-                    <h3 class="font-bold text-slate-700">Master Data Karyawan</h3>
+                    <h3 class="font-bold text-slate-700">Master Data Karyawan & Master BPJS</h3>
                     <button onclick="openModalKaryawan()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-2 rounded-lg font-medium">+ Tambah Karyawan</button>
                 </div>
                 <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                     <div class="overflow-x-auto">
-                        <table class="w-full text-sm text-left">
+                        <table class="w-full text-xs text-left">
                             <thead class="bg-slate-50 text-xs uppercase text-slate-500 border-b">
                                 <tr>
                                     <th class="p-3">NIK</th>
                                     <th class="p-3">Nama</th>
                                     <th class="p-3">Jabatan</th>
                                     <th class="p-3">NPWP</th>
-                                    <th class="p-3">Start Kerja</th>
                                     <th class="p-3">PTKP</th>
+                                    <th class="p-3">Mulai BPJS TK</th>
+                                    <th class="p-3">Mulai BPJS Kes</th>
                                     <th class="p-3 text-right">Aksi</th>
                                 </tr>
                             </thead>
@@ -175,7 +176,7 @@
                 </div>
             </section>
 
-            <!-- TAB 3: DATA GAJI & THR (SUSUNAN ROW KE-2 BPJS) -->
+            <!-- TAB 3: DATA GAJI & THR (SINGLE ROW - BPJS DIHAPUSKAN) -->
             <section id="tab-gaji" class="tab-content hidden">
                 <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                     <h3 class="font-bold text-slate-700 mb-4">Input & Edit Gaji Bulanan Per Periode</h3>
@@ -276,7 +277,7 @@
 
                 <div id="slip-print-area" class="bg-white p-6 rounded-xl border border-slate-300 max-w-2xl mx-auto text-xs leading-relaxed">
                     <div class="text-center border-b pb-3 mb-3">
-                        <h2 class="font-bold text-base uppercase">PT MULTISARANA ARGO LESTARI</h2>
+                        <h2 class="font-bold text-base uppercase">PT PRIMA ANUGERAH MAKMUR</h2>
                         <p class="text-slate-500">SLIP GAJI KARYAWAN - PERIODE <span id="slip-periode-text">JANUARI 2026</span></p>
                     </div>
 
@@ -375,48 +376,96 @@
         </main>
     </div>
 
-    <!-- Modal Form Karyawan -->
+    <!-- Modal Form Karyawan (Lengkap dengan Master Config BPJS & Tanggal Mulai Berlaku) -->
     <div id="modal-karyawan" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50">
-        <div class="bg-white p-6 rounded-xl shadow-xl w-full max-w-md border">
+        <div class="bg-white p-6 rounded-xl shadow-xl w-full max-w-lg border max-h-[90vh] overflow-y-auto">
             <h3 id="modal-karyawan-title" class="font-bold text-slate-800 mb-4 text-base">Tambah Data Karyawan</h3>
-            <form onsubmit="saveKaryawan(event)" class="space-y-3">
+            <form onsubmit="saveKaryawan(event)" class="space-y-4">
                 <input type="hidden" id="kary-id-edit">
-                <div>
-                    <label class="text-xs font-semibold text-slate-600">NIK</label>
-                    <input type="text" id="kary-nik" class="w-full border rounded p-2 text-sm" required>
+                
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-xs font-semibold text-slate-600">NIK</label>
+                        <input type="text" id="kary-nik" class="w-full border rounded p-2 text-sm" required>
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold text-slate-600">Nama Karyawan</label>
+                        <input type="text" id="kary-nama" class="w-full border rounded p-2 text-sm" required>
+                    </div>
                 </div>
-                <div>
-                    <label class="text-xs font-semibold text-slate-600">Nama Karyawan</label>
-                    <input type="text" id="kary-nama" class="w-full border rounded p-2 text-sm" required>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-xs font-semibold text-slate-600">Jabatan</label>
+                        <input type="text" id="kary-jabatan" class="w-full border rounded p-2 text-sm" required>
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold text-slate-600">NPWP / NIK Pajak</label>
+                        <input type="text" id="kary-npwp" class="w-full border rounded p-2 text-sm">
+                    </div>
                 </div>
-                <div>
-                    <label class="text-xs font-semibold text-slate-600">Jabatan</label>
-                    <input type="text" id="kary-jabatan" class="w-full border rounded p-2 text-sm" required>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-xs font-semibold text-slate-600">Tanggal Mulai Kerja</label>
+                        <input type="date" id="kary-start" class="w-full border rounded p-2 text-sm" required>
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold text-slate-600">Status PTKP</label>
+                        <select id="kary-ptkp" class="w-full border rounded p-2 text-sm bg-slate-50" required>
+                            <option value="TK/0">TK/0</option>
+                            <option value="TK/1">TK/1</option>
+                            <option value="TK/2">TK/2</option>
+                            <option value="TK/3">TK/3</option>
+                            <option value="K/0">K/0</option>
+                            <option value="K/1">K/1</option>
+                            <option value="K/2">K/2</option>
+                            <option value="K/3">K/3</option>
+                        </select>
+                    </div>
                 </div>
-                <div>
-                    <label class="text-xs font-semibold text-slate-600">NPWP / NIK Pajak</label>
-                    <input type="text" id="kary-npwp" class="w-full border rounded p-2 text-sm">
+
+                <!-- SEKSI MASTER BPJS KETENAGAKERJAAN -->
+                <div class="border-t pt-3 bg-slate-50 p-3 rounded-lg border">
+                    <h4 class="font-bold text-xs text-indigo-700 uppercase mb-2">Master BPJS Ketenagakerjaan</h4>
+                    <div class="space-y-2">
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox" id="kary-bpjs-tk-auto" checked onchange="toggleModalBpjsInputs()">
+                            <label for="kary-bpjs-tk-auto" class="text-xs font-semibold text-slate-700">Auto Follow Gaji Pokok</label>
+                        </div>
+                        <div id="container-modal-tk-base" class="hidden">
+                            <label class="text-[11px] font-semibold text-slate-600 block">Dasar Upah BPJS TK (Manual)</label>
+                            <input type="text" id="kary-bpjs-tk-base" onkeyup="formatInputRibuan(this)" class="w-full border rounded p-1.5 text-xs" placeholder="Misal: 5.000.000">
+                        </div>
+                        <div>
+                            <label class="text-[11px] font-semibold text-slate-600 block">Berlaku Mulai Bulan/Tahun BPJS TK</label>
+                            <input type="month" id="kary-bpjs-tk-start" value="2026-01" class="w-full border rounded p-1.5 text-xs bg-white" required>
+                        </div>
+                    </div>
                 </div>
-                <div>
-                    <label class="text-xs font-semibold text-slate-600">Tanggal Mulai Kerja</label>
-                    <input type="date" id="kary-start" class="w-full border rounded p-2 text-sm" required>
+
+                <!-- SEKSI MASTER BPJS KESEHATAN -->
+                <div class="border-t pt-3 bg-slate-50 p-3 rounded-lg border">
+                    <h4 class="font-bold text-xs text-teal-700 uppercase mb-2">Master BPJS Kesehatan</h4>
+                    <div class="space-y-2">
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox" id="kary-bpjs-kes-auto" checked onchange="toggleModalBpjsInputs()">
+                            <label for="kary-bpjs-kes-auto" class="text-xs font-semibold text-slate-700">Auto Follow Gaji Pokok</label>
+                        </div>
+                        <div id="container-modal-kes-base" class="hidden">
+                            <label class="text-[11px] font-semibold text-slate-600 block">Dasar Upah BPJS Kes (Max 12M)</label>
+                            <input type="text" id="kary-bpjs-kes-base" onkeyup="formatInputRibuan(this)" class="w-full border rounded p-1.5 text-xs" placeholder="Misal: 5.000.000">
+                        </div>
+                        <div>
+                            <label class="text-[11px] font-semibold text-slate-600 block">Berlaku Mulai Bulan/Tahun BPJS Kes</label>
+                            <input type="month" id="kary-bpjs-kes-start" value="2026-01" class="w-full border rounded p-1.5 text-xs bg-white" required>
+                        </div>
+                    </div>
                 </div>
-                <div>
-                    <label class="text-xs font-semibold text-slate-600">Status PTKP</label>
-                    <select id="kary-ptkp" class="w-full border rounded p-2 text-sm bg-slate-50" required>
-                        <option value="TK/0">TK/0</option>
-                        <option value="TK/1">TK/1</option>
-                        <option value="TK/2">TK/2</option>
-                        <option value="TK/3">TK/3</option>
-                        <option value="K/0">K/0</option>
-                        <option value="K/1">K/1</option>
-                        <option value="K/2">K/2</option>
-                        <option value="K/3">K/3</option>
-                    </select>
-                </div>
-                <div class="flex justify-end gap-2 pt-2">
-                    <button type="button" onclick="closeModalKaryawan()" class="px-3 py-1.5 text-xs border rounded">Batal</button>
-                    <button type="submit" class="px-3 py-1.5 text-xs bg-blue-600 text-white rounded">Simpan</button>
+
+                <div class="flex justify-end gap-2 pt-2 border-t">
+                    <button type="button" onclick="closeModalKaryawan()" class="px-4 py-2 text-xs border rounded font-medium">Batal</button>
+                    <button type="submit" class="px-4 py-2 text-xs bg-blue-600 text-white rounded font-bold hover:bg-blue-700">Simpan Data Master</button>
                 </div>
             </form>
         </div>
@@ -677,15 +726,30 @@
 
         function getPayrollData(karyId) {
             return globalPayrollMap[karyId] || {
-                gajiPokok: 0, tunjJab: 0, tunjMakan: 0, tunjPulsa: 0, tunjLain: 0, gratifikasi: 0, thr: 0, potGaji: 0,
-                autoBpjsTk: true, autoBpjsKes: true, dasarJht: 0, dasarJkk: 0, dasarJkm: 0, dasarJp: 0, dasarBpjsKes: 0
+                gajiPokok: 0, tunjJab: 0, tunjMakan: 0, tunjPulsa: 0, tunjLain: 0, gratifikasi: 0, thr: 0, potGaji: 0
             };
         }
 
-        function getBpjsTkComponents(karyId) {
-            const p = getPayrollData(karyId);
+        // LOGIKA CEK PENCOCOKAN TANGGAL MULAI BERLAKU BPJS
+        function isBpjsTkActive(kary, selectedPeriod) {
+            if (!kary.bpjsTkStart) return true;
+            return selectedPeriod >= kary.bpjsTkStart;
+        }
+
+        function isBpjsKesActive(kary, selectedPeriod) {
+            if (!kary.bpjsKesStart) return true;
+            return selectedPeriod >= kary.bpjsKesStart;
+        }
+
+        function getBpjsTkComponents(kary, selectedPeriod) {
+            if (!isBpjsTkActive(kary, selectedPeriod)) {
+                return { jht: 0, jkk: 0, jkm: 0, jp: 0 };
+            }
+            const p = getPayrollData(kary.id);
             const gp = p.gajiPokok || 0;
-            if (p.autoBpjsTk !== false) {
+            const isAuto = (kary.bpjsTkAuto !== false);
+            
+            if (isAuto) {
                 return {
                     jht: gp,
                     jkk: gp,
@@ -693,18 +757,24 @@
                     jp: Math.min(gp, MAX_DASAR_BPJS_JP)
                 };
             } else {
+                const base = kary.bpjsTkBase || 0;
                 return {
-                    jht: p.dasarJht || 0,
-                    jkk: p.dasarJkk || 0,
-                    jkm: p.dasarJkm || 0,
-                    jp: Math.min(p.dasarJp || 0, MAX_DASAR_BPJS_JP)
+                    jht: base,
+                    jkk: base,
+                    jkm: base,
+                    jp: Math.min(base, MAX_DASAR_BPJS_JP)
                 };
             }
         }
 
-        function getDasarBpjsKes(karyId) {
-            const p = getPayrollData(karyId);
-            const raw = (p.autoBpjsKes !== false) ? (p.gajiPokok || 0) : (p.dasarBpjsKes || 0);
+        function getDasarBpjsKes(kary, selectedPeriod) {
+            if (!isBpjsKesActive(kary, selectedPeriod)) {
+                return 0;
+            }
+            const p = getPayrollData(kary.id);
+            const gp = p.gajiPokok || 0;
+            const isAuto = (kary.bpjsKesAuto !== false);
+            const raw = isAuto ? gp : (kary.bpjsKesBase || 0);
             return Math.min(raw, MAX_DASAR_BPJS_KES);
         }
 
@@ -743,6 +813,7 @@
         function renderDashboard() {
             const tbody = document.getElementById('table-dashboard-body');
             tbody.innerHTML = '';
+            const periode = getSelectedPeriode();
 
             let totalBrutoTHP = 0;
             let totalSetorBpjsTK = 0;
@@ -751,8 +822,8 @@
             globalKaryawan.forEach(k => {
                 const p = getPayrollData(k.id);
                 const gp = p.gajiPokok || 0;
-                const tk = getBpjsTkComponents(k.id);
-                const dasarKes = getDasarBpjsKes(k.id);
+                const tk = getBpjsTkComponents(k, periode);
+                const dasarKes = getDasarBpjsKes(k, periode);
                 const tunj = (p.tunjJab || 0) + (p.tunjMakan || 0) + (p.tunjPulsa || 0) + (p.tunjLain || 0);
                 
                 const bpjsKesPribadi = dasarKes * 0.01;
@@ -787,6 +858,14 @@
             document.getElementById('dash-total-bpjs-kes').innerText = `Rp ${formatRibuan(totalSetorBpjsKes)}`;
         }
 
+        function toggleModalBpjsInputs() {
+            const tkAuto = document.getElementById('kary-bpjs-tk-auto').checked;
+            const kesAuto = document.getElementById('kary-bpjs-kes-auto').checked;
+
+            document.getElementById('container-modal-tk-base').style.display = tkAuto ? 'none' : 'block';
+            document.getElementById('container-modal-kes-base').style.display = kesAuto ? 'none' : 'block';
+        }
+
         function openModalKaryawan(editId = null) {
             document.getElementById('modal-karyawan').classList.remove('hidden');
             document.getElementById('modal-karyawan').classList.add('flex');
@@ -794,7 +873,7 @@
             if (editId) {
                 const k = globalKaryawan.find(item => item.id === editId);
                 if (k) {
-                    document.getElementById('modal-karyawan-title').innerText = "Edit Data Karyawan";
+                    document.getElementById('modal-karyawan-title').innerText = "Edit Data Master Karyawan";
                     document.getElementById('kary-id-edit').value = k.id;
                     document.getElementById('kary-nik').value = k.nik || '';
                     document.getElementById('kary-nama').value = k.nama || '';
@@ -802,9 +881,17 @@
                     document.getElementById('kary-npwp').value = k.npwp || '';
                     document.getElementById('kary-start').value = k.startKerja || '';
                     document.getElementById('kary-ptkp').value = k.ptkp || 'TK/0';
+                    
+                    document.getElementById('kary-bpjs-tk-auto').checked = (k.bpjsTkAuto !== false);
+                    document.getElementById('kary-bpjs-tk-base').value = formatRibuan(k.bpjsTkBase || 0);
+                    document.getElementById('kary-bpjs-tk-start').value = k.bpjsTkStart || '2026-01';
+
+                    document.getElementById('kary-bpjs-kes-auto').checked = (k.bpjsKesAuto !== false);
+                    document.getElementById('kary-bpjs-kes-base').value = formatRibuan(k.bpjsKesBase || 0);
+                    document.getElementById('kary-bpjs-kes-start').value = k.bpjsKesStart || '2026-01';
                 }
             } else {
-                document.getElementById('modal-karyawan-title').innerText = "Tambah Data Karyawan";
+                document.getElementById('modal-karyawan-title').innerText = "Tambah Master Karyawan Baru";
                 document.getElementById('kary-id-edit').value = "";
                 document.getElementById('kary-nik').value = "";
                 document.getElementById('kary-nama').value = "";
@@ -812,7 +899,16 @@
                 document.getElementById('kary-npwp').value = "";
                 document.getElementById('kary-start').value = "";
                 document.getElementById('kary-ptkp').value = "TK/0";
+                
+                document.getElementById('kary-bpjs-tk-auto').checked = true;
+                document.getElementById('kary-bpjs-tk-base').value = "";
+                document.getElementById('kary-bpjs-tk-start').value = "2026-01";
+
+                document.getElementById('kary-bpjs-kes-auto').checked = true;
+                document.getElementById('kary-bpjs-kes-base').value = "";
+                document.getElementById('kary-bpjs-kes-start').value = "2026-01";
             }
+            toggleModalBpjsInputs();
         }
 
         function closeModalKaryawan() {
@@ -829,12 +925,18 @@
                 jabatan: document.getElementById('kary-jabatan').value,
                 npwp: document.getElementById('kary-npwp').value,
                 startKerja: document.getElementById('kary-start').value,
-                ptkp: document.getElementById('kary-ptkp').value
+                ptkp: document.getElementById('kary-ptkp').value,
+                bpjsTkAuto: document.getElementById('kary-bpjs-tk-auto').checked,
+                bpjsTkBase: cleanNumber(document.getElementById('kary-bpjs-tk-base').value),
+                bpjsTkStart: document.getElementById('kary-bpjs-tk-start').value,
+                bpjsKesAuto: document.getElementById('kary-bpjs-kes-auto').checked,
+                bpjsKesBase: cleanNumber(document.getElementById('kary-bpjs-kes-base').value),
+                bpjsKesStart: document.getElementById('kary-bpjs-kes-start').value
             };
 
             if (editId) {
                 await db.collection('karyawan').doc(editId).update(data);
-                await logAudit('EDIT_KARYAWAN', `Mengubah profil karyawan: ${data.nama}`);
+                await logAudit('EDIT_KARYAWAN', `Mengubah profil & master BPJS karyawan: ${data.nama}`);
             } else {
                 await db.collection('karyawan').add(data);
                 await logAudit('TAMBAH_KARYAWAN', `Menambah karyawan baru: ${data.nama}`);
@@ -859,41 +961,32 @@
             globalKaryawan.forEach(k => {
                 tbody.innerHTML += `
                     <tr class="border-b bg-white hover:bg-slate-50">
-                        <td class="p-3">${k.nik}</td>
-                        <td class="p-3 font-semibold">${k.nama}</td>
+                        <td class="p-3 font-semibold">${k.nik}</td>
+                        <td class="p-3 font-bold text-slate-800">${k.nama}</td>
                         <td class="p-3">${k.jabatan}</td>
                         <td class="p-3">${k.npwp || '-'}</td>
-                        <td class="p-3">${k.startKerja}</td>
-                        <td class="p-3"><span class="bg-slate-100 px-2 py-1 rounded border">${k.ptkp}</span></td>
+                        <td class="p-3"><span class="bg-slate-100 px-2 py-0.5 rounded border">${k.ptkp}</span></td>
+                        <td class="p-3 text-indigo-700 font-semibold">${k.bpjsTkStart || '2026-01'}</td>
+                        <td class="p-3 text-teal-700 font-semibold">${k.bpjsKesStart || '2026-01'}</td>
                         <td class="p-3 text-right flex justify-end gap-2">
-                            <button onclick="openModalKaryawan('${k.id}')" class="text-blue-600 hover:underline">Edit</button>
-                            <button onclick="deleteKaryawan('${k.id}')" class="text-red-600 hover:underline">Hapus</button>
+                            <button onclick="openModalKaryawan('${k.id}')" class="text-blue-600 hover:underline font-semibold">Edit</button>
+                            <button onclick="deleteKaryawan('${k.id}')" class="text-red-600 hover:underline font-semibold">Hapus</button>
                         </td>
                     </tr>
                 `;
             });
         }
 
-        function toggleBpjsInputs(id) {
-            const autoTk = document.getElementById(`auto-tk-${id}`).checked;
-            const autoKes = document.getElementById(`auto-kes-${id}`).checked;
-
-            document.getElementById(`container-dasar-tk-${id}`).style.display = autoTk ? 'none' : 'flex';
-            document.getElementById(`container-dasar-kes-${id}`).style.display = autoKes ? 'none' : 'block';
-        }
-
+        // TAMPILAN TABEL GAJI BERSIH (1 BARIS PER KARYAWAN)
         function renderGajiTable() {
             const tbody = document.getElementById('table-gaji-body');
             tbody.innerHTML = '';
 
             globalKaryawan.forEach(k => {
                 const p = getPayrollData(k.id);
-                const isAutoTk = (p.autoBpjsTk !== false);
-                const isAutoKes = (p.autoBpjsKes !== false);
 
                 tbody.innerHTML += `
-                    <!-- ROW 1: INPUT ANGKA GAJI -->
-                    <tr class="border-t bg-white font-semibold">
+                    <tr class="border-b bg-white font-semibold hover:bg-slate-50">
                         <td class="p-2 border font-bold text-slate-800">${k.nama}</td>
                         <td class="p-2 border"><input type="text" value="${formatRibuan(p.gajiPokok || 0)}" onkeyup="formatInputRibuan(this)" class="w-24 border rounded p-1 text-right" id="gp-${k.id}"></td>
                         <td class="p-2 border"><input type="text" value="${formatRibuan(p.tunjJab || 0)}" onkeyup="formatInputRibuan(this)" class="w-20 border rounded p-1 text-right" id="tj-${k.id}"></td>
@@ -903,41 +996,8 @@
                         <td class="p-2 border"><input type="text" value="${formatRibuan(p.gratifikasi || 0)}" onkeyup="formatInputRibuan(this)" class="w-20 border rounded p-1 text-right" id="gr-${k.id}"></td>
                         <td class="p-2 border"><input type="text" value="${formatRibuan(p.thr || 0)}" onkeyup="formatInputRibuan(this)" class="w-20 border rounded p-1 text-right" id="thr-${k.id}"></td>
                         <td class="p-2 border"><input type="text" value="${formatRibuan(p.potGaji || 0)}" onkeyup="formatInputRibuan(this)" class="w-20 border rounded p-1 text-right text-red-600" id="pot-${k.id}"></td>
-                        <td class="p-2 border text-center align-middle" rowspan="2">
-                            <button onclick="saveGaji('${k.id}')" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-blue-700 shadow transition">Simpan</button>
-                        </td>
-                    </tr>
-                    <!-- ROW 2: CONFIG BPJS TK & KES HORIZONTAL -->
-                    <tr class="border-b bg-slate-50 text-[11px]">
-                        <td colspan="9" class="p-2.5 border">
-                            <div class="flex flex-wrap items-center gap-6">
-                                <div class="flex items-center gap-3">
-                                    <div class="flex items-center gap-1 font-bold text-slate-700">
-                                        <input type="checkbox" id="auto-tk-${k.id}" ${isAutoTk ? 'checked' : ''} onchange="toggleBpjsInputs('${k.id}')">
-                                        <label for="auto-tk-${k.id}">Auto BPJS TK</label>
-                                    </div>
-                                    <div id="container-dasar-tk-${k.id}" style="display: ${isAutoTk ? 'none' : 'flex'};" class="items-center gap-2 bg-white p-1 rounded border">
-                                        <span class="text-slate-500">Base JHT:</span>
-                                        <input type="text" value="${formatRibuan(p.dasarJht || 0)}" onkeyup="formatInputRibuan(this)" class="w-20 border rounded p-0.5 text-right" id="dasar-jht-${k.id}">
-                                        <span class="text-slate-500">JKK:</span>
-                                        <input type="text" value="${formatRibuan(p.dasarJkk || 0)}" onkeyup="formatInputRibuan(this)" class="w-20 border rounded p-0.5 text-right" id="dasar-jkk-${k.id}">
-                                        <span class="text-slate-500">JKM:</span>
-                                        <input type="text" value="${formatRibuan(p.dasarJkm || 0)}" onkeyup="formatInputRibuan(this)" class="w-20 border rounded p-0.5 text-right" id="dasar-jkm-${k.id}">
-                                        <span class="text-slate-500">JP:</span>
-                                        <input type="text" value="${formatRibuan(p.dasarJp || 0)}" onkeyup="formatInputRibuan(this)" class="w-20 border rounded p-0.5 text-right" id="dasar-jp-${k.id}">
-                                    </div>
-                                </div>
-                                <div class="flex items-center gap-3 border-l pl-4">
-                                    <div class="flex items-center gap-1 font-bold text-slate-700">
-                                        <input type="checkbox" id="auto-kes-${k.id}" ${isAutoKes ? 'checked' : ''} onchange="toggleBpjsInputs('${k.id}')">
-                                        <label for="auto-kes-${k.id}">Auto BPJS Kes</label>
-                                    </div>
-                                    <div id="container-dasar-kes-${k.id}" style="display: ${isAutoKes ? 'none' : 'block'};" class="bg-white p-1 rounded border">
-                                        <span class="text-slate-500">Base Kes (Max 12M):</span>
-                                        <input type="text" value="${formatRibuan(p.dasarBpjsKes || 0)}" onkeyup="formatInputRibuan(this)" class="w-24 border rounded p-0.5 text-right" id="dasar-kes-${k.id}">
-                                    </div>
-                                </div>
-                            </div>
+                        <td class="p-2 border text-center align-middle">
+                            <button onclick="saveGaji('${k.id}')" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-700 shadow transition">Simpan</button>
                         </td>
                     </tr>
                 `;
@@ -946,8 +1006,6 @@
 
         async function saveGaji(id) {
             const periode = getSelectedPeriode();
-            const autoTk = document.getElementById(`auto-tk-${id}`).checked;
-            const autoKes = document.getElementById(`auto-kes-${id}`).checked;
             const gp = cleanNumber(document.getElementById(`gp-${id}`).value);
 
             const data = {
@@ -958,18 +1016,11 @@
                 tunjLain: cleanNumber(document.getElementById(`tl-${id}`).value),
                 gratifikasi: cleanNumber(document.getElementById(`gr-${id}`).value),
                 thr: cleanNumber(document.getElementById(`thr-${id}`).value),
-                potGaji: cleanNumber(document.getElementById(`pot-${id}`).value),
-                autoBpjsTk: autoTk,
-                autoBpjsKes: autoKes,
-                dasarJht: autoTk ? gp : cleanNumber(document.getElementById(`dasar-jht-${id}`).value),
-                dasarJkk: autoTk ? gp : cleanNumber(document.getElementById(`dasar-jkk-${id}`).value),
-                dasarJkm: autoTk ? gp : cleanNumber(document.getElementById(`dasar-jkm-${id}`).value),
-                dasarJp: autoTk ? Math.min(gp, MAX_DASAR_BPJS_JP) : Math.min(cleanNumber(document.getElementById(`dasar-jp-${id}`).value), MAX_DASAR_BPJS_JP),
-                dasarBpjsKes: autoKes ? gp : cleanNumber(document.getElementById(`dasar-kes-${id}`).value)
+                potGaji: cleanNumber(document.getElementById(`pot-${id}`).value)
             };
 
             await db.collection('karyawan').doc(id).collection('payroll').doc(periode).set(data);
-            await logAudit('UPDATE_GAJI', `Update gaji karyawan ID ${id} periode ${periode}`);
+            await logAudit('UPDATE_GAJI', `Update kompensasi gaji ID ${id} periode ${periode}`);
             alert(`Data gaji periode ${periode} berhasil disimpan!`);
             loadGlobalData();
         }
@@ -977,14 +1028,16 @@
         function renderLaporPPhTable() {
             const tbody = document.getElementById('table-lapor-pph-body');
             tbody.innerHTML = '';
+            const periode = getSelectedPeriode();
+
             let totalBrutoPajakAcc = 0;
             let totalPPhAcc = 0;
 
             globalKaryawan.forEach(k => {
                 const p = getPayrollData(k.id);
                 const gp = p.gajiPokok || 0;
-                const tk = getBpjsTkComponents(k.id);
-                const dasarKes = getDasarBpjsKes(k.id);
+                const tk = getBpjsTkComponents(k, periode);
+                const dasarKes = getDasarBpjsKes(k, periode);
                 const tunj = (p.tunjJab || 0) + (p.tunjMakan || 0) + (p.tunjPulsa || 0) + (p.tunjLain || 0);
                 const brutoTHP = gp + tunj;
                 
@@ -1014,7 +1067,7 @@
             document.getElementById('dash-total-pph').innerText = `Rp ${formatRibuan(totalPPhAcc)}`;
         }
 
-        // --- KONSEP 1: PRINT REKAP PDF VIA WINDOW KHUSUS (DIJAMIN TIDAK BLANK) ---
+        // PRINT REKAP PDF (KONSEP 1: POPUP WINDOW TERISOLASI)
         function printRekapPDF() {
             const periode = getSelectedPeriode().toUpperCase();
             
@@ -1027,8 +1080,8 @@
             globalKaryawan.forEach(k => {
                 const p = getPayrollData(k.id);
                 const gp = p.gajiPokok || 0;
-                const tk = getBpjsTkComponents(k.id);
-                const dasarKes = getDasarBpjsKes(k.id);
+                const tk = getBpjsTkComponents(k, periode.toLowerCase());
+                const dasarKes = getDasarBpjsKes(k, periode.toLowerCase());
                 const tj = p.tunjJab || 0;
                 const tpbt = p.tunjPulsa || 0;
                 const tm = p.tunjMakan || 0;
@@ -1113,7 +1166,7 @@
                 </head>
                 <body>
                     <div class="header">
-                        <h1>PT MULTISARANA ARGO LESTARI</h1>
+                        <h1>PT PRIMA ANUGERAH MAKMUR</h1>
                         <h2>REKAPITULASI PAYROLL & IURAN BPJS - PERIODE ${periode}</h2>
                     </div>
                     <table>
@@ -1174,13 +1227,11 @@
                 </html>
             `;
 
-            // Buka Window Baru dan Inject HTML Dokumen
             const printWin = window.open('', '_blank', 'width=1100,height=700');
             printWin.document.open();
             printWin.document.write(printHTML);
             printWin.document.close();
 
-            // Jalankan Perintah Print Setelah Window Murni Selesai Load
             printWin.onload = function() {
                 printWin.focus();
                 printWin.print();
@@ -1243,10 +1294,11 @@
             const k = globalKaryawan.find(item => item.id === id);
             if (!k) return;
 
+            const periode = getSelectedPeriode();
             const p = getPayrollData(k.id);
             const gp = p.gajiPokok || 0;
-            const tk = getBpjsTkComponents(k.id);
-            const dasarKes = getDasarBpjsKes(k.id);
+            const tk = getBpjsTkComponents(k, periode);
+            const dasarKes = getDasarBpjsKes(k, periode);
             const tunj = (p.tunjJab || 0) + (p.tunjMakan || 0) + (p.tunjPulsa || 0) + (p.tunjLain || 0);
             
             const bpjsKes = dasarKes * 0.01;
@@ -1333,12 +1385,13 @@
         }
 
         function exportToCoretaxCSV() {
+            const periode = getSelectedPeriode();
             let csvContent = "data:text/csv;charset=utf-8,NIK,NAMA,NPWP,STATUS_PTKP,BRUTO_PAJAK_GROSSUP,PPH21_TER\n";
             globalKaryawan.forEach(k => {
                 const p = getPayrollData(k.id);
                 const gp = p.gajiPokok || 0;
-                const tk = getBpjsTkComponents(k.id);
-                const dasarKes = getDasarBpjsKes(k.id);
+                const tk = getBpjsTkComponents(k, periode);
+                const dasarKes = getDasarBpjsKes(k, periode);
                 const bpjsPerusahaan = (tk.jkk * 0.0054) + (tk.jkm * 0.0030) + (dasarKes * 0.04);
                 const brutoAwal = gp + (p.tunjJab || 0) + (p.tunjMakan || 0) + (p.tunjPulsa || 0) + (p.tunjLain || 0) + bpjsPerusahaan;
                 const calc = calculateGrossUpTER(k.ptkp, brutoAwal);
@@ -1347,7 +1400,7 @@
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `Coretax_PPh21_PT_MAL_${getSelectedPeriode()}.csv`);
+            link.setAttribute("download", `Coretax_PPh21_PT_PAM_${periode}.csv`);
             document.body.appendChild(link);
             link.click();
         }
