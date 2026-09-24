@@ -178,10 +178,16 @@
                 </div>
             </section>
 
-            <!-- TAB 3: DATA GAJI & THR -->
+            <!-- TAB 3: DATA GAJI & THR (SINGLE BATCH SAVE) -->
             <section id="tab-gaji" class="tab-content hidden">
                 <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                    <h3 class="font-bold text-slate-700 mb-4">Input & Edit Gaji Bulanan Per Periode</h3>
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-slate-700">Input & Edit Gaji Bulanan Per Periode</h3>
+                        <button onclick="saveAllGaji()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-4 py-2 rounded-lg font-bold shadow transition flex items-center gap-1.5">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                            Simpan Semua Data Gaji
+                        </button>
+                    </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-xs text-left border-collapse">
                             <thead class="bg-slate-100 uppercase text-slate-600 border-b font-bold">
@@ -195,7 +201,6 @@
                                     <th class="p-2 border">GRATIFIKASI</th>
                                     <th class="p-2 border">THR</th>
                                     <th class="p-2 border">POT. GAJI</th>
-                                    <th class="p-2 border text-center">AKSI</th>
                                 </tr>
                             </thead>
                             <tbody id="table-gaji-body"></tbody>
@@ -242,11 +247,13 @@
                 </div>
             </section>
 
-            <!-- TAB 5: LAPOR PPH 21 BULANAN (CORETAX & TER) -->
+            <!-- TAB 5: LAPOR PPH 21 BULANAN (CORETAX XML & TER) -->
             <section id="tab-lapor-pph" class="tab-content hidden">
                 <div class="flex justify-between items-center mb-4">
-                    <h3 class="font-bold text-slate-700">Kalkulasi PPh 21 TER Bulanan & Export Coretax</h3>
-                    <button onclick="exportToCoretaxCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3 py-2 rounded-lg font-medium">Export CSV Format Coretax</button>
+                    <h3 class="font-bold text-slate-700">Kalkulasi PPh 21 TER Bulanan & Export XML Coretax</h3>
+                    <button onclick="exportToCoretaxXML()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3 py-2 rounded-lg font-medium shadow transition">
+                        Export XML Format Coretax
+                    </button>
                 </div>
                 <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                     <div class="overflow-x-auto">
@@ -270,7 +277,7 @@
                 </div>
             </section>
 
-            <!-- TAB 6: PPH 21 AKHIR TAHUN (TAHUN DINAMIS & BUKTI POTONG 1721-A1) -->
+            <!-- TAB 6: PPH 21 AKHIR TAHUN (TAHUN DINAMIS & EXPORT XML TAHUNAN 1721-A1) -->
             <section id="tab-pph-akhir" class="tab-content hidden">
                 <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-4 flex flex-wrap justify-between items-center gap-4">
                     <div>
@@ -282,8 +289,8 @@
                             <label class="text-xs font-bold text-slate-600 uppercase">Pilih Tahun Pajak:</label>
                             <select id="pph-akhir-year" onchange="renderPphAkhirTahunTable()" class="border rounded px-3 py-1.5 text-sm bg-slate-50 font-bold text-amber-700 border-amber-300"></select>
                         </div>
-                        <button onclick="exportAnnualCoretaxCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3 py-1.5 rounded-lg font-bold shadow transition">
-                            Export CSV Coretax Tahunan (1721-A1)
+                        <button onclick="exportAnnualCoretaxXML()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3 py-1.5 rounded-lg font-bold shadow transition">
+                            Export XML Coretax Tahunan (1721-A1)
                         </button>
                     </div>
                 </div>
@@ -303,7 +310,6 @@
                                     <th class="p-2.5 border">PPh 21 Terutang (Pasal 17)</th>
                                     <th class="p-2.5 border">PPh 21 Dipotong (TER Jan-Des)</th>
                                     <th class="p-2.5 border text-center">Selisih Status</th>
-                                    <th class="p-2.5 border text-center">Aksi Dokumen</th>
                                 </tr>
                             </thead>
                             <tbody id="table-pph-akhir-body"></tbody>
@@ -567,7 +573,6 @@
         let globalAnnualCalculations = {};
         let globalDirektur = { nama: "ABDUL HALEK", kota: "Pekanbaru", npwpPemotong: "0210139952122000" };
 
-        // GENERATE OPSI TAHUN SECARA DINAMIS (TANPA BATASAN HARDCODED)
         function populateYearDropdown() {
             const yearSelect = document.getElementById('pph-akhir-year');
             if (!yearSelect) return;
@@ -575,7 +580,7 @@
             yearSelect.innerHTML = '';
             
             const startYear = 2020;
-            const endYear = Math.max(currentYear + 5, 2030); // Dinamis mengikuti tahun kalender berjalan + 5 tahun
+            const endYear = Math.max(currentYear + 5, 2030);
             
             for (let y = endYear; y >= startYear; y--) {
                 const opt = document.createElement('option');
@@ -613,6 +618,33 @@
                 return `${clean.substring(0,2)}.${clean.substring(2,5)}.${clean.substring(5,8)}.${clean.substring(8,9)}-${clean.substring(9,12)}.${clean.substring(12,16)}`;
             }
             return raw;
+        }
+
+        function escapeXml(unsafe) {
+            if (!unsafe) return '';
+            return unsafe.toString().replace(/[<>&'"]/g, function (c) {
+                switch (c) {
+                    case '<': return '&lt;';
+                    case '>': return '&gt;';
+                    case '&': return '&amp;';
+                    case '\'': return '&apos;';
+                    case '"': return '&quot;';
+                }
+            });
+        }
+
+        function downloadBlob(content, filename, contentType) {
+            const blob = new Blob([content], { type: contentType });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => {
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 100);
         }
 
         function getTerRateFull(category, bruto) {
@@ -1153,33 +1185,53 @@
                         <td class="p-2 border"><input type="text" value="${formatRibuan(p.gratifikasi || 0)}" onkeyup="formatInputRibuan(this)" class="w-20 border rounded p-1 text-right" id="gr-${k.id}"></td>
                         <td class="p-2 border"><input type="text" value="${formatRibuan(p.thr || 0)}" onkeyup="formatInputRibuan(this)" class="w-20 border rounded p-1 text-right" id="thr-${k.id}"></td>
                         <td class="p-2 border"><input type="text" value="${formatRibuan(p.potGaji || 0)}" onkeyup="formatInputRibuan(this)" class="w-20 border rounded p-1 text-right text-red-600" id="pot-${k.id}"></td>
-                        <td class="p-2 border text-center align-middle">
-                            <button onclick="saveGaji('${k.id}')" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-700 shadow transition">Simpan</button>
-                        </td>
                     </tr>
                 `;
             });
         }
 
-        async function saveGaji(id) {
+        // FUNGSI SIMPAN SEKALIGUS (BATCH SAVE GAJI)
+        async function saveAllGaji() {
+            if (globalKaryawan.length === 0) {
+                alert('Tidak ada data karyawan!');
+                return;
+            }
+
             const periode = getSelectedPeriode();
-            const gp = cleanNumber(document.getElementById(`gp-${id}`).value);
+            const batch = db.batch();
 
-            const data = {
-                gajiPokok: gp,
-                tunjJab: cleanNumber(document.getElementById(`tj-${id}`).value),
-                tunjMakan: cleanNumber(document.getElementById(`tm-${id}`).value),
-                tunjPulsa: cleanNumber(document.getElementById(`tp-${id}`).value),
-                tunjLain: cleanNumber(document.getElementById(`tl-${id}`).value),
-                gratifikasi: cleanNumber(document.getElementById(`gr-${id}`).value),
-                thr: cleanNumber(document.getElementById(`thr-${id}`).value),
-                potGaji: cleanNumber(document.getElementById(`pot-${id}`).value)
-            };
+            globalKaryawan.forEach(k => {
+                const gp = cleanNumber(document.getElementById(`gp-${k.id}`).value);
+                const tj = cleanNumber(document.getElementById(`tj-${k.id}`).value);
+                const tm = cleanNumber(document.getElementById(`tm-${k.id}`).value);
+                const tp = cleanNumber(document.getElementById(`tp-${k.id}`).value);
+                const tl = cleanNumber(document.getElementById(`tl-${k.id}`).value);
+                const gr = cleanNumber(document.getElementById(`gr-${k.id}`).value);
+                const thr = cleanNumber(document.getElementById(`thr-${k.id}`).value);
+                const pot = cleanNumber(document.getElementById(`pot-${k.id}`).value);
 
-            await db.collection('karyawan').doc(id).collection('payroll').doc(periode).set(data);
-            await logAudit('UPDATE_GAJI', `Update kompensasi gaji ID ${id} periode ${periode}`);
-            alert(`Data gaji periode ${periode} berhasil disimpan!`);
-            loadGlobalData();
+                const docRef = db.collection('karyawan').doc(k.id).collection('payroll').doc(periode);
+                batch.set(docRef, {
+                    gajiPokok: gp,
+                    tunjJab: tj,
+                    tunjMakan: tm,
+                    tunjPulsa: tp,
+                    tunjLain: tl,
+                    gratifikasi: gr,
+                    thr: thr,
+                    potGaji: pot
+                });
+            });
+
+            try {
+                await batch.commit();
+                await logAudit('UPDATE_GAJI_BATCH', `Simpan sekaligus data gaji ${globalKaryawan.length} karyawan periode ${periode}`);
+                alert(`Seluruh data gaji periode ${periode} berhasil disimpan sekaligus!`);
+                loadGlobalData();
+            } catch (err) {
+                console.error("Gagal simpan batch gaji:", err);
+                alert('Terjadi kesalahan saat menyimpan data gaji.');
+            }
         }
 
         function renderLaporPPhTable() {
@@ -1228,7 +1280,7 @@
         // PPH 21 AKHIR TAHUN VIA PARALLEL PROMISE FETCH
         async function renderPphAkhirTahunTable() {
             const tbody = document.getElementById('table-pph-akhir-body');
-            tbody.innerHTML = '<tr><td colspan="11" class="p-4 text-center text-slate-500 font-semibold">Memuat & mengkalkulasi data tahunan...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="10" class="p-4 text-center text-slate-500 font-semibold">Memuat & mengkalkulasi data tahunan...</td></tr>';
             
             const selectedYear = document.getElementById('pph-akhir-year').value || new Date().getFullYear().toString();
             let annualMap = {};
@@ -1312,125 +1364,66 @@
                         <td class="p-2.5 border font-bold text-indigo-700">Rp ${formatRibuan(pph21Pasal17Annual)}</td>
                         <td class="p-2.5 border font-bold text-blue-700">Rp ${formatRibuan(pph21TerAnnual)}</td>
                         <td class="p-2.5 border text-center">${statusBadge}</td>
-                        <td class="p-2.5 border text-center">
-                            <button onclick="printBuktiPotong1721A1('${k.id}')" class="bg-amber-600 hover:bg-amber-700 text-white px-2 py-1 rounded text-[11px] font-bold shadow">
-                                Cetak 1721-A1
-                            </button>
-                        </td>
                     </tr>
                 `;
             });
         }
 
-        // BUKTI POTONG FORMULIR 1721-A1 DENGAN NPWP PEMOTONG DEDIKASI
-        function printBuktiPotong1721A1(karyId) {
-            const k = globalKaryawan.find(item => item.id === karyId);
-            if (!k) return;
-
-            const selectedYear = document.getElementById('pph-akhir-year').value || new Date().getFullYear();
-            const aData = globalAnnualCalculations[karyId] || { brutoSetahun: 0, biayaJabatanSetahun: 0, bpjsKarySetahun: 0, pphTerSetahun: 0 };
+        // EXPORT XML BULANAN CORETAX
+        function exportToCoretaxXML() {
+            const periode = getSelectedPeriode();
+            const npwpPemotong = globalDirektur.npwpPemotong || '0210139952122000';
             
-            const bruto = aData.brutoSetahun;
-            const biayaJab = aData.biayaJabatanSetahun;
-            const iuranBpjs = aData.bpjsKarySetahun;
-            const neto = Math.max(0, bruto - biayaJab - iuranBpjs);
-            const ptkp = PTKP_DICT[k.ptkp] || 54000000;
-            const pkp = Math.max(0, neto - ptkp);
-            const pph21Terutang = calculatePajakPasal17Tahunan(pkp);
-            const pph21TerDipotong = aData.pphTerSetahun;
+            let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
+            xml += `<CoretaxPPh21Masa xmlns="http://www.pajak.go.id/coretax/pph21/masa">\n`;
+            xml += `  <Header>\n`;
+            xml += `    <NpwpPemotong>${npwpPemotong}</NpwpPemotong>\n`;
+            xml += `    <NamaPemotong>PT PRIMA ANUGERAH MAKMUR</NamaPemotong>\n`;
+            xml += `    <MasaPajak>${periode.split('-')[1]}</MasaPajak>\n`;
+            xml += `    <TahunPajak>${periode.split('-')[0]}</TahunPajak>\n`;
+            xml += `  </Header>\n`;
+            xml += `  <ListPemotongan>\n`;
 
-            const printHTML = `
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <title>Bukti Potong 1721-A1 - ${k.nama}</title>
-                    <style>
-                        @page { size: A4 portrait; margin: 10mm; }
-                        body { font-family: Arial, sans-serif; font-size: 11px; color: #000; margin: 0; padding: 10px; }
-                        .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 12px; }
-                        .header h2 { margin: 0; font-size: 15px; }
-                        .header h3 { margin: 2px 0 0 0; font-size: 12px; font-weight: normal; }
-                        .box { border: 1px solid #000; padding: 8px; margin-bottom: 10px; }
-                        .row { display: flex; justify-content: space-between; margin-bottom: 4px; }
-                        table { width: 100%; border-collapse: collapse; margin-top: 8px; }
-                        th, td { border: 1px solid #000; padding: 5px; text-align: left; }
-                        th { background-color: #f1f5f9; text-align: center; }
-                        .right { text-align: right; }
-                        .font-bold { font-weight: bold; }
-                    </style>
-                </head>
-                <body>
-                    <div class="header">
-                        <h2>BUKTI PEMOTONGAN PPH PASAL 21 BAGI PEGAWAI TETAP</h2>
-                        <h3>FORMULIR 1721 - A1 (TAHUN PAJAK ${selectedYear})</h3>
-                        <p style="margin:4px 0 0 0; font-weight:bold; font-size:13px;">PT PRIMA ANUGERAH MAKMUR</p>
-                        <p style="margin:2px 0 0 0; font-size:11px;">NPWP PEMOTONG: <strong>${formatNPWPDisplay(globalDirektur.npwpPemotong)}</strong></p>
-                    </div>
+            globalKaryawan.forEach(k => {
+                const p = getPayrollData(k.id);
+                const gp = p.gajiPokok || 0;
+                const tk = getBpjsTkComponents(k, periode);
+                const dasarKes = getDasarBpjsKes(k, periode);
+                const bpjsPerusahaan = (tk.jkk * 0.0054) + (tk.jkm * 0.0030) + (dasarKes * 0.04);
+                const brutoAwal = gp + (p.tunjJab || 0) + (p.tunjMakan || 0) + (p.tunjPulsa || 0) + (p.tunjLain || 0) + (p.gratifikasi || 0) + (p.thr || 0) + bpjsPerusahaan;
+                const calc = calculatePajakKaryawan(k.ptkp, brutoAwal, k.pajakMetode || 'NET');
 
-                    <div class="box">
-                        <div class="row"><span><strong>NAMA PEGAWAI:</strong> ${k.nama}</span><span><strong>NIK:</strong> ${k.nik}</span></div>
-                        <div class="row"><span><strong>JABATAN:</strong> ${k.jabatan}</span><span><strong>NPWP PEGAWAI:</strong> ${k.npwp || '-'}</span></div>
-                        <div class="row"><span><strong>STATUS PTKP:</strong> ${k.ptkp}</span><span><strong>METODE PAJAK:</strong> ${k.pajakMetode || 'NET'}</span></div>
-                    </div>
+                xml += `    <ItemPemotongan>\n`;
+                xml += `      <Nik>${k.nik || ''}</Nik>\n`;
+                xml += `      <Nama>${escapeXml(k.nama || '')}</Nama>\n`;
+                xml += `      <NpwpPegawai>${k.npwp || ''}</NpwpPegawai>\n`;
+                xml += `      <KodePTKP>${k.ptkp}</KodePTKP>\n`;
+                xml += `      <MetodePajak>${calc.metode}</MetodePajak>\n`;
+                xml += `      <PenghasilanBruto>${Math.round(calc.brutoPajakFinal)}</PenghasilanBruto>\n`;
+                xml += `      <PPh21Dipotong>${Math.round(calc.pph21)}</PPh21Dipotong>\n`;
+                xml += `    </ItemPemotongan>\n`;
+            });
 
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>NO</th>
-                                <th>RINCIAN PENGHASILAN & PERHITUNGAN PPH 21</th>
-                                <th class="right">JUMLAH (RUPIAH)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr><td style="text-align:center;">1</td><td>Penghasilan Bruto Setahun</td><td class="right">Rp ${formatRibuan(bruto)}</td></tr>
-                            <tr><td style="text-align:center;">2</td><td>Pengurang: Biaya Jabatan Setahun</td><td class="right">Rp ${formatRibuan(biayaJab)}</td></tr>
-                            <tr><td style="text-align:center;">3</td><td>Pengurang: Iuran BPJS Karyawan Setahun</td><td class="right">Rp ${formatRibuan(iuranBpjs)}</td></tr>
-                            <tr class="font-bold"><td>4</td><td>Jumlah Penghasilan Neto Setahun (1 - 2 - 3)</td><td class="right">Rp ${formatRibuan(neto)}</td></tr>
-                            <tr><td style="text-align:center;">5</td><td>Penghasilan Tidak Kena Pajak (PTKP)</td><td class="right">Rp ${formatRibuan(ptkp)}</td></tr>
-                            <tr class="font-bold"><td>6</td><td>Penghasilan Kena Pajak (PKP) Setahun</td><td class="right">Rp ${formatRibuan(pkp)}</td></tr>
-                            <tr class="font-bold" style="background-color:#f8fafc;"><td>7</td><td>PPh Pasal 21 Terutang Setahun (Tarif Pasal 17)</td><td class="right">Rp ${formatRibuan(pph21Terutang)}</td></tr>
-                            <tr><td style="text-align:center;">8</td><td>PPh Pasal 21 Telah Dipotong (Akumulasi TER Jan-Des)</td><td class="right">Rp ${formatRibuan(pph21TerDipotong)}</td></tr>
-                        </tbody>
-                    </table>
+            xml += `  </ListPemotongan>\n`;
+            xml += `</CoretaxPPh21Masa>`;
 
-                    <div class="box" style="margin-top:15px; text-align:center; background-color:#f1f5f9;">
-                        <strong>STATUS AKHIR TAHUN: </strong> 
-                        ${(pph21Terutang - pph21TerDipotong) < 0 ? 'LEBIH BAYAR (LB) Rp ' + formatRibuan(Math.abs(pph21Terutang - pph21TerDipotong)) : (pph21Terutang - pph21TerDipotong) > 0 ? 'KURANG BAYAR (KB) Rp ' + formatRibuan(pph21Terutang - pph21TerDipotong) : 'NIHIL'}
-                    </div>
-
-                    <div style="display:flex; justify-content:space-between; margin-top:30px; text-align:center;">
-                        <div style="width:40%;">
-                            <p>Penerima / Karyawan,</p>
-                            <br><br><br>
-                            <p><strong>( ${k.nama} )</strong></p>
-                        </div>
-                        <div style="width:40%;">
-                            <p>${globalDirektur.kota || 'Pekanbaru'}, 31 Desember ${selectedYear}</p>
-                            <p>Pemotong Pajak / Direktur,</p>
-                            <br><br><br>
-                            <p><strong>( ${globalDirektur.nama || 'ABDUL HALEK'} )</strong></p>
-                        </div>
-                    </div>
-                </body>
-                </html>
-            `;
-
-            const printWin = window.open('', '_blank', 'width=800,height=900');
-            printWin.document.open();
-            printWin.document.write(printHTML);
-            printWin.document.close();
-
-            printWin.onload = function() {
-                printWin.focus();
-                printWin.print();
-                printWin.close();
-            };
+            downloadBlob(xml, `Coretax_PPh21_Masa_PT_PAM_${periode}.xml`, 'text/xml');
         }
 
-        function exportAnnualCoretaxCSV() {
-            const selectedYear = document.getElementById('pph-akhir-year').value || new Date().getFullYear();
-            let csvContent = "data:text/csv;charset=utf-8,NPWP_PEMOTONG,NIK,NAMA,NPWP_PEGAWAI,PTKP,METODE_PAJAK,BRUTO_SETAHUN,BIAYA_JABATAN,BPJS_KARY_SETAHUN,NETO_SETAHUN,PKP,PPH21_PASAL17_TERUTANG,PPH21_TER_DIPOTONG,SELISIH_LB_KB,STATUS\n";
-            
+        // EXPORT XML TAHUNAN (FORMULIR 1721-A1) CORETAX
+        function exportAnnualCoretaxXML() {
+            const selectedYear = document.getElementById('pph-akhir-year').value || new Date().getFullYear().toString();
+            const npwpPemotong = globalDirektur.npwpPemotong || '0210139952122000';
+
+            let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
+            xml += `<CoretaxPPh21Tahunan1721A1 xmlns="http://www.pajak.go.id/coretax/pph21/1721A1">\n`;
+            xml += `  <Header>\n`;
+            xml += `    <NpwpPemotong>${npwpPemotong}</NpwpPemotong>\n`;
+            xml += `    <NamaPemotong>PT PRIMA ANUGERAH MAKMUR</NamaPemotong>\n`;
+            xml += `    <TahunPajak>${selectedYear}</TahunPajak>\n`;
+            xml += `  </Header>\n`;
+            xml += `  <ListBuktiPotong1721A1>\n`;
+
             globalKaryawan.forEach(k => {
                 const aData = globalAnnualCalculations[k.id] || { brutoSetahun: 0, biayaJabatanSetahun: 0, bpjsKarySetahun: 0, pphTerSetahun: 0 };
                 const bruto = aData.brutoSetahun;
@@ -1444,15 +1437,28 @@
                 const selisih = pph21Terutang - pph21TerDipotong;
                 const status = selisih < 0 ? 'LEBIH_BAYAR' : selisih > 0 ? 'KURANG_BAYAR' : 'NIHIL';
 
-                csvContent += `${globalDirektur.npwpPemotong || '0210139952122000'},${k.nik},${k.nama},${k.npwp || ''},${k.ptkp},${k.pajakMetode || 'NET'},${bruto},${biayaJab},${iuranBpjs},${neto},${pkp},${pph21Terutang},${pph21TerDipotong},${selisih},${status}\n`;
+                xml += `    <BuktiPotong1721A1>\n`;
+                xml += `      <Nik>${k.nik || ''}</Nik>\n`;
+                xml += `      <Nama>${escapeXml(k.nama || '')}</Nama>\n`;
+                xml += `      <NpwpPegawai>${k.npwp || ''}</NpwpPegawai>\n`;
+                xml += `      <KodePTKP>${k.ptkp}</KodePTKP>\n`;
+                xml += `      <MetodePajak>${k.pajakMetode || 'NET'}</MetodePajak>\n`;
+                xml += `      <BrutoSetahun>${Math.round(bruto)}</BrutoSetahun>\n`;
+                xml += `      <BiayaJabatan>${Math.round(biayaJab)}</BiayaJabatan>\n`;
+                xml += `      <BpjsKaryawanSetahun>${Math.round(iuranBpjs)}</BpjsKaryawanSetahun>\n`;
+                xml += `      <NetoSetahun>${Math.round(neto)}</NetoSetahun>\n`;
+                xml += `      <PKP>${Math.round(pkp)}</PKP>\n`;
+                xml += `      <PPh21Pasal17Terutang>${Math.round(pph21Terutang)}</PPh21Pasal17Terutang>\n`;
+                xml += `      <PPh21TerDipotong>${Math.round(pph21TerDipotong)}</PPh21TerDipotong>\n`;
+                xml += `      <Selisih>${Math.round(selisih)}</Selisih>\n`;
+                xml += `      <StatusSelisih>${status}</StatusSelisih>\n`;
+                xml += `    </BuktiPotong1721A1>\n`;
             });
 
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `Coretax_PPh21_Tahunan_1721A1_PT_PAM_${selectedYear}.csv`);
-            document.body.appendChild(link);
-            link.click();
+            xml += `  </ListBuktiPotong1721A1>\n`;
+            xml += `</CoretaxPPh21Tahunan1721A1>`;
+
+            downloadBlob(xml, `Coretax_PPh21_Tahunan_1721A1_PT_PAM_${selectedYear}.xml`, 'text/xml');
         }
 
         function printRekapPDF() {
@@ -1835,27 +1841,6 @@
                     alert('Terjadi kesalahan saat menghapus audit log.');
                 }
             }
-        }
-
-        function exportToCoretaxCSV() {
-            const periode = getSelectedPeriode();
-            let csvContent = "data:text/csv;charset=utf-8,NPWP_PEMOTONG,NIK,NAMA,NPWP_PEGAWAI,STATUS_PTKP,METODE_PAJAK,BRUTO_PAJAK,PPH21_TER\n";
-            globalKaryawan.forEach(k => {
-                const p = getPayrollData(k.id);
-                const gp = p.gajiPokok || 0;
-                const tk = getBpjsTkComponents(k, periode);
-                const dasarKes = getDasarBpjsKes(k, periode);
-                const bpjsPerusahaan = (tk.jkk * 0.0054) + (tk.jkm * 0.0030) + (dasarKes * 0.04);
-                const brutoAwal = gp + (p.tunjJab || 0) + (p.tunjMakan || 0) + (p.tunjPulsa || 0) + (p.tunjLain || 0) + (p.gratifikasi || 0) + (p.thr || 0) + bpjsPerusahaan;
-                const calc = calculatePajakKaryawan(k.ptkp, brutoAwal, k.pajakMetode || 'NET');
-                csvContent += `${globalDirektur.npwpPemotong || '0210139952122000'},${k.nik},${k.nama},${k.npwp || ''},${k.ptkp},${calc.metode},${calc.brutoPajakFinal},${calc.pph21}\n`;
-            });
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `Coretax_PPh21_PT_PAM_${periode}.csv`);
-            document.body.appendChild(link);
-            link.click();
         }
     </script>
 </body>
