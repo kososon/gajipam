@@ -69,7 +69,7 @@
             </div>
         </header>
 
-        <!-- Navbar Menu (Diseragamkan 1 Warna) -->
+        <!-- Navbar Menu -->
         <nav class="bg-white border-b border-slate-200 no-print">
             <div class="max-w-7xl mx-auto px-4 flex gap-2 overflow-x-auto text-sm font-medium py-2">
                 <button onclick="switchTab('dashboard')" class="tab-btn px-4 py-2 rounded-lg hover:bg-slate-100 text-slate-700 active-tab" id="btn-dashboard">Dashboard</button>
@@ -150,11 +150,15 @@
                 </div>
             </section>
 
-            <!-- TAB 2: DATA KARYAWAN -->
+            <!-- TAB 2: DATA KARYAWAN (+ FITUR PENCARIAN NAMA) -->
             <section id="tab-karyawan" class="tab-content hidden">
-                <div class="flex justify-between items-center mb-4">
+                <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
                     <h3 class="font-bold text-slate-700">Master Data Karyawan & Masa Kerja (A-Z)</h3>
-                    <button onclick="openModalKaryawan()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-2 rounded-lg font-medium">+ Tambah Karyawan</button>
+                    <div class="flex items-center gap-2">
+                        <!-- Input Cari Nama Karyawan Master -->
+                        <input type="text" id="search-karyawan" onkeyup="renderKaryawanTable()" placeholder="Cari nama karyawan..." class="border rounded-lg px-3 py-1.5 text-xs bg-white focus:ring-2 focus:ring-blue-500 outline-none w-48 sm:w-64">
+                        <button onclick="openModalKaryawan()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-2 rounded-lg font-medium">+ Tambah Karyawan</button>
+                    </div>
                 </div>
                 <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                     <div class="overflow-x-auto">
@@ -178,18 +182,22 @@
                 </div>
             </section>
 
-            <!-- TAB 3: DATA GAJI & THR (+ INPUT OVERRIDE BPJS BULANAN) -->
+            <!-- TAB 3: DATA GAJI & THR (+ FITUR PENCARIAN NAMA) -->
             <section id="tab-gaji" class="tab-content hidden">
                 <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                    <div class="flex justify-between items-center mb-4">
+                    <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
                         <div>
                             <h3 class="font-bold text-slate-700">Input & Edit Gaji Bulanan Per Periode (A-Z)</h3>
                             <p class="text-xs text-slate-500">Nilai Dasar BPJS TK/Kes bulanan dapat disesuaikan manual & terkunci permanen per periode</p>
                         </div>
-                        <button onclick="saveAllGaji()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-4 py-2 rounded-lg font-bold shadow transition flex items-center gap-1.5">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
-                            Simpan Semua Data Gaji
-                        </button>
+                        <div class="flex items-center gap-2">
+                            <!-- Input Cari Nama Karyawan Gaji -->
+                            <input type="text" id="search-gaji" onkeyup="renderGajiTable()" placeholder="Cari nama karyawan..." class="border rounded-lg px-3 py-1.5 text-xs bg-white focus:ring-2 focus:ring-blue-500 outline-none w-48 sm:w-64">
+                            <button onclick="saveAllGaji()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-4 py-2 rounded-lg font-bold shadow transition flex items-center gap-1.5">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                                Simpan Semua Data Gaji
+                            </button>
+                        </div>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-xs text-left border-collapse">
@@ -1215,10 +1223,23 @@
             }
         }
 
+        // RENDER TABEL MASTER KARYAWAN (+ FITUR SEARCH NAMA)
         function renderKaryawanTable() {
             const tbody = document.getElementById('table-karyawan-body');
             tbody.innerHTML = '';
-            globalKaryawan.forEach(k => {
+            
+            const searchQuery = (document.getElementById('search-karyawan')?.value || '').trim().toLowerCase();
+
+            const filteredList = globalKaryawan.filter(k => {
+                return (k.nama || '').toLowerCase().includes(searchQuery);
+            });
+
+            if (filteredList.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" class="p-4 text-center text-slate-500 font-semibold">Tidak ada karyawan yang cocok dengan pencarian.</td></tr>';
+                return;
+            }
+
+            filteredList.forEach(k => {
                 const metode = (k.pajakMetode || 'NET') === 'GROSS_UP' ? 'GROSS UP' : 'NET (Auto)';
                 const statusBadge = (k.isActive !== false) 
                     ? '<span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold">AKTIF</span>' 
@@ -1243,15 +1264,21 @@
             });
         }
 
+        // RENDER TABEL GAJI BULANAN (+ FITUR SEARCH NAMA)
         function renderGajiTable() {
             const tbody = document.getElementById('table-gaji-body');
             tbody.innerHTML = '';
             const periode = getSelectedPeriode();
+            const searchQuery = (document.getElementById('search-gaji')?.value || '').trim().toLowerCase();
 
-            const activeKaryawan = globalKaryawan.filter(k => isKaryawanActiveInPeriode(k, periode));
+            const activeKaryawan = globalKaryawan.filter(k => {
+                const isActive = isKaryawanActiveInPeriode(k, periode);
+                const matchesSearch = (k.nama || '').toLowerCase().includes(searchQuery);
+                return isActive && matchesSearch;
+            });
 
             if (activeKaryawan.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="11" class="p-4 text-center text-slate-500 font-semibold">Tidak ada karyawan aktif pada periode ini.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="11" class="p-4 text-center text-slate-500 font-semibold">Tidak ada karyawan aktif yang cocok dengan pencarian.</td></tr>';
                 return;
             }
 
@@ -1291,7 +1318,10 @@
             const batch = db.batch();
 
             activeKaryawan.forEach(k => {
-                const gp = cleanNumber(document.getElementById(`gp-${k.id}`).value);
+                const elGp = document.getElementById(`gp-${k.id}`);
+                if (!elGp) return; // Mengabaikan karyawan jika disembunyikan filter saat save
+
+                const gp = cleanNumber(elGp.value);
                 const bpjsTkBaseVal = cleanNumber(document.getElementById(`bpjs-tk-base-${k.id}`).value);
                 const bpjsKesBaseVal = cleanNumber(document.getElementById(`bpjs-kes-base-${k.id}`).value);
                 const tj = cleanNumber(document.getElementById(`tj-${k.id}`).value);
@@ -1586,15 +1616,16 @@
             downloadBlob(xml, `Coretax_PPh21_Tahunan_1721A1_PT_PAM_${selectedYear}.xml`, 'text/xml');
         }
 
+        // PRINT REKAP RESTRUKTURISASI SESUAI URUTAN BARU (A-Z)
         function printRekapPDF() {
             const periode = getSelectedPeriode().toUpperCase();
             
-            let sumTotalGaji = 0, sumLaporTk = 0, sumLaporKes = 0, sumGapok = 0;
-            let sumTunjJab = 0, sumTunjPbt = 0, sumTunjMakan = 0, sumTunjLain = 0, sumTotalAllow = 0;
-            let sumJkkPers = 0, sumJhtPers = 0, sumJpPers = 0, sumJkmPers = 0, sumKesPers = 0;
-            let sumJhtKary = 0, sumJpKary = 0, sumKesKary = 0;
+            let sumBrutoAwal = 0, sumBpjsTkPers = 0, sumBpjsKesPers = 0, sumTunjPph = 0;
+            let sumTotalGajiBruto = 0, sumPotPph21 = 0, sumPotBpjsTkKary = 0, sumPotBpjsKesKary = 0, sumTHP = 0;
 
             let rowsHTML = '';
+            let no = 1;
+
             globalKaryawan.forEach(k => {
                 if (!isKaryawanActiveInPeriode(k, periode.toLowerCase())) return;
 
@@ -1602,64 +1633,56 @@
                 const gp = p.gajiPokok || 0;
                 const tk = getBpjsTkComponents(k, periode.toLowerCase());
                 const dasarKes = getDasarBpjsKes(k, periode.toLowerCase());
-                const tj = p.tunjJab || 0;
-                const tpbt = p.tunjPulsa || 0;
-                const tm = p.tunjMakan || 0;
-                const tl = p.tunjLain || 0;
+                
+                const tunj = (p.tunjJab || 0) + (p.tunjMakan || 0) + (p.tunjPulsa || 0) + (p.tunjLain || 0) + (p.gratifikasi || 0) + (p.thr || 0);
+                const totalBrutoAwal = gp + tunj;
 
-                const totalAllow = tj + tpbt + tm + tl;
-                const totalGaji = gp + totalAllow;
+                const bpjsTkPers = (tk.jht * 0.037) + (tk.jkk * 0.0054) + (tk.jkm * 0.0030) + (tk.jp * 0.02);
+                const bpjsKesPers = dasarKes * 0.04;
 
-                const jkkP = tk.jkk * 0.0054;
-                const jhtP = tk.jht * 0.037;
-                const jpP = tk.jp * 0.02;
-                const jkmP = tk.jkm * 0.0030;
-                const kesP = dasarKes * 0.04;
+                const bpjsKenaPajakPerusahaan = (tk.jkk * 0.0054) + (tk.jkm * 0.0030) + bpjsKesPers;
+                const brutoAwalTanpaPajak = totalBrutoAwal + bpjsKenaPajakPerusahaan;
+                const calcPajak = calculatePajakKaryawan(k.ptkp, brutoAwalTanpaPajak, k.pajakMetode || 'NET');
 
-                const jhtK = tk.jht * 0.02;
-                const jpK = tk.jp * 0.01;
-                const kesK = dasarKes * 0.01;
+                let tunjPph = 0;
+                let potPph21 = calcPajak.pph21;
 
-                sumTotalGaji += totalGaji;
-                sumLaporTk += tk.jht;
-                sumLaporKes += dasarKes;
-                sumGapok += gp;
-                sumTunjJab += tj;
-                sumTunjPbt += tpbt;
-                sumTunjMakan += tm;
-                sumTunjLain += tl;
-                sumTotalAllow += totalAllow;
+                if ((k.pajakMetode || 'NET') === 'GROSS_UP') {
+                    tunjPph = calcPajak.pph21;
+                }
 
-                sumJkkPers += jkkP;
-                sumJhtPers += jhtP;
-                sumJpPers += jpP;
-                sumJkmPers += jkmP;
-                sumKesPers += kesP;
+                const totalGajiBrutoAkhir = totalBrutoAwal + bpjsTkPers + bpjsKesPers + tunjPph;
 
-                sumJhtKary += jhtK;
-                sumJpKary += jpK;
-                sumKesKary += kesK;
+                const potBpjsTkKary = (tk.jht * 0.02) + (tk.jp * 0.01);
+                const potBpjsKesKary = dasarKes * 0.01;
+                const potGajiLain = p.potGaji || 0;
+
+                const thp = (totalBrutoAwal + tunjPph) - (potPph21 + potBpjsTkKary + potBpjsKesKary + potGajiLain);
+
+                sumBrutoAwal += totalBrutoAwal;
+                sumBpjsTkPers += bpjsTkPers;
+                sumBpjsKesPers += bpjsKesPers;
+                sumTunjPph += tunjPph;
+                sumTotalGajiBruto += totalGajiBrutoAkhir;
+                sumPotPph21 += potPph21;
+                sumPotBpjsTkKary += potBpjsTkKary;
+                sumPotBpjsKesKary += potBpjsKesKary;
+                sumTHP += thp;
 
                 rowsHTML += `
                     <tr>
+                        <td>${no++}</td>
+                        <td>${k.nik || '-'}</td>
                         <td class="left font-bold">${k.nama}</td>
-                        <td>Rp ${formatRibuan(totalGaji)}</td>
-                        <td>Rp ${formatRibuan(tk.jht)}</td>
-                        <td>Rp ${formatRibuan(dasarKes)}</td>
-                        <td>Rp ${formatRibuan(gp)}</td>
-                        <td>Rp ${formatRibuan(tj)}</td>
-                        <td>Rp ${formatRibuan(tpbt)}</td>
-                        <td>Rp ${formatRibuan(tm)}</td>
-                        <td>Rp ${formatRibuan(tl)}</td>
-                        <td class="font-bold">Rp ${formatRibuan(totalAllow)}</td>
-                        <td>Rp ${formatRibuan(jkkP)}</td>
-                        <td>Rp ${formatRibuan(jhtP)}</td>
-                        <td>Rp ${formatRibuan(jpP)}</td>
-                        <td>Rp ${formatRibuan(jkmP)}</td>
-                        <td>Rp ${formatRibuan(kesP)}</td>
-                        <td>Rp ${formatRibuan(jhtK)}</td>
-                        <td>Rp ${formatRibuan(jpK)}</td>
-                        <td>Rp ${formatRibuan(kesK)}</td>
+                        <td>Rp ${formatRibuan(totalBrutoAwal)}</td>
+                        <td>Rp ${formatRibuan(bpjsTkPers)}</td>
+                        <td>Rp ${formatRibuan(bpjsKesPers)}</td>
+                        <td>Rp ${formatRibuan(tunjPph)}</td>
+                        <td class="font-bold">Rp ${formatRibuan(totalGajiBrutoAkhir)}</td>
+                        <td>Rp ${formatRibuan(potPph21)}</td>
+                        <td>Rp ${formatRibuan(potBpjsTkKary)}</td>
+                        <td>Rp ${formatRibuan(potBpjsKesKary)}</td>
+                        <td class="font-bold text-emerald">Rp ${formatRibuan(thp)}</td>
                     </tr>
                 `;
             });
@@ -1668,54 +1691,43 @@
                 <!DOCTYPE html>
                 <html>
                 <head>
-                    <title>Rekapitulasi Payroll - ${periode}</title>
+                    <title>Rekapitulasi Penggajian - ${periode}</title>
                     <style>
-                        @page { size: A4 landscape; margin: 5mm; }
+                        @page { size: A4 landscape; margin: 6mm; }
                         body { font-family: Arial, sans-serif; margin: 10px; color: #000; }
                         .header { text-align: center; margin-bottom: 15px; }
                         .header h1 { margin: 0; font-size: 16px; text-transform: uppercase; }
                         .header h2 { margin: 3px 0 0 0; font-size: 12px; font-weight: normal; }
                         table { width: 100%; border-collapse: collapse; font-size: 8px; }
-                        th, td { border: 1px solid #000; padding: 4px 2px; text-align: center; }
-                        th { background-color: #e2e8f0; font-weight: bold; }
-                        .bg-sub { background-color: #f1f5f9; }
+                        th, td { border: 1px solid #000; padding: 5px 3px; text-align: center; }
+                        th { background-color: #f1f5f9; font-weight: bold; }
                         .left { text-align: left; }
                         .font-bold { font-weight: bold; }
+                        .text-emerald { color: #047857; }
                         tfoot tr { background-color: #e2e8f0; font-weight: bold; }
                     </style>
                 </head>
                 <body>
                     <div class="header">
                         <h1>PT PRIMA ANUGERAH MAKMUR</h1>
-                        <h2>REKAPITULASI PAYROLL & IURAN BPJS - PERIODE ${periode}</h2>
+                        <h2>REKAPITULASI PENGGAJIAN & PPH 21 - PERIODE ${periode}</h2>
                         <p style="margin:2px 0 0 0; font-size:10px;">NPWP Pemotong: ${formatNPWPDisplay(globalDirektur.npwpPemotong)}</p>
                     </div>
                     <table>
                         <thead>
                             <tr>
-                                <th rowspan="2">Nama</th>
-                                <th rowspan="2">TOTAL GAJI</th>
-                                <th rowspan="2">Gaji Lapor BPJS TK</th>
-                                <th rowspan="2">Gaji Lapor BPJS Kes</th>
-                                <th rowspan="2">Gapok</th>
-                                <th colspan="4">ALLOWANCE / TUNJANGAN</th>
-                                <th rowspan="2">TOTAL ALLOWANCE</th>
-                                <th colspan="5">IURAN BPJS PERUSAHAAN</th>
-                                <th colspan="3">IURAN BPJS KARYAWAN</th>
-                            </tr>
-                            <tr class="bg-sub">
-                                <th>Tunj Jabatan</th>
-                                <th>Tunj PBT</th>
-                                <th>Tunj Makan</th>
-                                <th>Tunj Lain2</th>
-                                <th>JKK (0.54%)</th>
-                                <th>JHT (3.70%)</th>
-                                <th>JP (2%)</th>
-                                <th>JKM (0.30%)</th>
-                                <th>BPJS Kes (4%)</th>
-                                <th>JHT (2%)</th>
-                                <th>JP (1%)</th>
-                                <th>BPJS Kes (1%)</th>
+                                <th>No.</th>
+                                <th>NIK</th>
+                                <th>Nama Karyawan</th>
+                                <th>Total Bruto (sblm BPJS Pers.)</th>
+                                <th>BPJS TK (Perusahaan)</th>
+                                <th>BPJS Kes (Perusahaan)</th>
+                                <th>Tunj PPh (Net/Gross-Up)</th>
+                                <th>Total Gaji Bruto Akhir</th>
+                                <th>Pot. PPh 21</th>
+                                <th>Pot. BPJS TK (Karyawan)</th>
+                                <th>Pot. BPJS Kes (Karyawan)</th>
+                                <th>THP (Take Home Pay)</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -1723,24 +1735,16 @@
                         </tbody>
                         <tfoot>
                             <tr>
-                                <td>TOTAL</td>
-                                <td>Rp ${formatRibuan(sumTotalGaji)}</td>
-                                <td>Rp ${formatRibuan(sumLaporTk)}</td>
-                                <td>Rp ${formatRibuan(sumLaporKes)}</td>
-                                <td>Rp ${formatRibuan(sumGapok)}</td>
-                                <td>Rp ${formatRibuan(sumTunjJab)}</td>
-                                <td>Rp ${formatRibuan(sumTunjPbt)}</td>
-                                <td>Rp ${formatRibuan(sumTunjMakan)}</td>
-                                <td>Rp ${formatRibuan(sumTunjLain)}</td>
-                                <td>Rp ${formatRibuan(sumTotalAllow)}</td>
-                                <td>Rp ${formatRibuan(sumJkkPers)}</td>
-                                <td>Rp ${formatRibuan(sumJhtPers)}</td>
-                                <td>Rp ${formatRibuan(sumJpPers)}</td>
-                                <td>Rp ${formatRibuan(sumJkmPers)}</td>
-                                <td>Rp ${formatRibuan(sumKesPers)}</td>
-                                <td>Rp ${formatRibuan(sumJhtKary)}</td>
-                                <td>Rp ${formatRibuan(sumJpKary)}</td>
-                                <td>Rp ${formatRibuan(sumKesKary)}</td>
+                                <td colspan="3" class="font-bold">TOTAL</td>
+                                <td>Rp ${formatRibuan(sumBrutoAwal)}</td>
+                                <td>Rp ${formatRibuan(sumBpjsTkPers)}</td>
+                                <td>Rp ${formatRibuan(sumBpjsKesPers)}</td>
+                                <td>Rp ${formatRibuan(sumTunjPph)}</td>
+                                <td>Rp ${formatRibuan(sumTotalGajiBruto)}</td>
+                                <td>Rp ${formatRibuan(sumPotPph21)}</td>
+                                <td>Rp ${formatRibuan(sumPotBpjsTkKary)}</td>
+                                <td>Rp ${formatRibuan(sumPotBpjsKesKary)}</td>
+                                <td>Rp ${formatRibuan(sumTHP)}</td>
                             </tr>
                         </tfoot>
                     </table>
