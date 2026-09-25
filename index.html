@@ -12,6 +12,27 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
 
     <style>
+        /* Data Gaji & THR: header tabel tetap terlihat saat scroll vertikal */
+        #tab-gaji .overflow-x-auto {
+            max-height: 70vh;
+            overflow: auto;
+            position: relative;
+        }
+        #tab-gaji #table-gaji-body + * { display:none; }
+        #tab-gaji table thead {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+        }
+        #tab-gaji table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 21;
+            background-color: #f1f5f9;
+        }
+        #tab-gaji table thead th:nth-child(3) { background-color: #eef2ff; }
+        #tab-gaji table thead th:nth-child(4) { background-color: #f0fdfa; }
+
         /* Format Cetak Slip Single Karyawan (Half A4) */
         /* Highlight 1 baris saat mouse / kursor input berada di Data Gaji & THR */
         #table-gaji-body tr {
