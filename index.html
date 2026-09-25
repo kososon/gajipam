@@ -94,7 +94,9 @@
                     <select id="filter-periode-type" onchange="loadGlobalData()" class="border rounded px-3 py-1.5 text-sm bg-slate-50">
                         <option value="monthly">Bulanan</option>
                     </select>
-                    <input type="month" id="filter-month" onchange="loadGlobalData()" class="border rounded px-3 py-1.5 text-sm bg-slate-50 font-bold text-blue-600">
+                    <input type="month" id="filter-month" onchange="loadGlobalData(); syncDefaultWithholdingDate();" class="border rounded px-3 py-1.5 text-sm bg-slate-50 font-bold text-blue-600">
+                    <label class="text-xs font-bold text-slate-500 uppercase">Tanggal Pemotongan:</label>
+                    <input type="date" id="filter-withholding-date" class="border rounded px-3 py-1.5 text-sm bg-amber-50 font-bold text-amber-700" title="Isi tanggal pemotongan aktual untuk BPMP Coretax">
                 </div>
                 
                 <div class="flex items-center gap-2">
@@ -525,6 +527,16 @@
                     </div>
                 </div>
 
+                <div class="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <div class="flex items-start gap-2">
+                        <input type="checkbox" id="kary-pajak-subjektif-bagian-tahun" class="w-4 h-4 mt-0.5 text-amber-600 rounded">
+                        <div>
+                            <label for="kary-pajak-subjektif-bagian-tahun" class="text-xs font-bold text-amber-900">Kewajiban pajak subjektif hanya bagian tahun</label>
+                            <p class="text-[10px] text-amber-800 mt-1">Centang hanya jika kewajiban pajak subjektif memang baru dimulai setelah Januari atau berakhir sebelum Desember. Jangan dicentang hanya karena karyawan baru masuk atau resign.</p>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- SEKSI MASTER BPJS KETENAGAKERJAAN -->
                 <div class="border-t pt-3 bg-slate-50 p-3 rounded-lg border">
                     <h4 class="font-bold text-xs text-indigo-700 uppercase mb-2">Master BPJS Ketenagakerjaan</h4>
@@ -659,6 +671,19 @@
             if (filter) return filter;
             const now = new Date();
             return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        }
+
+        function syncDefaultWithholdingDate() {
+            const periode = getSelectedPeriode();
+            const input = document.getElementById('filter-withholding-date');
+            if (!input || !periode) return;
+            const [y, m] = periode.split('-').map(Number);
+            const lastDay = new Date(y, m, 0);
+            const defaultDate = `${lastDay.getFullYear()}-${String(lastDay.getMonth() + 1).padStart(2, '0')}-${String(lastDay.getDate()).padStart(2, '0')}`;
+            if (!input.value || !input.dataset.periode || input.dataset.periode !== periode) {
+                input.value = defaultDate;
+                input.dataset.periode = periode;
+            }
         }
 
         function normalizePeriode(value) {
@@ -967,6 +992,7 @@
 
             populateYearDropdown();
             setDefaultPeriodeFilter();
+            syncDefaultWithholdingDate();
             loadGlobalData();
         }
 
@@ -1225,6 +1251,7 @@
                     document.getElementById('kary-end').value = k.endKerja || '';
                     document.getElementById('kary-ptkp').value = k.ptkp || 'TK/0';
                     document.getElementById('kary-pajak-metode').value = k.pajakMetode || 'NET';
+                    document.getElementById('kary-pajak-subjektif-bagian-tahun').checked = (k.pajakSubjektifBagianTahun === true);
                     
                     document.getElementById('kary-bpjs-tk-auto').checked = (k.bpjsTkAuto !== false);
                     document.getElementById('kary-bpjs-tk-base').value = formatRibuan(k.bpjsTkBase || 0);
@@ -1246,6 +1273,7 @@
                 document.getElementById('kary-end').value = '';
                 document.getElementById('kary-ptkp').value = "TK/0";
                 document.getElementById('kary-pajak-metode').value = "NET";
+                document.getElementById('kary-pajak-subjektif-bagian-tahun').checked = false;
                 
                 document.getElementById('kary-bpjs-tk-auto').checked = true;
                 document.getElementById('kary-bpjs-tk-base').value = "";
@@ -1295,6 +1323,7 @@
                 endKerja: isActive ? null : endKerjaInput,
                 ptkp: document.getElementById('kary-ptkp').value,
                 pajakMetode: document.getElementById('kary-pajak-metode').value,
+                pajakSubjektifBagianTahun: document.getElementById('kary-pajak-subjektif-bagian-tahun').checked,
                 bpjsTkAuto: document.getElementById('kary-bpjs-tk-auto').checked,
                 bpjsTkBase: cleanNumber(document.getElementById('kary-bpjs-tk-base').value),
                 bpjsTkStart: document.getElementById('kary-bpjs-tk-start').value,
@@ -1503,6 +1532,14 @@
 
                 const aData = globalAnnualCalculations[k.id];
                 const isLast = !!aData && aData.lastTaxMonth === periode;
+                if (isLast && aData.finalPayrollMissing) {
+                    tbody.innerHTML += `
+                        <tr class="border-b bg-amber-50">
+                            <td class="p-3 font-semibold">${k.nama}</td>
+                            <td class="p-3" colspan="8">Payroll masa pajak terakhir <b>${periode}</b> belum tersedia. PPh masa terakhir/BPA1 belum dapat dihitung.</td>
+                        </tr>`;
+                    return;
+                }
                 let calc;
                 if (isLast) {
                     calc = {
@@ -1546,11 +1583,15 @@
         // - bila mulai setelah Januari / berhenti sebelum Desember: neto disetahunkan,
         //   pajak kemudian diproporsikan berdasarkan jumlah bulan dalam bagian tahun.
         // ================================================================
-        function calculatePph21BagianTahun({ brutoSetahun, biayaJabatan, bpjsKarySetahun, ptkp, masaBulan }) {
+        function calculatePph21BagianTahun({ brutoSetahun, biayaJabatan, bpjsKarySetahun, ptkp, masaBulan, annualizePartYear = false }) {
             const months = Math.max(1, Number(masaBulan) || 1);
             const neto = Math.max(0, brutoSetahun - biayaJabatan - bpjsKarySetahun);
 
-            if (months < 12) {
+            // PMK 168/2023 membedakan: jika kewajiban pajak subjektif memang hanya
+            // meliputi bagian tahun, neto disetahunkan lalu pajaknya diproporsikan.
+            // Mulai/resign kerja saja tidak otomatis berarti kewajiban pajak subjektif
+            // hanya bagian tahun.
+            if (annualizePartYear && months < 12) {
                 const netoDisetahunkan = neto * 12 / months;
                 const pkpDisetahunkan = Math.max(0, netoDisetahunkan - ptkp);
                 const pphDisetahunkan = calculatePajakPasal17Tahunan(pkpDisetahunkan);
@@ -1565,12 +1606,13 @@
             }
 
             const pkp = Math.max(0, neto - ptkp);
+            const pphBagianTahun = calculatePajakPasal17Tahunan(pkp);
             return {
                 neto,
                 netoDisetahunkan: neto,
                 pkp: Math.max(0, Math.floor((pkp || 0) / 1000) * 1000),
-                pphDisetahunkan: calculatePajakPasal17Tahunan(pkp),
-                pphBagianTahun: calculatePajakPasal17Tahunan(pkp)
+                pphDisetahunkan: pphBagianTahun,
+                pphBagianTahun
             };
         }
 
@@ -1591,6 +1633,7 @@
                 const employment = getEmploymentMonthsInYear(k, year);
                 if (!employment) return;
 
+                const lastTaxMonth = `${year}-${String(employment.endMonth).padStart(2, '0')}`;
                 annualMap[k.id] = {
                     brutoSetahun: 0,
                     biayaJabatanSetahun: 0,
@@ -1598,12 +1641,13 @@
                     pphTerSetahun: 0,
                     pphSebelumMasaTerakhir: 0,
                     pph21TerutangBagianTahun: 0,
-                    pph21MasaTerakhir: 0,
+                    pph21MasaTerakhir: null,
                     brutoPajakMasaTerakhir: 0,
                     startMonth: employment.startMonth,
                     endMonth: employment.endMonth,
                     masaKerjaAktif: employment.masaKerjaAktif,
-                    lastTaxMonth: null,
+                    lastTaxMonth,
+                    finalPayrollMissing: false,
                     monthlyRecords: []
                 };
 
@@ -1649,23 +1693,25 @@
                 if (!k) return;
 
                 aData.monthlyRecords.sort((a, b) => a.periode.localeCompare(b.periode));
-                if (aData.monthlyRecords.length === 0) {
-                    aData.masaKerjaAktif = 0;
+                const last = aData.monthlyRecords.find(rec => rec.periode === aData.lastTaxMonth);
+                const priorRecords = aData.monthlyRecords.filter(rec => rec.periode !== aData.lastTaxMonth);
+
+                // Masa pajak terakhir ditentukan oleh akhir kewajiban kerja:
+                // Desember untuk karyawan yang masih aktif, atau bulan resign.
+                // Jangan gunakan payroll terakhir yang kebetulan sudah tersedia.
+                if (!last) {
+                    aData.finalPayrollMissing = true;
                     return;
                 }
 
-                // Masa pajak terakhir adalah Desember atau bulan karyawan berhenti;
-                // secara operasional gunakan bulan payroll terakhir yang benar-benar memiliki penghasilan.
-                const lastRecord = aData.monthlyRecords[aData.monthlyRecords.length - 1];
-                aData.lastTaxMonth = lastRecord.periode;
-
                 const metode = k.pajakMetode || 'NET';
+                const annualizePartYear = k.pajakSubjektifBagianTahun === true;
                 let priorPph = 0;
                 let priorBrutoPajak = 0;
                 let priorBpjsKary = 0;
 
-                // Hitung semua masa selain masa terakhir dengan TER.
-                aData.monthlyRecords.slice(0, -1).forEach(rec => {
+                // Semua masa selain masa pajak terakhir menggunakan TER.
+                priorRecords.forEach(rec => {
                     const calc = calculatePajakKaryawan(k.ptkp, rec.brutoPajakDasar, metode);
                     rec.pph21 = calc.pph21;
                     rec.brutoPajakFinal = calc.brutoPajakFinal;
@@ -1674,14 +1720,12 @@
                     priorBpjsKary += rec.bpjsKaryawanBulan;
                 });
 
-                const last = lastRecord;
                 const months = aData.masaKerjaAktif;
                 const ptkp = PTKP_DICT[k.ptkp] || 54000000;
 
                 if (metode === 'GROSS_UP') {
-                    // Pada gross-up, PPh masa terakhir juga menjadi tunjangan PPh.
-                    // Cari x dengan fixed-point: x = PPh bagian tahun setelah memasukkan x
-                    // ke bruto masa terakhir, dikurangi PPh masa sebelumnya.
+                    // Cari tunjangan PPh masa terakhir secara iteratif karena tunjangan PPh
+                    // sendiri menjadi bagian bruto masa terakhir.
                     let x = 0;
                     for (let i = 0; i < 50; i++) {
                         const brutoTotal = priorBrutoPajak + last.brutoPajakDasar + x;
@@ -1692,16 +1736,16 @@
                             biayaJabatan: biayaJab,
                             bpjsKarySetahun: bpjsTotal,
                             ptkp,
-                            masaBulan: months
+                            masaBulan: months,
+                            annualizePartYear
                         }).pphBagianTahun;
-                        const nextX = annualTax - priorPph;
+                        const nextX = Math.max(0, annualTax - priorPph);
                         if (Math.abs(nextX - x) < 0.01) {
                             x = nextX;
                             break;
                         }
                         x = nextX;
                     }
-
                     last.pph21 = x;
                     last.brutoPajakFinal = last.brutoPajakDasar + x;
                 } else {
@@ -1718,12 +1762,12 @@
                     biayaJabatan: aData.biayaJabatanSetahun,
                     bpjsKarySetahun: aData.bpjsKarySetahun,
                     ptkp,
-                    masaBulan: months
+                    masaBulan: months,
+                    annualizePartYear
                 });
 
-                // Untuk NET, masa terakhir = pajak bagian tahun - potongan sebelumnya.
-                // Untuk GROSS_UP, fixed-point di atas sudah membuat tunjangan/potongan masa terakhir
-                // sama dengan pajak bagian tahun dikurangi potongan sebelumnya.
+                // Untuk NET, masa terakhir = pajak bagian tahun - pajak masa sebelumnya.
+                // Untuk GROSS_UP, fixed-point di atas sudah menghasilkan nilai yang sama.
                 if (metode !== 'GROSS_UP') {
                     last.pph21 = finalTax.pphBagianTahun - priorPph;
                 }
@@ -1736,6 +1780,7 @@
                 aData.netoSetahun = finalTax.neto;
                 aData.netoDisetahunkan = finalTax.netoDisetahunkan;
                 aData.pkpMasa = finalTax.pkp;
+                aData.annualizePartYear = annualizePartYear;
                 aData.monthlyRecords.forEach(rec => { rec.isLastTaxMonth = rec.periode === aData.lastTaxMonth; });
             });
 
@@ -1823,8 +1868,18 @@
             const [year, month] = periode.split('-');
             const npwpPemotong = normalizeTin16(globalDirektur.npwpPemotong || '');
             const nitkuPemotong = getNitkuPemotong();
-            const withholdingDate = new Date(Number(year), Number(month), 0);
-            const dateXml = `${withholdingDate.getFullYear()}-${String(withholdingDate.getMonth()+1).padStart(2,'0')}-${String(withholdingDate.getDate()).padStart(2,'0')}`;
+            const dateInput = document.getElementById('filter-withholding-date');
+            syncDefaultWithholdingDate();
+            const dateXml = dateInput ? dateInput.value : '';
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(dateXml)) {
+                alert('Tanggal pemotongan aktual wajib diisi sebelum export BPMP.');
+                return;
+            }
+            const minWithholdingDate = `${periode}-01`;
+            if (dateXml < minWithholdingDate) {
+                alert('Tanggal pemotongan tidak boleh lebih rendah dari awal Masa Pajak BPMP.');
+                return;
+            }
 
             if (npwpPemotong.length !== 16) {
                 alert('NPWP Pemotong harus 16 digit sebelum export BPMP.');
@@ -1836,6 +1891,16 @@
             }
 
             const annualMap = await buildAnnualCalculations(year);
+            const missingFinalEmployees = globalKaryawan.filter(k => {
+                if (!isKaryawanActiveInPeriode(k, periode)) return false;
+                const aData = annualMap[k.id];
+                return !!aData && aData.lastTaxMonth === periode && aData.finalPayrollMissing;
+            });
+            if (missingFinalEmployees.length) {
+                alert(`Tidak dapat export BPMP ${periode}. Payroll masa pajak terakhir belum tersedia untuk: ${missingFinalEmployees.map(k => k.nama).join(', ')}. Lengkapi payroll lalu proses BPA1.`);
+                return;
+            }
+
             const bpmpEmployees = [];
 
             globalKaryawan.forEach(k => {
@@ -1843,6 +1908,8 @@
                 const aData = annualMap[k.id];
                 // Masa pajak terakhir wajib BPA1, bukan BPMP.
                 if (aData && aData.lastTaxMonth === periode) return;
+                // Jika payroll masa terakhir belum ada, jangan menebak atau menggeser masa terakhir.
+                if (aData && aData.finalPayrollMissing && aData.lastTaxMonth === periode) return;
 
                 const p = getPayrollData(k.id);
                 const gp = p.gajiPokok || 0;
@@ -1990,7 +2057,11 @@
                 const calcPajak = calculatePajakKaryawan(k.ptkp, brutoAwalTanpaPajak, metode);
                 const aData = globalAnnualCalculations[k.id];
                 const isLastTaxMonth = !!aData && aData.lastTaxMonth === periodeNormalized;
-                const pphMasa = isLastTaxMonth ? aData.pph21MasaTerakhir : calcPajak.pph21;
+                if (isLastTaxMonth && aData.finalPayrollMissing) {
+                    rowsHTML += `<tr><td colspan="10" style="padding:8px;background:#fff7ed;color:#9a3412;"><b>${k.nama}</b>: payroll masa pajak terakhir ${periodeNormalized} belum tersedia.</td></tr>`;
+                    return;
+                }
+                const pphMasa = isLastTaxMonth ? Number(aData.pph21MasaTerakhir || 0) : calcPajak.pph21;
 
                 const tunjPph = metode === 'GROSS_UP' ? pphMasa : 0;
                 const potPph21 = pphMasa;
@@ -2201,7 +2272,7 @@
 
             if (isEndMonthOfKaryawan && aData) {
                 // Masa terakhir dihitung sebagai selisih antara pajak bagian tahun dan potongan sebelumnya.
-                const finalPph = aData.pph21MasaTerakhir;
+                const finalPph = Number(aData.pph21MasaTerakhir || 0);
                 if (metode === 'GROSS_UP') {
                     // Gross-up: koreksi PPh tetap netral terhadap THP karena tunjangan dan potongan sama nilainya.
                     tunjPajak = finalPph;
