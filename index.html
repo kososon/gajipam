@@ -13,6 +13,20 @@
 
     <style>
         /* Format Cetak Slip Single Karyawan (Half A4) */
+        /* Highlight 1 baris saat mouse / kursor input berada di Data Gaji & THR */
+        #table-gaji-body tr {
+            transition: background-color 120ms ease;
+        }
+        #table-gaji-body tr:hover > td,
+        #table-gaji-body tr:focus-within > td {
+            background-color: #fff7cc !important;
+        }
+        #table-gaji-body tr:hover > td:first-child,
+        #table-gaji-body tr:focus-within > td:first-child {
+            box-shadow: inset 4px 0 0 #f59e0b;
+            font-weight: 800;
+        }
+
         @media print {
             body * { visibility: hidden; }
             .no-print { display: none !important; }
@@ -1364,7 +1378,7 @@
                 const kesBaseVal = getDasarBpjsKes(k, periode);
 
                 tbody.innerHTML += `
-                    <tr class="border-b bg-white font-semibold hover:bg-slate-50">
+                    <tr class="border-b bg-white font-semibold transition-colors duration-100">
                         <td class="p-2 border font-bold text-slate-800">${k.nama}</td>
                         <td class="p-2 border"><input type="text" value="${formatRibuan(p.gajiPokok || 0)}" onkeyup="formatInputRibuan(this)" class="w-24 border rounded p-1 text-right" id="gp-${k.id}"></td>
                         <td class="p-2 border bg-indigo-50/50"><input type="text" value="${formatRibuan(tkComp.jht)}" onkeyup="formatInputRibuan(this)" class="w-24 border border-indigo-200 rounded p-1 text-right font-bold text-indigo-700 bg-white" id="bpjs-tk-base-${k.id}"></td>
