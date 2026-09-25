@@ -1312,9 +1312,42 @@
                 return;
             }
 
+            const nikInput = document.getElementById('kary-nik').value.trim();
+            const namaInput = document.getElementById('kary-nama').value.trim();
+
+            if (!nikInput) {
+                alert('NIK wajib diisi.');
+                return;
+            }
+            if (!namaInput) {
+                alert('Nama karyawan wajib diisi.');
+                return;
+            }
+
+            // NIK adalah identitas unik. Nama saja boleh sama, karena bisa ada
+            // dua orang dengan nama yang sama tetapi NIK berbeda.
+            const nikNormalized = nikInput.replace(/\D/g, '');
+            const duplicateNik = globalKaryawan.find(k => {
+                if (editId && k.id === editId) return false;
+                const existingNik = String(k.nik || '').replace(/\D/g, '');
+                return existingNik && nikNormalized && existingNik === nikNormalized;
+            });
+
+            if (duplicateNik) {
+                const namaLama = duplicateNik.nama || 'karyawan lain';
+                const konfirmasi = confirm(
+                    `⚠️ NIK sudah terdaftar\n\n` +
+                    `NIK: ${nikInput}\n` +
+                    `Terdaftar atas nama: ${namaLama}\n\n` +
+                    `Silakan periksa kembali data karyawan.\n\n` +
+                    `Apakah Anda tetap ingin menyimpan data ini?`
+                );
+                if (!konfirmasi) return;
+            }
+
             const data = {
-                nik: document.getElementById('kary-nik').value.trim(),
-                nama: document.getElementById('kary-nama').value.trim(),
+                nik: nikInput,
+                nama: namaInput,
                 jabatan: document.getElementById('kary-jabatan').value.trim(),
                 npwp: document.getElementById('kary-npwp').value.trim(),
                 startKerja,
