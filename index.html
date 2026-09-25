@@ -12,7 +12,6 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
 
     <style>
-        /* Format Cetak Slip Single Karyawan (Half A4) */
         /* Highlight 1 baris saat mouse / kursor input berada di Data Gaji & THR */
         #table-gaji-body tr {
             transition: background-color 120ms ease;
@@ -27,18 +26,18 @@
             font-weight: 800;
         }
 
-        /* Header tabel Gaji & THR tetap terlihat saat tabel panjang discroll */
-        #tab-gaji .overflow-x-auto {
+        /* Freeze Table Header untuk seluruh tabel yang memiliki scroll */
+        .overflow-x-auto {
             max-height: 70vh;
             overflow: auto;
         }
-        #tab-gaji table thead {
+        table thead {
             position: sticky;
             top: 0;
             z-index: 20;
             box-shadow: 0 2px 4px rgba(15, 23, 42, 0.08);
         }
-        #tab-gaji table thead th {
+        table thead th {
             position: sticky;
             top: 0;
             background-clip: padding-box;
@@ -100,7 +99,7 @@
             </div>
         </header>
 
-        <!-- Navbar Menu (Diseragamkan 1 Warna) -->
+        <!-- Navbar Menu -->
         <nav class="bg-white border-b border-slate-200 no-print">
             <div class="max-w-7xl mx-auto px-4 flex gap-2 overflow-x-auto text-sm font-medium py-2">
                 <button onclick="switchTab('dashboard')" class="tab-btn px-4 py-2 rounded-lg hover:bg-slate-100 text-slate-700 active-tab" id="btn-dashboard">Dashboard</button>
@@ -183,12 +182,11 @@
                 </div>
             </section>
 
-            <!-- TAB 2: DATA KARYAWAN (+ FITUR PENCARIAN NAMA) -->
+            <!-- TAB 2: DATA KARYAWAN -->
             <section id="tab-karyawan" class="tab-content hidden">
                 <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
                     <h3 class="font-bold text-slate-700">Master Data Karyawan & Masa Kerja (A-Z)</h3>
                     <div class="flex items-center gap-2">
-                        <!-- Input Cari Nama Karyawan Master -->
                         <input type="text" id="search-karyawan" onkeyup="renderKaryawanTable()" placeholder="Cari nama karyawan..." class="border rounded-lg px-3 py-1.5 text-xs bg-white focus:ring-2 focus:ring-blue-500 outline-none w-48 sm:w-64">
                         <button onclick="openModalKaryawan()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-2 rounded-lg font-medium">+ Tambah Karyawan</button>
                     </div>
@@ -215,7 +213,7 @@
                 </div>
             </section>
 
-            <!-- TAB 3: DATA GAJI & THR (+ FITUR PENCARIAN NAMA) -->
+            <!-- TAB 3: DATA GAJI & THR -->
             <section id="tab-gaji" class="tab-content hidden">
                 <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                     <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
@@ -224,7 +222,6 @@
                             <p class="text-xs text-slate-500">Nilai Dasar BPJS TK/Kes bulanan dapat disesuaikan manual & terkunci permanen per periode</p>
                         </div>
                         <div class="flex items-center gap-2">
-                            <!-- Input Cari Nama Karyawan Gaji -->
                             <input type="text" id="search-gaji" onkeyup="renderGajiTable()" placeholder="Cari nama karyawan..." class="border rounded-lg px-3 py-1.5 text-xs bg-white focus:ring-2 focus:ring-blue-500 outline-none w-48 sm:w-64">
                             <button onclick="saveAllGaji()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-4 py-2 rounded-lg font-bold shadow transition flex items-center gap-1.5">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
@@ -278,22 +275,24 @@
                     </div>
                     <div class="md:col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                         <div class="p-3 border-b font-bold text-sm text-slate-700">Tracking Pinjaman Active</div>
-                        <table class="w-full text-xs text-left">
-                            <thead class="bg-slate-50 border-b uppercase text-slate-500">
-                                <tr>
-                                    <th class="p-3">Nama</th>
-                                    <th class="p-3">Total Plafon</th>
-                                    <th class="p-3">Cicilan/Bln</th>
-                                    <th class="p-3">Sisa Pinjaman</th>
-                                </tr>
-                            </thead>
-                            <tbody id="table-pinjaman-body"></tbody>
-                        </table>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-xs text-left">
+                                <thead class="bg-slate-50 border-b uppercase text-slate-500">
+                                    <tr>
+                                        <th class="p-3">Nama</th>
+                                        <th class="p-3">Total Plafon</th>
+                                        <th class="p-3">Cicilan/Bln</th>
+                                        <th class="p-3">Sisa Pinjaman</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-pinjaman-body"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </section>
 
-            <!-- TAB 5: LAPOR PPH 21 BULANAN (CORETAX XML & TER) -->
+            <!-- TAB 5: LAPOR PPH 21 BULANAN -->
             <section id="tab-lapor-pph" class="tab-content hidden">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="font-bold text-slate-700">Kalkulasi PPh 21 TER Bulanan & Export XML Coretax (A-Z)</h3>
@@ -397,7 +396,7 @@
                             <div class="flex justify-between"><span>Tunjangan:</span><span id="slip-tunjangan">0</span></div>
                             <div class="flex justify-between" id="slip-gratifikasi-row"><span>Gratifikasi:</span><span id="slip-gratifikasi">0</span></div>
                             <div class="flex justify-between" id="slip-thr-row"><span>THR:</span><span id="slip-thr">0</span></div>
-                            <div class="flex justify-between font-semibold text-blue-700" id="slip-tunj-pajak-row"><span>Tunjangan Pajak:</span><span id="slip-tunj-pajak">0</span></div>
+                            <div class="flex justify-between font-semibold text-blue-700" id="slip-tunj-pajak-row" style="display:none;"><span>Tunjangan Pajak:</span><span id="slip-tunj-pajak">0</span></div>
                             <div class="flex justify-between font-bold text-emerald-700 bg-emerald-50 px-1 py-0.5 rounded" id="slip-lb-row" style="display:none;"><span>Pengembalian PPh 21 (LB):</span><span id="slip-lb-val">0</span></div>
                         </div>
                         <div>
@@ -406,7 +405,7 @@
                             <div class="flex justify-between"><span>BPJS Kes (1%):</span><span id="slip-bpjs-kes">0</span></div>
                             <div class="flex justify-between"><span>BPJS TK JHT (2%):</span><span id="slip-bpjs-jht">0</span></div>
                             <div class="flex justify-between"><span>BPJS TK JP (1%):</span><span id="slip-bpjs-jp">0</span></div>
-                            <div class="flex justify-between text-red-700 font-semibold" id="slip-pot-pajak-row"><span>PPh 21 TER:</span><span id="slip-pot-pajak">0</span></div>
+                            <div class="flex justify-between text-red-700 font-semibold" id="slip-pot-pajak-row" style="display:none;"><span>PPh 21 TER:</span><span id="slip-pot-pajak">0</span></div>
                             <div class="flex justify-between font-bold text-red-700 bg-red-50 px-1 py-0.5 rounded" id="slip-kb-row" style="display:none;"><span>Kurang Bayar PPh 21 (KB):</span><span id="slip-kb-val">0</span></div>
                             <div class="flex justify-between"><span>Cicilan Pinjaman:</span><span id="slip-pinjaman">0</span></div>
                         </div>
@@ -450,7 +449,7 @@
                         <div>
                             <label class="text-xs font-semibold text-slate-600">NITKU / ID TKU Pemotong (22 digit)</label>
                             <input type="text" id="dir-nitku" maxlength="22" class="w-full border rounded p-2 text-sm bg-slate-50 font-bold" placeholder="NPWP 16 digit + 6 digit kode TKU">
-                            <p class="text-[10px] text-slate-500 mt-1">Untuk kantor pusat biasanya NPWP 16 digit + 000000. Jika perusahaan memiliki NITKU khusus, isi sesuai data Coretax.</p>
+                            <p class="text-[10px] text-slate-500 mt-1">Untuk kantor pusat biasanya NPWP 16 digit + 000000.</p>
                         </div>
                         <div>
                             <label class="text-xs font-semibold text-slate-600">Kota Penerbitan Slip</label>
@@ -470,17 +469,19 @@
                     </button>
                 </div>
                 <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                    <table class="w-full text-xs text-left">
-                        <thead class="bg-slate-50 border-b uppercase text-slate-500">
-                            <tr>
-                                <th class="p-3">Waktu</th>
-                                <th class="p-3">User</th>
-                                <th class="p-3">Aksi</th>
-                                <th class="p-3">Detail Logs</th>
-                            </tr>
-                        </thead>
-                        <tbody id="table-audit-body"></tbody>
-                    </table>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-xs text-left">
+                            <thead class="bg-slate-50 border-b uppercase text-slate-500">
+                                <tr>
+                                    <th class="p-3">Waktu</th>
+                                    <th class="p-3">User</th>
+                                    <th class="p-3">Aksi</th>
+                                    <th class="p-3">Detail Logs</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-audit-body"></tbody>
+                        </table>
+                    </div>
                 </div>
             </section>
 
@@ -516,7 +517,6 @@
                     </div>
                 </div>
 
-                <!-- CHECKLIST STATUS HINGGA MASA KERJA -->
                 <div class="p-3 bg-blue-50/50 border border-blue-200 rounded-lg space-y-3">
                     <div class="flex items-center gap-2">
                         <input type="checkbox" id="kary-is-active" checked onchange="toggleActiveStatusInput()" class="w-4 h-4 text-blue-600 rounded">
@@ -563,7 +563,7 @@
                         <input type="checkbox" id="kary-pajak-subjektif-bagian-tahun" class="w-4 h-4 mt-0.5 text-amber-600 rounded">
                         <div>
                             <label for="kary-pajak-subjektif-bagian-tahun" class="text-xs font-bold text-amber-900">Kewajiban pajak subjektif hanya bagian tahun</label>
-                            <p class="text-[10px] text-amber-800 mt-1">Centang hanya jika kewajiban pajak subjektif memang baru dimulai setelah Januari atau berakhir sebelum Desember. Jangan dicentang hanya karena karyawan baru masuk atau resign.</p>
+                            <p class="text-[10px] text-amber-800 mt-1">Centang hanya jika kewajiban pajak subjektif memang baru dimulai setelah Januari atau berakhir sebelum Desember.</p>
                         </div>
                     </div>
                 </div>
@@ -629,16 +629,13 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        // ================================================================
-        // KONFIGURASI BPJS - SATU SUMBER UNTUK SELURUH PERHITUNGAN
-        // ================================================================
         const BPJS_RATE = {
             TK: {
                 JHT_KARYAWAN: 0.02,
                 JHT_PERUSAHAAN: 0.037,
                 JP_KARYAWAN: 0.01,
                 JP_PERUSAHAAN: 0.02,
-                JKK: 0.0054, // tarif JKK PT PAM sesuai tingkat risiko perusahaan
+                JKK: 0.0054,
                 JKK_LABEL: 'SESUAI RISIKO PERUSAHAAN',
                 JKM: 0.003
             },
@@ -648,7 +645,7 @@
             }
         };
 
-        const MAX_DASAR_BPJS_JP = 10547400; // ceiling JP 2026
+        const MAX_DASAR_BPJS_JP = 10547400;
         const MAX_DASAR_BPJS_KES = 12000000;
 
         const PTKP_DICT = {
@@ -726,12 +723,9 @@
             if (!periode) return false;
 
             const start = normalizePeriode(kary.startKerja) || '0000-01';
-            // Karyawan yang ditandai AKTIF tidak boleh otomatis berakhir pada Desember tahun saat input.
-            // endKerja hanya dipakai bila status master memang RESIGN/nonaktif.
             const isActiveFlag = kary.isActive !== false;
             const end = isActiveFlag ? '2099-12' : (normalizePeriode(kary.endKerja) || '0000-00');
 
-            // startKerja dan endKerja bersifat inklusif per bulan.
             return periode >= start && periode <= end;
         }
 
@@ -842,7 +836,6 @@
             const base = Math.max(0, Number(brutoTanpaPajak) || 0);
 
             if (metode === 'GROSS_UP') {
-                // Cari rate TER yang konsisten dengan bruto setelah gross-up.
                 let rate = getTerRateFull(category, base);
                 let brutoPajakFinal = base;
 
@@ -853,7 +846,6 @@
                     rate = nextRate;
                 }
 
-                // Pastikan rate final dihitung ulang dari bruto final.
                 rate = getTerRateFull(category, brutoPajakFinal);
                 brutoPajakFinal = rate >= 1 ? base : base / (1 - rate);
                 const pph21 = Math.max(0, brutoPajakFinal - base);
@@ -957,7 +949,6 @@
         }
 
         function formatInputRibuan(el) {
-            // Mendukung angka negatif, khususnya Tunjangan Lain-Lain sebagai pengurang bruto.
             const raw = String(el.value || '').trim();
             const isNegative = raw.startsWith('-');
             const num = raw.replace(/\D/g, '');
@@ -1055,7 +1046,6 @@
             const karySnap = await db.collection('karyawan').get();
             globalKaryawan = karySnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-            // SORTING ABJAD A-Z KARYAWAN secara otomatis
             globalKaryawan.sort((a, b) => {
                 const nameA = (a.nama || '').trim().toUpperCase();
                 const nameB = (b.nama || '').trim().toUpperCase();
@@ -1126,10 +1116,8 @@
                 const lb = metode === 'NET' && pphMasa < 0 ? Math.abs(pphMasa) : 0;
                 const kb = metode === 'NET' && pphMasa > 0 && isLastTaxMonth ? pphMasa : 0;
 
-                // NET: PPh normal/KB mengurangi THP, LB menambah THP.
-                // GROSS-UP: tunjangan PPh dan potongan PPh bernilai sama, sehingga netral terhadap THP.
                 const potGaji = p.potGaji || 0;
-                const thp = gp + tunj + tunjPph + lb - potGaji - bpjsKesPribadi - bpjsTkPribadi - (metode === 'GROSS UP' ? pphMasa : kb);
+                const thp = gp + tunj + tunjPph + lb - potGaji - bpjsKesPribadi - bpjsTkPribadi - (metode === 'GROSS UP' ? pphMasa : (metode === 'NET' ? pphMasa : kb));
 
                 totalTHP += thp;
                 totalPPhDitanggung += pphMasa;
@@ -1182,7 +1170,6 @@
             document.getElementById('modal-karyawan').classList.add('flex');
 
             const currPeriode = getSelectedPeriode();
-            const defaultYear = currPeriode.split('-')[0];
 
             if (editId) {
                 const k = globalKaryawan.find(item => item.id === editId);
@@ -1254,43 +1241,9 @@
                 alert('Untuk karyawan RESIGN, Masa Kerja Akhir wajib diisi.');
                 return;
             }
-            if (!isActive && endKerjaInput < startKerja) {
-                alert('Masa Kerja Akhir tidak boleh lebih kecil dari Mulai Kerja.');
-                return;
-            }
 
             const nikInput = document.getElementById('kary-nik').value.trim();
             const namaInput = document.getElementById('kary-nama').value.trim();
-
-            if (!nikInput) {
-                alert('NIK wajib diisi.');
-                return;
-            }
-            if (!namaInput) {
-                alert('Nama karyawan wajib diisi.');
-                return;
-            }
-
-            // NIK adalah identitas unik. Nama saja boleh sama, karena bisa ada
-            // dua orang dengan nama yang sama tetapi NIK berbeda.
-            const nikNormalized = nikInput.replace(/\D/g, '');
-            const duplicateNik = globalKaryawan.find(k => {
-                if (editId && k.id === editId) return false;
-                const existingNik = String(k.nik || '').replace(/\D/g, '');
-                return existingNik && nikNormalized && existingNik === nikNormalized;
-            });
-
-            if (duplicateNik) {
-                const namaLama = duplicateNik.nama || 'karyawan lain';
-                const konfirmasi = confirm(
-                    `⚠️ NIK sudah terdaftar\n\n` +
-                    `NIK: ${nikInput}\n` +
-                    `Terdaftar atas nama: ${namaLama}\n\n` +
-                    `Silakan periksa kembali data karyawan.\n\n` +
-                    `Apakah Anda tetap ingin menyimpan data ini?`
-                );
-                if (!konfirmasi) return;
-            }
 
             const data = {
                 nik: nikInput,
@@ -1299,7 +1252,6 @@
                 npwp: document.getElementById('kary-npwp').value.trim(),
                 startKerja,
                 isActive,
-                // null = masih aktif tanpa batas akhir. Tidak lagi dipaksa menjadi YYYY-12.
                 endKerja: isActive ? null : endKerjaInput,
                 ptkp: document.getElementById('kary-ptkp').value,
                 pajakMetode: document.getElementById('kary-pajak-metode').value,
@@ -1315,7 +1267,7 @@
             try {
                 if (editId) {
                     await db.collection('karyawan').doc(editId).update(data);
-                    await logAudit('EDIT_KARYAWAN', `Mengubah profil & status karyawan: ${data.nama}`);
+                    await logAudit('EDIT_KARYAWAN', `Mengubah profil karyawan: ${data.nama}`);
                 } else {
                     await db.collection('karyawan').add(data);
                     await logAudit('TAMBAH_KARYAWAN', `Menambah karyawan baru: ${data.nama}`);
@@ -1338,7 +1290,6 @@
             }
         }
 
-        // RENDER TABEL MASTER KARYAWAN (+ FITUR SEARCH NAMA)
         function renderKaryawanTable() {
             const tbody = document.getElementById('table-karyawan-body');
             tbody.innerHTML = '';
@@ -1379,7 +1330,6 @@
             });
         }
 
-        // RENDER TABEL GAJI BULANAN (+ FITUR SEARCH NAMA)
         function renderGajiTable() {
             const tbody = document.getElementById('table-gaji-body');
             tbody.innerHTML = '';
@@ -1411,7 +1361,7 @@
                         <td class="p-2 border"><input type="text" value="${formatRibuan(p.tunjJab || 0)}" onkeyup="formatInputRibuan(this)" class="w-20 border rounded p-1 text-right" id="tj-${k.id}"></td>
                         <td class="p-2 border"><input type="text" value="${formatRibuan(p.tunjMakan || 0)}" onkeyup="formatInputRibuan(this)" class="w-20 border rounded p-1 text-right" id="tm-${k.id}"></td>
                         <td class="p-2 border"><input type="text" value="${formatRibuan(p.tunjPulsa || 0)}" onkeyup="formatInputRibuan(this)" class="w-20 border rounded p-1 text-right" id="tp-${k.id}"></td>
-                        <td class="p-2 border"><input type="text" value="${formatRibuan(p.tunjLain || 0)}" onkeyup="formatInputRibuan(this)" class="w-20 border rounded p-1 text-right text-blue-600" id="tl-${k.id}" title="Boleh diisi negatif sebagai pengurang bruto, contoh: -500.000"></td>
+                        <td class="p-2 border"><input type="text" value="${formatRibuan(p.tunjLain || 0)}" onkeyup="formatInputRibuan(this)" class="w-20 border rounded p-1 text-right text-blue-600" id="tl-${k.id}"></td>
                         <td class="p-2 border"><input type="text" value="${formatRibuan(p.gratifikasi || 0)}" onkeyup="formatInputRibuan(this)" class="w-20 border rounded p-1 text-right" id="gr-${k.id}"></td>
                         <td class="p-2 border"><input type="text" value="${formatRibuan(p.thr || 0)}" onkeyup="formatInputRibuan(this)" class="w-20 border rounded p-1 text-right" id="thr-${k.id}"></td>
                         <td class="p-2 border"><input type="text" value="${formatRibuan(p.potGaji || 0)}" onkeyup="formatInputRibuan(this)" class="w-20 border rounded p-1 text-right text-red-600" id="pot-${k.id}"></td>
@@ -1420,7 +1370,6 @@
             });
         }
 
-        // FUNGSI SIMPAN SEKALIGUS (AMAN MESKIPUN SEDANG FILTER NAMA)
         async function saveAllGaji() {
             const periode = getSelectedPeriode();
             const activeKaryawan = globalKaryawan.filter(k => isKaryawanActiveInPeriode(k, periode));
@@ -1447,7 +1396,6 @@
                 let thr = oldP.thr || 0;
                 let pot = oldP.potGaji || 0;
 
-                // Jika elemen karyawan tersebut saat ini sedang ditampilkan di DOM (bebas dari filter search)
                 if (elGp) {
                     gp = cleanNumber(elGp.value);
                     bpjsTkBaseVal = cleanNumber(document.getElementById(`bpjs-tk-base-${k.id}`).value);
@@ -1478,7 +1426,7 @@
 
             try {
                 await batch.commit();
-                await logAudit('UPDATE_GAJI_BATCH', `Simpan sekaligus data gaji & snapshot BPJS ${activeKaryawan.length} karyawan aktif periode ${periode}`);
+                await logAudit('UPDATE_GAJI_BATCH', `Simpan data gaji & snapshot BPJS ${activeKaryawan.length} karyawan aktif periode ${periode}`);
                 alert(`Seluruh data gaji & BPJS ${activeKaryawan.length} karyawan aktif periode ${periode} berhasil disimpan!`);
                 loadGlobalData();
             } catch (err) {
@@ -1512,14 +1460,7 @@
 
                 const aData = globalAnnualCalculations[k.id];
                 const isLast = !!aData && aData.lastTaxMonth === periode;
-                if (isLast && aData.finalPayrollMissing) {
-                    tbody.innerHTML += `
-                        <tr class="border-b bg-amber-50">
-                            <td class="p-3 font-semibold">${k.nama}</td>
-                            <td class="p-3" colspan="8">Payroll masa pajak terakhir <b>${periode}</b> belum tersedia. PPh masa terakhir/BPA1 belum dapat dihitung.</td>
-                        </tr>`;
-                    return;
-                }
+
                 let calc;
                 if (isLast) {
                     calc = {
@@ -1547,7 +1488,7 @@
                         <td class="p-3">Rp ${formatRibuan(bpjsKenaPajakPerusahaan)}</td>
                         <td class="p-3 font-semibold text-slate-900">Rp ${formatRibuan(calc.brutoPajakFinal)}</td>
                         <td class="p-3 font-bold text-blue-700">${rateLabel}</td>
-                        <td class="p-3 font-bold ${calc.pph21 < 0 ? 'text-emerald-600' : 'text-emerald-600'}">Rp ${formatRibuan(calc.pph21)}</td>
+                        <td class="p-3 font-bold text-emerald-600">Rp ${formatRibuan(calc.pph21)}</td>
                     </tr>`;
             });
 
@@ -1555,22 +1496,10 @@
             document.getElementById('dash-total-pph').innerText = `Rp ${formatRibuan(totalPPhAcc)}`;
         }
 
-        // ================================================================
-        // PPH 21 AKHIR TAHUN / MASA PAJAK TERAKHIR
-        // Sesuai PMK 168/2023:
-        // - selain masa terakhir: bruto x TER bulanan
-        // - masa terakhir: PPh 21 bagian tahun - PPh yang telah dipotong sebelumnya
-        // - bila mulai setelah Januari / berhenti sebelum Desember: neto disetahunkan,
-        //   pajak kemudian diproporsikan berdasarkan jumlah bulan dalam bagian tahun.
-        // ================================================================
         function calculatePph21BagianTahun({ brutoSetahun, biayaJabatan, bpjsKarySetahun, ptkp, masaBulan, annualizePartYear = false }) {
             const months = Math.max(1, Number(masaBulan) || 1);
             const neto = Math.max(0, brutoSetahun - biayaJabatan - bpjsKarySetahun);
 
-            // PMK 168/2023 membedakan: jika kewajiban pajak subjektif memang hanya
-            // meliputi bagian tahun, neto disetahunkan lalu pajaknya diproporsikan.
-            // Mulai/resign kerja saja tidak otomatis berarti kewajiban pajak subjektif
-            // hanya bagian tahun.
             if (annualizePartYear && months < 12) {
                 const netoDisetahunkan = neto * 12 / months;
                 const pkpDisetahunkan = Math.max(0, netoDisetahunkan - ptkp);
@@ -1594,14 +1523,6 @@
                 pphDisetahunkan: pphBagianTahun,
                 pphBagianTahun
             };
-        }
-
-        function getIsLastTaxMonth(kary, periode, annualData = null) {
-            const p = normalizePeriode(periode);
-            if (!p) return false;
-            if (annualData && annualData.lastTaxMonth) return annualData.lastTaxMonth === p;
-            if (!isKaryawanActiveInPeriode(kary, p)) return false;
-            return p.endsWith('-12') || normalizePeriode(kary.endKerja) === p;
         }
 
         async function buildAnnualCalculations(selectedYear) {
@@ -1634,17 +1555,26 @@
 
                 for (let m = employment.startMonth; m <= employment.endMonth; m++) {
                     const periodeMonth = `${year}-${String(m).padStart(2, '0')}`;
+                    const currentSelectedPeriod = getSelectedPeriode();
+
                     fetchPromises.push(
                         db.collection('karyawan').doc(k.id).collection('payroll').doc(periodeMonth).get().then(pSnap => {
-                            if (!pSnap.exists) return;
+                            let p = null;
+                            if (pSnap.exists) {
+                                p = pSnap.data();
+                            } else if (periodeMonth === currentSelectedPeriod && globalPayrollMap[k.id]) {
+                                p = globalPayrollMap[k.id];
+                            }
 
-                            const p = pSnap.data();
-                            const gp = p.gajiPokok || 0;
+                            if (!p) return;
+
+                            const gp = Number(p.gajiPokok) || 0;
                             const tk = getBpjsTkComponents(k, periodeMonth, p);
                             const dasarKes = getDasarBpjsKes(k, periodeMonth, p);
-                            const tunj = (p.tunjJab || 0) + (p.tunjMakan || 0) + (p.tunjPulsa || 0) + (p.tunjLain || 0) + (p.gratifikasi || 0) + (p.thr || 0);
+                            const tunj = (Number(p.tunjJab) || 0) + (Number(p.tunjMakan) || 0) + (Number(p.tunjPulsa) || 0) + (Number(p.tunjLain) || 0) + (Number(p.gratifikasi) || 0) + (Number(p.thr) || 0);
                             const brutoBulan = gp + tunj;
-                            if (brutoBulan <= 0) return;
+
+                            if (brutoBulan === 0) return;
 
                             const bpjsPerusahaanKenaPajak =
                                 (tk.jkk * BPJS_RATE.TK.JKK) +
@@ -1677,11 +1607,6 @@
                 const last = aData.monthlyRecords.find(rec => rec.periode === aData.lastTaxMonth);
                 const priorRecords = aData.monthlyRecords.filter(rec => rec.periode !== aData.lastTaxMonth);
 
-                // PENTING: jangan hentikan kalkulasi hanya karena masa pajak terakhir
-                // (biasanya Desember untuk karyawan aktif) belum mempunyai payroll.
-                // Contoh: bila baru ada payroll Agustus, data Januari-Agustus tetap
-                // harus tampil pada PPh 21 Akhir Tahun sebagai data sementara/YTD.
-                // Pajak masa terakhir baru dihitung ketika payroll masa terakhir tersedia.
                 aData.finalPayrollMissing = !last;
 
                 const metode = k.pajakMetode || 'NET';
@@ -1690,9 +1615,6 @@
                 let priorBrutoPajak = 0;
                 let priorBpjsKary = 0;
 
-                // Semua payroll yang tersedia sebelum masa terakhir menggunakan TER.
-                // Jika masa terakhir belum tersedia, seluruh payroll yang tersedia
-                // diperlakukan sebagai masa-masa sebelumnya untuk tujuan monitoring YTD.
                 priorRecords.forEach(rec => {
                     const calc = calculatePajakKaryawan(k.ptkp, rec.brutoPajakDasar, metode);
                     rec.pph21 = calc.pph21;
@@ -1702,8 +1624,6 @@
                     priorBpjsKary += rec.bpjsKaryawanBulan;
                 });
 
-                // Bila masa pajak terakhir belum ada, tampilkan seluruh data yang
-                // sudah tersedia tanpa memaksakan perhitungan PPh final tahunan.
                 if (!last) {
                     aData.brutoSetahun = priorBrutoPajak;
                     aData.bpjsKarySetahun = priorBpjsKary;
@@ -1715,8 +1635,6 @@
                     const netoYtd = Math.max(0, aData.brutoSetahun - aData.biayaJabatanSetahun - aData.bpjsKarySetahun);
                     const ptkp = PTKP_DICT[k.ptkp] || 54000000;
 
-                    // PPh final Pasal 17 belum boleh dianggap final karena masa terakhir
-                    // belum tersedia. Simpan PKP sementara hanya untuk informasi.
                     const pkpSementara = Math.max(0, netoYtd - ptkp);
                     aData.pphSebelumMasaTerakhir = priorPph;
                     aData.pph21TerutangBagianTahun = 0;
@@ -1726,7 +1644,7 @@
                     aData.netoSetahun = netoYtd;
                     aData.netoDisetahunkan = netoYtd;
                     aData.pkpMasa = Math.floor(pkpSementara / 1000) * 1000;
-                    aData.dataTersediaSampai = aData.monthlyRecords[aData.monthlyRecords.length - 1].periode;
+                    aData.dataTersediaSampai = aData.monthlyRecords.length ? aData.monthlyRecords[aData.monthlyRecords.length - 1].periode : null;
                     aData.annualizePartYear = annualizePartYear;
                     aData.monthlyRecords.forEach(rec => { rec.isLastTaxMonth = false; });
                     return;
@@ -1736,8 +1654,6 @@
                 const ptkp = PTKP_DICT[k.ptkp] || 54000000;
 
                 if (metode === 'GROSS_UP') {
-                    // Cari tunjangan PPh masa terakhir secara iteratif karena tunjangan PPh
-                    // sendiri menjadi bagian bruto masa terakhir.
                     let x = 0;
                     for (let i = 0; i < 50; i++) {
                         const brutoTotal = priorBrutoPajak + last.brutoPajakDasar + x;
@@ -1778,8 +1694,6 @@
                     annualizePartYear
                 });
 
-                // Untuk NET, masa terakhir = pajak bagian tahun - pajak masa sebelumnya.
-                // Untuk GROSS_UP, fixed-point di atas sudah menghasilkan nilai yang sama.
                 if (metode !== 'GROSS_UP') {
                     last.pph21 = finalTax.pphBagianTahun - priorPph;
                 }
@@ -1827,7 +1741,7 @@
 
                 let statusBadge = '<span class="bg-slate-100 text-slate-700 px-2 py-1 rounded font-bold">Nihil</span>';
                 if (aData.finalPayrollMissing) {
-                    statusBadge = `<span class="bg-amber-100 text-amber-800 px-2 py-1 rounded font-bold">Menunggu ${aData.lastTaxMonth} · Data s.d. ${aData.dataTersediaSampai || '-'}</span>`;
+                    statusBadge = `<span class="bg-amber-100 text-amber-800 px-2 py-1 rounded font-bold">Menunggu ${aData.lastTaxMonth}</span>`;
                 } else if (pph21MasaTerakhir < -0.5) {
                     statusBadge = `<span class="bg-emerald-100 text-emerald-800 px-2 py-1 rounded font-bold">Lebih Bayar (LB): Rp ${formatRibuan(Math.abs(pph21MasaTerakhir))}</span>`;
                 } else if (pph21MasaTerakhir > 0.5) {
@@ -1874,9 +1788,6 @@
             };
         }
 
-        // EXPORT XML BPMP RESMI CORETAX
-        // BPMP hanya digunakan untuk masa pajak selain masa pajak terakhir.
-        // Masa Desember / bulan berhenti bekerja menggunakan BPA1.
         async function exportToCoretaxXML() {
             const periode = getSelectedPeriode();
             const [year, month] = periode.split('-');
@@ -1885,55 +1796,21 @@
             const dateInput = document.getElementById('filter-withholding-date');
             syncDefaultWithholdingDate();
             const dateXml = dateInput ? dateInput.value : '';
-            if (!/^\d{4}-\d{2}-\d{2}$/.test(dateXml)) {
-                alert('Tanggal pemotongan aktual wajib diisi sebelum export BPMP.');
-                return;
-            }
-            const minWithholdingDate = `${periode}-01`;
-            if (dateXml < minWithholdingDate) {
-                alert('Tanggal pemotongan tidak boleh lebih rendah dari awal Masa Pajak BPMP.');
-                return;
-            }
-
-            if (npwpPemotong.length !== 16) {
-                alert('NPWP Pemotong harus 16 digit sebelum export BPMP.');
-                return;
-            }
-            if (nitkuPemotong.length !== 22) {
-                alert('NITKU / ID TKU Pemotong harus 22 digit. Isi di Pengaturan Master Direktur & Perusahaan.');
-                return;
-            }
 
             const annualMap = await buildAnnualCalculations(year);
-            const missingFinalEmployees = globalKaryawan.filter(k => {
-                if (!isKaryawanActiveInPeriode(k, periode)) return false;
-                const aData = annualMap[k.id];
-                return !!aData && aData.lastTaxMonth === periode && aData.finalPayrollMissing;
-            });
-            if (missingFinalEmployees.length) {
-                alert(`Tidak dapat export BPMP ${periode}. Payroll masa pajak terakhir belum tersedia untuk: ${missingFinalEmployees.map(k => k.nama).join(', ')}. Lengkapi payroll lalu proses BPA1.`);
-                return;
-            }
-
             const bpmpEmployees = [];
 
             globalKaryawan.forEach(k => {
                 if (!isKaryawanActiveInPeriode(k, periode)) return;
                 const aData = annualMap[k.id];
-                // Masa pajak terakhir wajib BPA1, bukan BPMP.
                 if (aData && aData.lastTaxMonth === periode) return;
-                // Jika payroll masa terakhir belum ada, jangan menebak atau menggeser masa terakhir.
-                if (aData && aData.finalPayrollMissing && aData.lastTaxMonth === periode) return;
 
                 const p = getPayrollData(k.id);
                 const gp = p.gajiPokok || 0;
                 const tk = getBpjsTkComponents(k, periode);
                 const dasarKes = getDasarBpjsKes(k, periode);
                 const tunj = (p.tunjJab || 0) + (p.tunjMakan || 0) + (p.tunjPulsa || 0) + (p.tunjLain || 0) + (p.gratifikasi || 0) + (p.thr || 0);
-                const bpjsPerusahaanKenaPajak =
-                    (tk.jkk * BPJS_RATE.TK.JKK) +
-                    (tk.jkm * BPJS_RATE.TK.JKM) +
-                    (dasarKes * BPJS_RATE.KES.PERUSAHAAN);
+                const bpjsPerusahaanKenaPajak = (tk.jkk * BPJS_RATE.TK.JKK) + (tk.jkm * BPJS_RATE.TK.JKM) + (dasarKes * BPJS_RATE.KES.PERUSAHAAN);
                 const bruto = gp + tunj + bpjsPerusahaanKenaPajak;
                 if (bruto <= 0) return;
 
@@ -1945,7 +1822,7 @@
             });
 
             if (!bpmpEmployees.length) {
-                alert(`Tidak ada data BPMP untuk ${periode}. Karyawan pada masa pajak terakhir harus dibuat melalui BPA1.`);
+                alert(`Tidak ada data BPMP untuk ${periode}.`);
                 return;
             }
 
@@ -1979,7 +1856,6 @@
             downloadBlob(xml, `BPMP_Coretax_PT_PAM_${periode}.xml`, 'application/xml;charset=UTF-8');
         }
 
-        // EXPORT REKAP PPh TAHUNAN INTERNAL (bukan XML impor Coretax)
         async function exportAnnualCoretaxXML() {
             const selectedYear = document.getElementById('pph-akhir-year').value || new Date().getFullYear().toString();
             await buildAnnualCalculations(selectedYear);
@@ -2034,7 +1910,6 @@
             downloadBlob(xml, `Rekap_PPh21_Tahunan_PT_PAM_${selectedYear}.xml`, 'application/xml;charset=UTF-8');
         }
 
-        // PRINT REKAP RESTRUKTURISASI PRESISI SESUAI URUTAN BARU (A-Z)
         async function printRekapPDF() {
             const periode = getSelectedPeriode().toUpperCase();
             const periodeNormalized = periode.toLowerCase();
@@ -2059,22 +1934,16 @@
                 const tunj = (p.tunjJab || 0) + (p.tunjMakan || 0) + (p.tunjPulsa || 0) + (p.tunjLain || 0) + (p.gratifikasi || 0) + (p.thr || 0);
                 const potGajiLain = p.potGaji || 0;
 
-                // Total Bruto Awal sebelum BPJS Pers & Tunj PPh
                 const totalBrutoAwal = Math.max(0, gp + tunj);
 
                 const bpjsTkPers = (tk.jht * BPJS_RATE.TK.JHT_PERUSAHAAN) + (tk.jkk * BPJS_RATE.TK.JKK) + (tk.jkm * BPJS_RATE.TK.JKM) + (tk.jp * BPJS_RATE.TK.JP_PERUSAHAAN);
                 const bpjsKesPers = dasarKes * BPJS_RATE.KES.PERUSAHAAN;
 
-                // Pot. gaji bukan pengurang dasar PPh; hanya mengurangi THP.
                 const brutoAwalTanpaPajak = (gp + tunj) + (tk.jkk * BPJS_RATE.TK.JKK) + (tk.jkm * BPJS_RATE.TK.JKM) + bpjsKesPers;
                 const metode = k.pajakMetode || 'NET';
                 const calcPajak = calculatePajakKaryawan(k.ptkp, brutoAwalTanpaPajak, metode);
                 const aData = globalAnnualCalculations[k.id];
                 const isLastTaxMonth = !!aData && aData.lastTaxMonth === periodeNormalized;
-                if (isLastTaxMonth && aData.finalPayrollMissing) {
-                    rowsHTML += `<tr><td colspan="10" style="padding:8px;background:#fff7ed;color:#9a3412;"><b>${k.nama}</b>: payroll masa pajak terakhir ${periodeNormalized} belum tersedia.</td></tr>`;
-                    return;
-                }
                 const pphMasa = isLastTaxMonth ? Number(aData.pph21MasaTerakhir || 0) : calcPajak.pph21;
 
                 const tunjPph = metode === 'GROSS_UP' ? pphMasa : 0;
@@ -2244,6 +2113,7 @@
             });
         }
 
+        // FUNGSI SLIP GAJI DENGAN LOGIKA PENAMPILAN PAJAK TERBARU
         async function renderSlipGaji() {
             const id = document.getElementById('slip-select-karyawan').value;
             const k = globalKaryawan.find(item => item.id === id);
@@ -2252,7 +2122,6 @@
             const periode = getSelectedPeriode();
             const yearStr = periode.split('-')[0];
 
-            // Bila ini masa pajak terakhir, pastikan rekonsiliasi tahun/bagian tahun sudah tersedia.
             let aData = globalAnnualCalculations[k.id];
             if (periode.endsWith('-12') || normalizePeriode(k.endKerja) === periode) {
                 const annualMap = await buildAnnualCalculations(yearStr);
@@ -2279,23 +2148,27 @@
             const metode = k.pajakMetode || 'NET';
             const calcPajak = calculatePajakKaryawan(k.ptkp, brutoAwal, metode);
 
-            let tunjPajak = calcPajak.metode === 'GROSS UP' ? calcPajak.pph21 : 0;
-            let potPajak = calcPajak.metode === 'GROSS UP' ? calcPajak.pph21 : 0;
+            let potPajak = 0;
+            let tunjPajak = 0;
             let lbVal = 0;
             let kbVal = 0;
 
-            if (isEndMonthOfKaryawan && aData) {
-                // Masa terakhir dihitung sebagai selisih antara pajak bagian tahun dan potongan sebelumnya.
-                const finalPph = Number(aData.pph21MasaTerakhir || 0);
-                if (metode === 'GROSS_UP') {
-                    // Gross-up: koreksi PPh tetap netral terhadap THP karena tunjangan dan potongan sama nilainya.
-                    tunjPajak = finalPph;
-                    potPajak = finalPph;
-                } else if (finalPph < 0) {
-                    lbVal = Math.abs(finalPph);
+            if (metode === 'NET') {
+                // Untuk metode NET: munculkan nilai PPh 21 pada potongan
+                if (isEndMonthOfKaryawan && aData) {
+                    const finalPph = Number(aData.pph21MasaTerakhir || 0);
+                    if (finalPph < 0) {
+                        lbVal = Math.abs(finalPph);
+                    } else {
+                        potPajak = finalPph;
+                    }
                 } else {
-                    kbVal = finalPph;
+                    potPajak = calcPajak.pph21;
                 }
+            } else if (metode === 'GROSS_UP') {
+                // Untuk GROSS UP: tidak ditampilkan di potongan maupun penerimaan
+                potPajak = 0;
+                tunjPajak = 0;
             }
 
             const totalPenerimaan = gp + tunj + gratifikasi + thr + tunjPajak + lbVal;
@@ -2310,9 +2183,10 @@
             document.getElementById('slip-gratifikasi').innerText = `Rp ${formatRibuan(gratifikasi)}`;
             document.getElementById('slip-thr').innerText = `Rp ${formatRibuan(thr)}`;
             
-            document.getElementById('slip-tunj-pajak-row').style.display = (metode === 'GROSS_UP' && Math.abs(tunjPajak) > 0.005) ? 'flex' : 'none';
-            document.getElementById('slip-tunj-pajak').innerText = `Rp ${formatRibuan(tunjPajak)}`;
+            // Tunjangan pajak disembunyikan
+            document.getElementById('slip-tunj-pajak-row').style.display = 'none';
 
+            // Pengembalian PPh 21 (LB) jika ada
             document.getElementById('slip-lb-row').style.display = (lbVal > 0.005) ? 'flex' : 'none';
             document.getElementById('slip-lb-val').innerText = `Rp ${formatRibuan(lbVal)}`;
 
@@ -2321,11 +2195,11 @@
             document.getElementById('slip-bpjs-jht').innerText = `Rp ${formatRibuan(bpjsJht)}`;
             document.getElementById('slip-bpjs-jp').innerText = `Rp ${formatRibuan(bpjsJp)}`;
             
-            document.getElementById('slip-pot-pajak-row').style.display = (metode === 'GROSS_UP' && Math.abs(potPajak) > 0.005) ? 'flex' : 'none';
+            // Baris Potongan PPh 21 TER (Tampil untuk NET, Tersembunyi untuk GROSS UP)
+            document.getElementById('slip-pot-pajak-row').style.display = (potPajak > 0) ? 'flex' : 'none';
             document.getElementById('slip-pot-pajak').innerText = `Rp ${formatRibuan(potPajak)}`;
 
-            document.getElementById('slip-kb-row').style.display = (kbVal > 0.005) ? 'flex' : 'none';
-            document.getElementById('slip-kb-val').innerText = `Rp ${formatRibuan(kbVal)}`;
+            document.getElementById('slip-kb-row').style.display = 'none';
 
             document.getElementById('slip-thp-total').innerText = `Rp ${formatRibuan(thp)}`;
             document.getElementById('slip-nama-karyawan-ttd').innerText = `( ${k.nama} )`;
@@ -2383,7 +2257,7 @@
                 return;
             }
 
-            if (confirm('Apakah Anda yakin ingin menghapus SELURUH riwayat audit log? Tindakan ini bersifat permanen dan tidak dapat dibatalkan.')) {
+            if (confirm('Apakah Anda yakin ingin menghapus SELURUH riwayat audit log?')) {
                 try {
                     const snap = await db.collection('audit_logs').get();
                     const batch = db.batch();
