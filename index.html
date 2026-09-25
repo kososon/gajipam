@@ -768,134 +768,42 @@
         }
 
         function getTerRateFull(category, bruto) {
-            if (category === 'A') {
-                if (bruto <= 5400000) return 0;
-                if (bruto <= 5650000) return 0.0025;
-                if (bruto <= 5950000) return 0.005;
-                if (bruto <= 6300000) return 0.0075;
-                if (bruto <= 6750000) return 0.01;
-                if (bruto <= 7500000) return 0.0125;
-                if (bruto <= 8550000) return 0.015;
-                if (bruto <= 9650000) return 0.0175;
-                if (bruto <= 10050000) return 0.02;
-                if (bruto <= 10350000) return 0.0225;
-                if (bruto <= 10700000) return 0.025;
-                if (bruto <= 11050000) return 0.03;
-                if (bruto <= 11600000) return 0.035;
-                if (bruto <= 12500000) return 0.04;
-                if (bruto <= 13750000) return 0.05;
-                if (bruto <= 15100000) return 0.06;
-                if (bruto <= 16950000) return 0.07;
-                if (bruto <= 19750000) return 0.08;
-                if (bruto <= 24150000) return 0.09;
-                if (bruto <= 26450000) return 0.10;
-                if (bruto <= 28000000) return 0.11;
-                if (bruto <= 30050000) return 0.12;
-                if (bruto <= 32400000) return 0.13;
-                if (bruto <= 35400000) return 0.14;
-                if (bruto <= 39100000) return 0.15;
-                if (bruto <= 43850000) return 0.16;
-                if (bruto <= 47800000) return 0.17;
-                if (bruto <= 51400000) return 0.18;
-                if (bruto <= 56300000) return 0.19;
-                if (bruto <= 62200000) return 0.20;
-                if (bruto <= 65050000) return 0.21;
-                if (bruto <= 75300000) return 0.22;
-                if (bruto <= 89700000) return 0.23;
-                if (bruto <= 104200000) return 0.24;
-                if (bruto <= 122200000) return 0.25;
-                if (bruto <= 144400000) return 0.26;
-                if (bruto <= 178700000) return 0.27;
-                if (bruto <= 231500000) return 0.28;
-                if (bruto <= 316100000) return 0.29;
-                if (bruto <= 462700000) return 0.30;
-                if (bruto <= 622000000) return 0.31;
-                if (bruto <= 712200000) return 0.32;
-                if (bruto <= 1400700000) return 0.33;
-                return 0.34;
-            } else if (category === 'B') {
-                if (bruto <= 6200000) return 0;
-                if (bruto <= 6500000) return 0.0025;
-                if (bruto <= 6850000) return 0.005;
-                if (bruto <= 7300000) return 0.0075;
-                if (bruto <= 7800000) return 0.01;
-                if (bruto <= 8900000) return 0.015;
-                if (bruto <= 9800000) return 0.02;
-                if (bruto <= 10500000) return 0.025;
-                if (bruto <= 11200000) return 0.03;
-                if (bruto <= 12000000) return 0.04;
-                if (bruto <= 13150000) return 0.05;
-                if (bruto <= 14550000) return 0.06;
-                if (bruto <= 16100000) return 0.07;
-                if (bruto <= 18250000) return 0.08;
-                if (bruto <= 21150000) return 0.09;
-                if (bruto <= 25050000) return 0.10;
-                if (bruto <= 27300000) return 0.11;
-                if (bruto <= 29100000) return 0.12;
-                if (bruto <= 31200000) return 0.13;
-                if (bruto <= 33800000) return 0.14;
-                if (bruto <= 37000000) return 0.15;
-                if (bruto <= 41000000) return 0.16;
-                if (bruto <= 45300000) return 0.17;
-                if (bruto <= 49300000) return 0.18;
-                if (bruto <= 53900000) return 0.19;
-                if (bruto <= 59600000) return 0.20;
-                if (bruto <= 68400000) return 0.21;
-                if (bruto <= 82000000) return 0.22;
-                if (bruto <= 97800000) return 0.23;
-                if (bruto <= 115200000) return 0.24;
-                if (bruto <= 136100000) return 0.25;
-                if (bruto <= 169700000) return 0.26;
-                if (bruto <= 221000000) return 0.27;
-                if (bruto <= 302000000) return 0.28;
-                if (bruto <= 441900000) return 0.29;
-                if (bruto <= 593800000) return 0.30;
-                if (bruto <= 679900000) return 0.31;
-                if (bruto <= 1337400000) return 0.32;
-                if (bruto <= 1337500000) return 0.33;
-                return 0.34;
-            } else {
-                if (bruto <= 6600000) return 0;
-                if (bruto <= 6950000) return 0.0025;
-                if (bruto <= 7350000) return 0.005;
-                if (bruto <= 7800000) return 0.0075;
-                if (bruto <= 8350000) return 0.01;
-                if (bruto <= 9450000) return 0.015;
-                if (bruto <= 10350000) return 0.02;
-                if (bruto <= 11150000) return 0.025;
-                if (bruto <= 11950000) return 0.03;
-                if (bruto <= 12800000) return 0.04;
-                if (bruto <= 14100000) return 0.05;
-                if (bruto <= 15550000) return 0.06;
-                if (bruto <= 17200000) return 0.07;
-                if (bruto <= 19500000) return 0.08;
-                if (bruto <= 22550000) return 0.09;
-                if (bruto <= 26650000) return 0.10;
-                if (bruto <= 29000000) return 0.11;
-                if (bruto <= 30900000) return 0.12;
-                if (bruto <= 33100000) return 0.13;
-                if (bruto <= 35900000) return 0.14;
-                if (bruto <= 39300000) return 0.15;
-                if (bruto <= 43600000) return 0.16;
-                if (bruto <= 48100000) return 0.17;
-                if (bruto <= 52400000) return 0.18;
-                if (bruto <= 57300000) return 0.19;
-                if (bruto <= 63400000) return 0.20;
-                if (bruto <= 72700000) return 0.21;
-                if (bruto <= 87100000) return 0.22;
-                if (bruto <= 103900000) return 0.23;
-                if (bruto <= 122400000) return 0.24;
-                if (bruto <= 144700000) return 0.25;
-                if (bruto <= 180400000) return 0.26;
-                if (bruto <= 234900000) return 0.27;
-                if (bruto <= 321000000) return 0.28;
-                if (bruto <= 470000000) return 0.29;
-                if (bruto <= 631500000) return 0.30;
-                if (bruto <= 723100000) return 0.31;
-                if (bruto <= 1422000000) return 0.32;
-                if (bruto <= 1422100000) return 0.33;
-                return 0.34;
+            const x = Math.max(0, Number(bruto) || 0);
+            const tables = {
+                A: [
+                    [5400000,0],[5650000,.0025],[5950000,.005],[6300000,.0075],[6750000,.01],[7500000,.0125],
+                    [8550000,.015],[9650000,.0175],[10050000,.02],[10350000,.0225],[10700000,.025],[11050000,.03],
+                    [11600000,.035],[12500000,.04],[13750000,.05],[15100000,.06],[16950000,.07],[19750000,.08],
+                    [24150000,.09],[26450000,.10],[28000000,.11],[30050000,.12],[32400000,.13],[35400000,.14],
+                    [39100000,.15],[43850000,.16],[47800000,.17],[51400000,.18],[56300000,.19],[62200000,.20],
+                    [68600000,.21],[77500000,.22],[89000000,.23],[103000000,.24],[125000000,.25],[157000000,.26],
+                    [206000000,.27],[337000000,.28],[454000000,.29],[550000000,.30],[695000000,.31],[910000000,.32],
+                    [1400000000,.33],[Infinity,.34]
+                ],
+                B: [
+                    [6200000,0],[6500000,.0025],[6850000,.005],[7300000,.0075],[9200000,.01],[10750000,.015],
+                    [11250000,.02],[11600000,.025],[12600000,.03],[13600000,.04],[14950000,.05],[16400000,.06],
+                    [18450000,.07],[21850000,.08],[26000000,.09],[27700000,.10],[29350000,.11],[31450000,.12],
+                    [33950000,.13],[37100000,.14],[41100000,.15],[45800000,.16],[49500000,.17],[53800000,.18],
+                    [58500000,.19],[64000000,.20],[71000000,.21],[80000000,.22],[93000000,.23],[109000000,.24],
+                    [129000000,.25],[163000000,.26],[211000000,.27],[374000000,.28],[459000000,.29],[555000000,.30],
+                    [704000000,.31],[957000000,.32],[1405000000,.33],[Infinity,.34]
+                ],
+                C: [
+                    [6600000,0],[6950000,.0025],[7350000,.005],[7800000,.0075],[8850000,.01],[9800000,.0125],
+                    [10950000,.015],[11200000,.0175],[12050000,.02],[12950000,.03],[14150000,.04],[15550000,.05],
+                    [17050000,.06],[19500000,.07],[22700000,.08],[26600000,.09],[28100000,.10],[30100000,.11],
+                    [32600000,.12],[35400000,.13],[38900000,.14],[43000000,.15],[47400000,.16],[51200000,.17],
+                    [55800000,.18],[60400000,.19],[66700000,.20],[74500000,.21],[83200000,.22],[95600000,.23],
+                    [110000000,.24],[134000000,.25],[169000000,.26],[221000000,.27],[390000000,.28],[463000000,.29],
+                    [561000000,.30],[709000000,.31],[965000000,.32],[Infinity,.34]
+                ]
+            };
+            const rows = tables[category] || tables.A;
+            for (const [limit, rate] of rows) {
+                if (x <= limit) return rate;
             }
+            return 0.34;
         }
 
         function calculatePajakKaryawan(ptkp, brutoTanpaPajak, metode = 'NET') {
