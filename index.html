@@ -69,7 +69,7 @@
             </div>
         </header>
 
-        <!-- Navbar Menu -->
+        <!-- Navbar Menu (Diseragamkan 1 Warna) -->
         <nav class="bg-white border-b border-slate-200 no-print">
             <div class="max-w-7xl mx-auto px-4 flex gap-2 overflow-x-auto text-sm font-medium py-2">
                 <button onclick="switchTab('dashboard')" class="tab-btn px-4 py-2 rounded-lg hover:bg-slate-100 text-slate-700 active-tab" id="btn-dashboard">Dashboard</button>
@@ -1305,7 +1305,7 @@
             });
         }
 
-        // FUNGSI SIMPAN SEKALIGUS (BATCH SAVE GAJI & OVERRIDE SNAPSHOT BPJS PERIODE TERPILIH)
+        // FUNGSI SIMPAN SEKALIGUS (AMAN MESKIPUN SEDANG FILTER NAMA)
         async function saveAllGaji() {
             const periode = getSelectedPeriode();
             const activeKaryawan = globalKaryawan.filter(k => isKaryawanActiveInPeriode(k, periode));
@@ -1319,18 +1319,32 @@
 
             activeKaryawan.forEach(k => {
                 const elGp = document.getElementById(`gp-${k.id}`);
-                if (!elGp) return; // Mengabaikan karyawan jika disembunyikan filter saat save
+                const oldP = getPayrollData(k.id);
 
-                const gp = cleanNumber(elGp.value);
-                const bpjsTkBaseVal = cleanNumber(document.getElementById(`bpjs-tk-base-${k.id}`).value);
-                const bpjsKesBaseVal = cleanNumber(document.getElementById(`bpjs-kes-base-${k.id}`).value);
-                const tj = cleanNumber(document.getElementById(`tj-${k.id}`).value);
-                const tm = cleanNumber(document.getElementById(`tm-${k.id}`).value);
-                const tp = cleanNumber(document.getElementById(`tp-${k.id}`).value);
-                const tl = cleanNumber(document.getElementById(`tl-${k.id}`).value);
-                const gr = cleanNumber(document.getElementById(`gr-${k.id}`).value);
-                const thr = cleanNumber(document.getElementById(`thr-${k.id}`).value);
-                const pot = cleanNumber(document.getElementById(`pot-${k.id}`).value);
+                let gp = oldP.gajiPokok || 0;
+                let bpjsTkBaseVal = oldP.bpjsTkBaseSnapshot !== undefined ? oldP.bpjsTkBaseSnapshot : null;
+                let bpjsKesBaseVal = oldP.bpjsKesBaseSnapshot !== undefined ? oldP.bpjsKesBaseSnapshot : null;
+                let tj = oldP.tunjJab || 0;
+                let tm = oldP.tunjMakan || 0;
+                let tp = oldP.tunjPulsa || 0;
+                let tl = oldP.tunjLain || 0;
+                let gr = oldP.gratifikasi || 0;
+                let thr = oldP.thr || 0;
+                let pot = oldP.potGaji || 0;
+
+                // Jika elemen karyawan tersebut saat ini sedang ditampilkan di DOM (bebas dari filter search)
+                if (elGp) {
+                    gp = cleanNumber(elGp.value);
+                    bpjsTkBaseVal = cleanNumber(document.getElementById(`bpjs-tk-base-${k.id}`).value);
+                    bpjsKesBaseVal = cleanNumber(document.getElementById(`bpjs-kes-base-${k.id}`).value);
+                    tj = cleanNumber(document.getElementById(`tj-${k.id}`).value);
+                    tm = cleanNumber(document.getElementById(`tm-${k.id}`).value);
+                    tp = cleanNumber(document.getElementById(`tp-${k.id}`).value);
+                    tl = cleanNumber(document.getElementById(`tl-${k.id}`).value);
+                    gr = cleanNumber(document.getElementById(`gr-${k.id}`).value);
+                    thr = cleanNumber(document.getElementById(`thr-${k.id}`).value);
+                    pot = cleanNumber(document.getElementById(`pot-${k.id}`).value);
+                }
 
                 const docRef = db.collection('karyawan').doc(k.id).collection('payroll').doc(periode);
                 batch.set(docRef, {
@@ -1616,7 +1630,7 @@
             downloadBlob(xml, `Coretax_PPh21_Tahunan_1721A1_PT_PAM_${selectedYear}.xml`, 'text/xml');
         }
 
-        // PRINT REKAP RESTRUKTURISASI SESUAI URUTAN BARU (A-Z)
+        // PRINT REKAP RESTRUKTURISASI PRESISI SESUAI URUTAN BARU (A-Z)
         function printRekapPDF() {
             const periode = getSelectedPeriode().toUpperCase();
             
@@ -1635,13 +1649,16 @@
                 const dasarKes = getDasarBpjsKes(k, periode.toLowerCase());
                 
                 const tunj = (p.tunjJab || 0) + (p.tunjMakan || 0) + (p.tunjPulsa || 0) + (p.tunjLain || 0) + (p.gratifikasi || 0) + (p.thr || 0);
-                const totalBrutoAwal = gp + tunj;
+                const potGajiLain = p.potGaji || 0;
+
+                // Total Bruto Awal sebelum BPJS Pers & Tunj PPh
+                const totalBrutoAwal = Math.max(0, (gp + tunj) - potGajiLain);
 
                 const bpjsTkPers = (tk.jht * 0.037) + (tk.jkk * 0.0054) + (tk.jkm * 0.0030) + (tk.jp * 0.02);
                 const bpjsKesPers = dasarKes * 0.04;
 
                 const bpjsKenaPajakPerusahaan = (tk.jkk * 0.0054) + (tk.jkm * 0.0030) + bpjsKesPers;
-                const brutoAwalTanpaPajak = totalBrutoAwal + bpjsKenaPajakPerusahaan;
+                const brutoAwalTanpaPajak = (gp + tunj) + bpjsKenaPajakPerusahaan;
                 const calcPajak = calculatePajakKaryawan(k.ptkp, brutoAwalTanpaPajak, k.pajakMetode || 'NET');
 
                 let tunjPph = 0;
@@ -1655,9 +1672,8 @@
 
                 const potBpjsTkKary = (tk.jht * 0.02) + (tk.jp * 0.01);
                 const potBpjsKesKary = dasarKes * 0.01;
-                const potGajiLain = p.potGaji || 0;
 
-                const thp = (totalBrutoAwal + tunjPph) - (potPph21 + potBpjsTkKary + potBpjsKesKary + potGajiLain);
+                const thp = (totalBrutoAwal + tunjPph) - (potPph21 + potBpjsTkKary + potBpjsKesKary);
 
                 sumBrutoAwal += totalBrutoAwal;
                 sumBpjsTkPers += bpjsTkPers;
