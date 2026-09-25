@@ -1628,6 +1628,7 @@
                     masaKerjaAktif: employment.masaKerjaAktif,
                     lastTaxMonth,
                     finalPayrollMissing: false,
+                    dataTersediaSampai: null,
                     monthlyRecords: []
                 };
 
@@ -1676,13 +1677,12 @@
                 const last = aData.monthlyRecords.find(rec => rec.periode === aData.lastTaxMonth);
                 const priorRecords = aData.monthlyRecords.filter(rec => rec.periode !== aData.lastTaxMonth);
 
-                // Masa pajak terakhir ditentukan oleh akhir kewajiban kerja:
-                // Desember untuk karyawan yang masih aktif, atau bulan resign.
-                // Jangan gunakan payroll terakhir yang kebetulan sudah tersedia.
-                if (!last) {
-                    aData.finalPayrollMissing = true;
-                    return;
-                }
+                // PENTING: jangan hentikan kalkulasi hanya karena masa pajak terakhir
+                // (biasanya Desember untuk karyawan aktif) belum mempunyai payroll.
+                // Contoh: bila baru ada payroll Agustus, data Januari-Agustus tetap
+                // harus tampil pada PPh 21 Akhir Tahun sebagai data sementara/YTD.
+                // Pajak masa terakhir baru dihitung ketika payroll masa terakhir tersedia.
+                aData.finalPayrollMissing = !last;
 
                 const metode = k.pajakMetode || 'NET';
                 const annualizePartYear = k.pajakSubjektifBagianTahun === true;
@@ -1690,7 +1690,9 @@
                 let priorBrutoPajak = 0;
                 let priorBpjsKary = 0;
 
-                // Semua masa selain masa pajak terakhir menggunakan TER.
+                // Semua payroll yang tersedia sebelum masa terakhir menggunakan TER.
+                // Jika masa terakhir belum tersedia, seluruh payroll yang tersedia
+                // diperlakukan sebagai masa-masa sebelumnya untuk tujuan monitoring YTD.
                 priorRecords.forEach(rec => {
                     const calc = calculatePajakKaryawan(k.ptkp, rec.brutoPajakDasar, metode);
                     rec.pph21 = calc.pph21;
@@ -1699,6 +1701,36 @@
                     priorBrutoPajak += calc.brutoPajakFinal;
                     priorBpjsKary += rec.bpjsKaryawanBulan;
                 });
+
+                // Bila masa pajak terakhir belum ada, tampilkan seluruh data yang
+                // sudah tersedia tanpa memaksakan perhitungan PPh final tahunan.
+                if (!last) {
+                    aData.brutoSetahun = priorBrutoPajak;
+                    aData.bpjsKarySetahun = priorBpjsKary;
+                    const dataMonths = aData.monthlyRecords.length;
+                    aData.biayaJabatanSetahun = Math.min(
+                        aData.brutoSetahun * 0.05,
+                        dataMonths * 500000
+                    );
+                    const netoYtd = Math.max(0, aData.brutoSetahun - aData.biayaJabatanSetahun - aData.bpjsKarySetahun);
+                    const ptkp = PTKP_DICT[k.ptkp] || 54000000;
+
+                    // PPh final Pasal 17 belum boleh dianggap final karena masa terakhir
+                    // belum tersedia. Simpan PKP sementara hanya untuk informasi.
+                    const pkpSementara = Math.max(0, netoYtd - ptkp);
+                    aData.pphSebelumMasaTerakhir = priorPph;
+                    aData.pph21TerutangBagianTahun = 0;
+                    aData.pph21MasaTerakhir = null;
+                    aData.pphTerSetahun = priorPph;
+                    aData.brutoPajakMasaTerakhir = 0;
+                    aData.netoSetahun = netoYtd;
+                    aData.netoDisetahunkan = netoYtd;
+                    aData.pkpMasa = Math.floor(pkpSementara / 1000) * 1000;
+                    aData.dataTersediaSampai = aData.monthlyRecords[aData.monthlyRecords.length - 1].periode;
+                    aData.annualizePartYear = annualizePartYear;
+                    aData.monthlyRecords.forEach(rec => { rec.isLastTaxMonth = false; });
+                    return;
+                }
 
                 const months = aData.masaKerjaAktif;
                 const ptkp = PTKP_DICT[k.ptkp] || 54000000;
@@ -1794,7 +1826,9 @@
                 const pph21MasaTerakhir = aData.pph21MasaTerakhir;
 
                 let statusBadge = '<span class="bg-slate-100 text-slate-700 px-2 py-1 rounded font-bold">Nihil</span>';
-                if (pph21MasaTerakhir < -0.5) {
+                if (aData.finalPayrollMissing) {
+                    statusBadge = `<span class="bg-amber-100 text-amber-800 px-2 py-1 rounded font-bold">Menunggu ${aData.lastTaxMonth} · Data s.d. ${aData.dataTersediaSampai || '-'}</span>`;
+                } else if (pph21MasaTerakhir < -0.5) {
                     statusBadge = `<span class="bg-emerald-100 text-emerald-800 px-2 py-1 rounded font-bold">Lebih Bayar (LB): Rp ${formatRibuan(Math.abs(pph21MasaTerakhir))}</span>`;
                 } else if (pph21MasaTerakhir > 0.5) {
                     statusBadge = `<span class="bg-red-100 text-red-800 px-2 py-1 rounded font-bold">Kurang Bayar (KB): Rp ${formatRibuan(pph21MasaTerakhir)}</span>`;
@@ -1810,7 +1844,7 @@
                         <td class="p-2.5 border font-semibold">Rp ${formatRibuan(netoMasa)}</td>
                         <td class="p-2.5 border"><span class="bg-slate-100 px-1.5 py-0.5 rounded text-[10px] font-bold">${k.ptkp}</span> (Rp ${formatRibuan(ptkpAnnual)})</td>
                         <td class="p-2.5 border font-semibold text-slate-900">Rp ${formatRibuan(pkpMasa)}</td>
-                        <td class="p-2.5 border font-bold text-indigo-700">Rp ${formatRibuan(pph21Pasal17Annual)}</td>
+                        <td class="p-2.5 border font-bold text-indigo-700">${aData.finalPayrollMissing ? '<span class="text-amber-700">Belum final</span>' : `Rp ${formatRibuan(pph21Pasal17Annual)}`}</td>
                         <td class="p-2.5 border font-bold text-blue-700">Rp ${formatRibuan(pph21Sebelum)}</td>
                         <td class="p-2.5 border text-center">${statusBadge}</td>
                     </tr>`;
