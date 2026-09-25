@@ -12,27 +12,6 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
 
     <style>
-        /* Data Gaji & THR: header tabel tetap terlihat saat scroll vertikal */
-        #tab-gaji .overflow-x-auto {
-            max-height: 70vh;
-            overflow: auto;
-            position: relative;
-        }
-        #tab-gaji #table-gaji-body + * { display:none; }
-        #tab-gaji table thead {
-            position: sticky;
-            top: 0;
-            z-index: 20;
-        }
-        #tab-gaji table thead th {
-            position: sticky;
-            top: 0;
-            z-index: 21;
-            background-color: #f1f5f9;
-        }
-        #tab-gaji table thead th:nth-child(3) { background-color: #eef2ff; }
-        #tab-gaji table thead th:nth-child(4) { background-color: #f0fdfa; }
-
         /* Format Cetak Slip Single Karyawan (Half A4) */
         /* Highlight 1 baris saat mouse / kursor input berada di Data Gaji & THR */
         #table-gaji-body tr {
@@ -46,6 +25,23 @@
         #table-gaji-body tr:focus-within > td:first-child {
             box-shadow: inset 4px 0 0 #f59e0b;
             font-weight: 800;
+        }
+
+        /* Header tabel Gaji & THR tetap terlihat saat tabel panjang discroll */
+        #tab-gaji .overflow-x-auto {
+            max-height: 70vh;
+            overflow: auto;
+        }
+        #tab-gaji table thead {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            box-shadow: 0 2px 4px rgba(15, 23, 42, 0.08);
+        }
+        #tab-gaji table thead th {
+            position: sticky;
+            top: 0;
+            background-clip: padding-box;
         }
 
         @media print {
@@ -961,8 +957,16 @@
         }
 
         function formatInputRibuan(el) {
-            let num = el.value.replace(/\D/g, '');
-            el.value = num ? new Intl.NumberFormat('id-ID').format(num) : '';
+            // Mendukung angka negatif, khususnya Tunjangan Lain-Lain sebagai pengurang bruto.
+            const raw = String(el.value || '').trim();
+            const isNegative = raw.startsWith('-');
+            const num = raw.replace(/\D/g, '');
+            if (!num) {
+                el.value = isNegative ? '-' : '';
+                return;
+            }
+            const formatted = new Intl.NumberFormat('id-ID').format(Number(num));
+            el.value = isNegative ? `-${formatted}` : formatted;
         }
 
         function cleanNumber(str) {
@@ -1407,7 +1411,7 @@
                         <td class="p-2 border"><input type="text" value="${formatRibuan(p.tunjJab || 0)}" onkeyup="formatInputRibuan(this)" class="w-20 border rounded p-1 text-right" id="tj-${k.id}"></td>
                         <td class="p-2 border"><input type="text" value="${formatRibuan(p.tunjMakan || 0)}" onkeyup="formatInputRibuan(this)" class="w-20 border rounded p-1 text-right" id="tm-${k.id}"></td>
                         <td class="p-2 border"><input type="text" value="${formatRibuan(p.tunjPulsa || 0)}" onkeyup="formatInputRibuan(this)" class="w-20 border rounded p-1 text-right" id="tp-${k.id}"></td>
-                        <td class="p-2 border"><input type="text" value="${formatRibuan(p.tunjLain || 0)}" onkeyup="formatInputRibuan(this)" class="w-20 border rounded p-1 text-right text-blue-600" id="tl-${k.id}"></td>
+                        <td class="p-2 border"><input type="text" value="${formatRibuan(p.tunjLain || 0)}" onkeyup="formatInputRibuan(this)" class="w-20 border rounded p-1 text-right text-blue-600" id="tl-${k.id}" title="Boleh diisi negatif sebagai pengurang bruto, contoh: -500.000"></td>
                         <td class="p-2 border"><input type="text" value="${formatRibuan(p.gratifikasi || 0)}" onkeyup="formatInputRibuan(this)" class="w-20 border rounded p-1 text-right" id="gr-${k.id}"></td>
                         <td class="p-2 border"><input type="text" value="${formatRibuan(p.thr || 0)}" onkeyup="formatInputRibuan(this)" class="w-20 border rounded p-1 text-right" id="thr-${k.id}"></td>
                         <td class="p-2 border"><input type="text" value="${formatRibuan(p.potGaji || 0)}" onkeyup="formatInputRibuan(this)" class="w-20 border rounded p-1 text-right text-red-600" id="pot-${k.id}"></td>
