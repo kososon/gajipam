@@ -4,11 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Payroll & PPh 21 - PT Prima Anugerah Makmur</title>
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- SheetJS untuk Export Excel -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
@@ -60,7 +57,6 @@
 
     <!-- Main Application Wrapper -->
     <div id="app-content" class="hidden min-h-screen flex flex-col">
-        <!-- Header -->
         <header class="bg-slate-900 text-white shadow-md no-print">
             <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
                 <div>
@@ -74,7 +70,6 @@
             </div>
         </header>
 
-        <!-- Navbar Menu -->
         <nav class="bg-white border-b border-slate-200 no-print">
             <div class="max-w-7xl mx-auto px-4 flex gap-2 overflow-x-auto text-sm font-medium py-2">
                 <button onclick="switchTab('dashboard')" class="tab-btn px-4 py-2 rounded-lg hover:bg-slate-100 text-slate-700 active-tab bg-blue-50 text-blue-600 font-bold" id="btn-dashboard">Dashboard</button>
@@ -89,10 +84,7 @@
             </div>
         </nav>
 
-        <!-- Body Content -->
         <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6">
-            
-            <!-- Global Filter & Print Action Bar -->
             <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-6 flex flex-wrap justify-between items-center gap-4 no-print">
                 <div class="flex items-center gap-3">
                     <label class="text-xs font-bold text-slate-500 uppercase">Periode Data:</label>
@@ -196,7 +188,6 @@
                         </div>
                         <div class="flex items-center gap-2">
                             <input type="text" id="search-gaji" onkeyup="renderGajiTable()" placeholder="Cari nama karyawan..." class="border rounded-lg px-3 py-1.5 text-xs bg-white focus:ring-2 focus:ring-blue-500 outline-none w-48 sm:w-64">
-                            <!-- TOMBOL EXPORT EXCEL BARU -->
                             <button onclick="exportGajiToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-4 py-2 rounded-lg font-bold shadow transition flex items-center gap-1.5">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                                 Export ke Excel
@@ -261,6 +252,7 @@
                                         <th class="p-3">Total Plafon</th>
                                         <th class="p-3">Cicilan/Bln</th>
                                         <th class="p-3">Sisa Pinjaman</th>
+                                        <th class="p-3 text-right">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody id="table-pinjaman-body"></tbody>
@@ -550,7 +542,6 @@
         </div>
     </div>
 
-    <!-- Engine Application JavaScript -->
     <script>
         const firebaseConfig = {
             apiKey: "AIzaSyAn0GEPGWMEmDslzabkHR2DAnDFctHRjDw",
@@ -583,6 +574,7 @@
         let globalKaryawan = [];
         let globalPayrollMap = {};
         let globalAnnualCalculations = {};
+        let globalPinjamanMap = {}; // Cache cicilan pinjaman per karyawan
         let globalDirektur = { nama: "ABDUL HALEK", kota: "Pekanbaru", npwpPemotong: "0210139952122000", nitkuPemotong: "0210139952122000000000" };
 
         function populateYearDropdown() {
@@ -791,6 +783,14 @@
             return Math.min(base, MAX_DASAR_BPJS_KES);
         }
 
+        // PERBAIKAN: Helper untuk mendapatkan cicilan pinjaman karyawan
+        function getCicilanPinjamanKaryawan(karyId) {
+            const pinjaman = globalPinjamanMap[karyId];
+            if (!pinjaman) return 0;
+            // Hanya hitung cicilan jika masih ada sisa pinjaman
+            return pinjaman.sisa > 0 ? (pinjaman.cicilan || 0) : 0;
+        }
+
         async function loadGlobalData() {
             const periode = getSelectedPeriode();
             const karySnap = await db.collection('karyawan').get();
@@ -802,6 +802,25 @@
                 const pSnap = await db.collection('karyawan').doc(k.id).collection('payroll').doc(periode).get();
                 if (pSnap.exists) globalPayrollMap[k.id] = pSnap.data();
             }));
+            
+            // PERBAIKAN: Load data pinjaman ke cache global
+            try {
+                const pinjamSnap = await db.collection('pinjaman').get();
+                globalPinjamanMap = {};
+                pinjamSnap.forEach(doc => {
+                    const pData = doc.data();
+                    const kId = pData.karyawanId;
+                    if (!globalPinjamanMap[kId]) {
+                        globalPinjamanMap[kId] = { cicilan: 0, sisa: 0, totalPlafon: 0 };
+                    }
+                    globalPinjamanMap[kId].cicilan += (pData.cicilan || 0);
+                    globalPinjamanMap[kId].sisa += (pData.sisa || 0);
+                    globalPinjamanMap[kId].totalPlafon += (pData.plafon || 0);
+                });
+            } catch (err) {
+                console.error("Gagal memuat data pinjaman:", err);
+            }
+
             try {
                 const dirDoc = await db.collection('settings').doc('direktur').get();
                 if (dirDoc.exists) {
@@ -815,11 +834,13 @@
             renderKaryawanTable(); renderGajiTable(); renderPinjamanTable(); await renderLaporPPhTable(); renderDashboard(); populateDropdowns();
         }
 
+        // PERBAIKAN: Fix double count LB pada THP
         function renderDashboard() {
             const tbody = document.getElementById('table-dashboard-body');
             tbody.innerHTML = '';
             const periode = getSelectedPeriode();
             let totalTHP = 0, totalSetorBpjsTK = 0, totalSetorBpjsKes = 0, totalPPhDitanggung = 0, totalActiveCount = 0;
+
             globalKaryawan.forEach(k => {
                 if (!isKaryawanActiveInPeriode(k, periode)) return;
                 totalActiveCount++;
@@ -828,24 +849,33 @@
                 const tk = getBpjsTkComponents(k, periode);
                 const dasarKes = getDasarBpjsKes(k, periode);
                 const tunj = (p.tunjJab || 0) + (p.tunjMakan || 0) + (p.tunjPulsa || 0) + (p.tunjLain || 0) + (p.gratifikasi || 0) + (p.thr || 0);
+
                 const bpjsKesPribadi = dasarKes * BPJS_RATE.KES.KARYAWAN;
                 const bpjsTkPribadi = (tk.jht * BPJS_RATE.TK.JHT_KARYAWAN) + (tk.jp * BPJS_RATE.TK.JP_KARYAWAN);
                 const bpjsTkPerusahaan = (tk.jht * BPJS_RATE.TK.JHT_PERUSAHAAN) + (tk.jkk * BPJS_RATE.TK.JKK) + (tk.jkm * BPJS_RATE.TK.JKM) + (tk.jp * BPJS_RATE.TK.JP_PERUSAHAAN);
                 const bpjsKesPerusahaan = dasarKes * BPJS_RATE.KES.PERUSAHAAN;
                 const bpjsKenaPajakPerusahaan = (tk.jkk * BPJS_RATE.TK.JKK) + (tk.jkm * BPJS_RATE.TK.JKM) + bpjsKesPerusahaan;
+
                 const metode = k.pajakMetode || 'NET';
                 const calcPajak = calculatePajakKaryawan(k.ptkp, gp + tunj + bpjsKenaPajakPerusahaan, metode);
                 const aData = globalAnnualCalculations[k.id];
                 const isLastTaxMonth = !!aData && aData.lastTaxMonth === periode;
-                
                 const pphMasa = isLastTaxMonth ? Number(aData.pph21MasaTerakhir || 0) : calcPajak.pph21;
-                
-                const tunjPph = metode === 'GROSS_UP' ? pphMasa : 0;
-                const lb = metode === 'NET' && pphMasa < 0 ? Math.abs(pphMasa) : 0;
-                const kb = metode === 'NET' && pphMasa > 0 && isLastTaxMonth ? pphMasa : 0;
+
+                const tunjPph = (metode === 'GROSS_UP') ? pphMasa : 0;
+                const lb = (metode === 'NET' && pphMasa < 0) ? Math.abs(pphMasa) : 0;
                 const potGaji = p.potGaji || 0;
-                const thp = gp + tunj + tunjPph + lb - potGaji - bpjsKesPribadi - bpjsTkPribadi - (metode === 'GROSS UP' ? pphMasa : (metode === 'NET' ? pphMasa : kb));
-                totalTHP += thp; totalPPhDitanggung += pphMasa; totalSetorBpjsTK += bpjsTkPerusahaan + bpjsTkPribadi; totalSetorBpjsKes += bpjsKesPerusahaan + bpjsKesPribadi;
+                const cicilanPinjaman = getCicilanPinjamanKaryawan(k.id);
+
+                // PERBAIKAN: Potongan PPh hanya jika positif, LB ditangani terpisah
+                const potPphFinal = (metode === 'GROSS_UP') ? pphMasa : (pphMasa > 0 ? pphMasa : 0);
+                const thp = gp + tunj + tunjPph + lb - potGaji - bpjsKesPribadi - bpjsTkPribadi - potPphFinal - cicilanPinjaman;
+
+                totalTHP += thp;
+                totalPPhDitanggung += pphMasa;
+                totalSetorBpjsTK += bpjsTkPerusahaan + bpjsTkPribadi;
+                totalSetorBpjsKes += bpjsKesPerusahaan + bpjsKesPribadi;
+
                 const metodeLabel = calcPajak.metode === 'GROSS UP' ? 'Gross Up' : 'Net (Auto)';
                 tbody.innerHTML += `<tr class="border-b bg-white hover:bg-slate-50">
                     <td class="p-3 font-semibold text-slate-800">${k.nama}</td>
@@ -856,6 +886,7 @@
                     <td class="p-3"><span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-semibold">${metodeLabel} (TER ${calcPajak.category})</span></td>
                 </tr>`;
             });
+
             document.getElementById('dash-total-karyawan').innerText = totalActiveCount;
             document.getElementById('dash-total-bruto').innerText = `Rp ${formatRibuan(totalTHP)}`;
             document.getElementById('dash-total-pph').innerText = `Rp ${formatRibuan(totalPPhDitanggung)}`;
@@ -1034,9 +1065,7 @@
             });
         }
 
-        // =====================================================================
-        // FITUR BARU: EXPORT DATA GAJI KE EXCEL
-        // =====================================================================
+        // PERBAIKAN: Export Excel mengambil data dari input fields (data terbaru yang belum disimpan)
         function exportGajiToExcel() {
             const periode = getSelectedPeriode();
             const activeKaryawan = globalKaryawan.filter(k => isKaryawanActiveInPeriode(k, periode));
@@ -1047,43 +1076,56 @@
             }
 
             const dataToExport = activeKaryawan.map(k => {
-                const p = getPayrollData(k.id);
-                const tkComp = getBpjsTkComponents(k, periode);
-                const kesBaseVal = getDasarBpjsKes(k, periode);
+                const elGp = document.getElementById(`gp-${k.id}`);
+                let gp, tkBase, kesBase, tj, tm, tp, tl, gr, thr, pot;
+
+                if (elGp) {
+                    // Ambil dari input fields (data terbaru)
+                    gp = cleanNumber(elGp.value);
+                    tkBase = cleanNumber(document.getElementById(`bpjs-tk-base-${k.id}`).value);
+                    kesBase = cleanNumber(document.getElementById(`bpjs-kes-base-${k.id}`).value);
+                    tj = cleanNumber(document.getElementById(`tj-${k.id}`).value);
+                    tm = cleanNumber(document.getElementById(`tm-${k.id}`).value);
+                    tp = cleanNumber(document.getElementById(`tp-${k.id}`).value);
+                    tl = cleanNumber(document.getElementById(`tl-${k.id}`).value);
+                    gr = cleanNumber(document.getElementById(`gr-${k.id}`).value);
+                    thr = cleanNumber(document.getElementById(`thr-${k.id}`).value);
+                    pot = cleanNumber(document.getElementById(`pot-${k.id}`).value);
+                } else {
+                    // Fallback ke data tersimpan
+                    const p = getPayrollData(k.id);
+                    const tkComp = getBpjsTkComponents(k, periode);
+                    gp = p.gajiPokok || 0;
+                    tkBase = tkComp.jht;
+                    kesBase = getDasarBpjsKes(k, periode);
+                    tj = p.tunjJab || 0; tm = p.tunjMakan || 0; tp = p.tunjPulsa || 0;
+                    tl = p.tunjLain || 0; gr = p.gratifikasi || 0; thr = p.thr || 0; pot = p.potGaji || 0;
+                }
 
                 return {
                     "Nama Karyawan": k.nama,
                     "NIK": k.nik,
                     "Jabatan": k.jabatan,
-                    "Gaji Pokok": p.gajiPokok || 0,
-                    "Dasar BPJS TK": tkComp.jht,
-                    "Dasar BPJS Kes": kesBaseVal,
-                    "Tunjangan Jabatan": p.tunjJab || 0,
-                    "Tunjangan Makan": p.tunjMakan || 0,
-                    "Tunjangan Pulsa/KDR": p.tunjPulsa || 0,
-                    "Tunjangan Lain-lain": p.tunjLain || 0,
-                    "Gratifikasi": p.gratifikasi || 0,
-                    "THR": p.thr || 0,
-                    "Potongan Gaji": p.potGaji || 0
+                    "Gaji Pokok": gp,
+                    "Dasar BPJS TK": tkBase,
+                    "Dasar BPJS Kes": kesBase,
+                    "Tunjangan Jabatan": tj,
+                    "Tunjangan Makan": tm,
+                    "Tunjangan Pulsa/KDR": tp,
+                    "Tunjangan Lain-lain": tl,
+                    "Gratifikasi": gr,
+                    "THR": thr,
+                    "Potongan Gaji": pot
                 };
             });
 
-            // Buat worksheet dari data JSON
             const ws = XLSX.utils.json_to_sheet(dataToExport);
-            
-            // Atur lebar kolom otomatis agar rapi
             const colWidths = Object.keys(dataToExport[0]).map(key => ({ wch: Math.max(key.length, 15) }));
             ws['!cols'] = colWidths;
-
-            // Buat workbook dan tambahkan worksheet
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, `Gaji_${periode}`);
-
-            // Trigger download file
-            const filename = `Data_Gaji_THR_PT_PAM_${periode}.xlsx`;
-            XLSX.writeFile(wb, filename);
+            XLSX.writeFile(wb, `Data_Gaji_THR_PT_PAM_${periode}.xlsx`);
         }
-        // =====================================================================
 
         async function saveAllGaji() {
             const periode = getSelectedPeriode();
@@ -1399,21 +1441,26 @@
             downloadBlob(xml, `Rekap_PPh21_Tahunan_PT_PAM_${selectedYear}.xml`, 'application/xml;charset=UTF-8');
         }
 
+        // PERBAIKAN: Print Rekap PDF - Fix periode dan handle LB
         async function printRekapPDF() {
-            const periode = getSelectedPeriode().toUpperCase();
-            const periodeNormalized = periode.toLowerCase();
-            if (periodeNormalized.endsWith('-12') || globalKaryawan.some(k => normalizePeriode(k.endKerja) === periodeNormalized && k.isActive === false)) {
-                await buildAnnualCalculations(periodeNormalized.substring(0, 4));
+            const periode = getSelectedPeriode();
+            const periodeUpper = periode.toUpperCase();
+
+            if (periode.endsWith('-12') || globalKaryawan.some(k => normalizePeriode(k.endKerja) === periode && k.isActive === false)) {
+                await buildAnnualCalculations(periode.substring(0, 4));
             }
+
             let sumBrutoAwal = 0, sumBpjsTkPers = 0, sumBpjsKesPers = 0, sumTunjPph = 0;
             let sumTotalGajiBruto = 0, sumPotPph21 = 0, sumPotBpjsTkKary = 0, sumPotBpjsKesKary = 0, sumTHP = 0;
-            let rowsHTML = ''; let no = 1;
+            let rowsHTML = '';
+            let no = 1;
+
             globalKaryawan.forEach(k => {
-                if (!isKaryawanActiveInPeriode(k, periodeNormalized)) return;
+                if (!isKaryawanActiveInPeriode(k, periode)) return;
                 const p = getPayrollData(k.id);
                 const gp = p.gajiPokok || 0;
-                const tk = getBpjsTkComponents(k, periode.toLowerCase());
-                const dasarKes = getDasarBpjsKes(k, periode.toLowerCase());
+                const tk = getBpjsTkComponents(k, periode);
+                const dasarKes = getDasarBpjsKes(k, periode);
                 const tunj = (p.tunjJab || 0) + (p.tunjMakan || 0) + (p.tunjPulsa || 0) + (p.tunjLain || 0) + (p.gratifikasi || 0) + (p.thr || 0);
                 const potGajiLain = p.potGaji || 0;
                 const totalBrutoAwal = Math.max(0, gp + tunj);
@@ -1423,16 +1470,22 @@
                 const metode = k.pajakMetode || 'NET';
                 const calcPajak = calculatePajakKaryawan(k.ptkp, brutoAwalTanpaPajak, metode);
                 const aData = globalAnnualCalculations[k.id];
-                const isLastTaxMonth = !!aData && aData.lastTaxMonth === periodeNormalized;
+                const isLastTaxMonth = !!aData && aData.lastTaxMonth === periode;
                 const pphMasa = isLastTaxMonth ? Number(aData.pph21MasaTerakhir || 0) : calcPajak.pph21;
-                const tunjPph = metode === 'GROSS_UP' ? pphMasa : 0;
-                const potPph21 = pphMasa;
+
+                const tunjPph = (metode === 'GROSS_UP') ? pphMasa : 0;
+                // PERBAIKAN: potPph21 hanya nilai positif
+                const potPph21 = pphMasa > 0 ? pphMasa : 0;
                 const totalGajiBrutoAkhir = totalBrutoAwal + bpjsTkPers + bpjsKesPers + tunjPph;
                 const potBpjsTkKary = (tk.jht * BPJS_RATE.TK.JHT_KARYAWAN) + (tk.jp * BPJS_RATE.TK.JP_KARYAWAN);
                 const potBpjsKesKary = dasarKes * BPJS_RATE.KES.KARYAWAN;
-                const thp = (totalBrutoAwal + tunjPph) - (potGajiLain + potPph21 + potBpjsTkKary + potBpjsKesKary);
+                // PERBAIKAN: LB menambah THP, bukan potPph21 negatif
+                const lb = (metode === 'NET' && pphMasa < 0) ? Math.abs(pphMasa) : 0;
+                const thp = (totalBrutoAwal + tunjPph + lb) - (potGajiLain + potPph21 + potBpjsTkKary + potBpjsKesKary);
+
                 sumBrutoAwal += totalBrutoAwal; sumBpjsTkPers += bpjsTkPers; sumBpjsKesPers += bpjsKesPers; sumTunjPph += tunjPph;
                 sumTotalGajiBruto += totalGajiBrutoAkhir; sumPotPph21 += potPph21; sumPotBpjsTkKary += potBpjsTkKary; sumPotBpjsKesKary += potBpjsKesKary; sumTHP += thp;
+
                 rowsHTML += `<tr>
                     <td>${no++}</td><td>${k.nik || '-'}</td><td class="left font-bold">${k.nama}</td>
                     <td>Rp ${formatRibuan(totalBrutoAwal)}</td><td>Rp ${formatRibuan(bpjsTkPers)}</td><td>Rp ${formatRibuan(bpjsKesPers)}</td>
@@ -1441,13 +1494,14 @@
                     <td class="font-bold text-emerald">Rp ${formatRibuan(thp)}</td>
                 </tr>`;
             });
-            const printHTML = `<!DOCTYPE html><html><head><title>Rekapitulasi Penggajian - ${periode}</title>
+
+            const printHTML = `<!DOCTYPE html><html><head><title>Rekapitulasi Penggajian - ${periodeUpper}</title>
                 <style>@page { size: A4 landscape; margin: 6mm; } body { font-family: Arial, sans-serif; margin: 10px; color: #000; }
                 .header { text-align: center; margin-bottom: 15px; } .header h1 { margin: 0; font-size: 16px; text-transform: uppercase; }
                 .header h2 { margin: 3px 0 0 0; font-size: 12px; font-weight: normal; } table { width: 100%; border-collapse: collapse; font-size: 8px; }
                 th, td { border: 1px solid #000; padding: 5px 3px; text-align: center; } th { background-color: #f1f5f9; font-weight: bold; }
                 .left { text-align: left; } .font-bold { font-weight: bold; } .text-emerald { color: #047857; } tfoot tr { background-color: #e2e8f0; font-weight: bold; }</style></head><body>
-                <div class="header"><h1>PT PRIMA ANUGERAH MAKMUR</h1><h2>REKAPITULASI PENGGAJIAN & PPH 21 - PERIODE ${periode}</h2>
+                <div class="header"><h1>PT PRIMA ANUGERAH MAKMUR</h1><h2>REKAPITULASI PENGGAJIAN & PPH 21 - PERIODE ${periodeUpper}</h2>
                 <p style="margin:2px 0 0 0; font-size:10px;">NPWP Pemotong: ${formatNPWPDisplay(globalDirektur.npwpPemotong)}</p></div>
                 <table><thead><tr><th>No.</th><th>NIK</th><th>Nama Karyawan</th><th>Total Bruto (sblm BPJS Pers.)</th><th>BPJS TK (Perusahaan)</th>
                 <th>BPJS Kes (Perusahaan)</th><th>Tunj PPh (Net/Gross-Up)</th><th>Total Gaji Bruto Akhir</th><th>Pot. PPh 21</th>
@@ -1456,6 +1510,7 @@
                 <td>Rp ${formatRibuan(sumBpjsKesPers)}</td><td>Rp ${formatRibuan(sumTunjPph)}</td><td>Rp ${formatRibuan(sumTotalGajiBruto)}</td>
                 <td>Rp ${formatRibuan(sumPotPph21)}</td><td>Rp ${formatRibuan(sumPotBpjsTkKary)}</td><td>Rp ${formatRibuan(sumPotBpjsKesKary)}</td>
                 <td>Rp ${formatRibuan(sumTHP)}</td></tr></tfoot></table></body></html>`;
+
             const printWin = window.open('', '_blank', 'width=1100,height=700');
             printWin.document.open(); printWin.document.write(printHTML); printWin.document.close();
             printWin.onload = function() { printWin.focus(); printWin.print(); printWin.close(); };
@@ -1469,16 +1524,37 @@
             const cicilan = cleanNumber(document.getElementById('pinjam-cicilan').value);
             await db.collection('pinjaman').add({ karyawanId: idKary, nama: k ? k.nama : '', plafon: plafon, cicilan: cicilan, sisa: plafon });
             await logAudit('TAMBAH_PINJAMAN', `Input pinjaman untuk ${k ? k.nama : ''} sebesar Rp ${formatRibuan(plafon)}`);
-            document.getElementById('form-pinjaman').reset(); renderPinjamanTable();
+            document.getElementById('form-pinjaman').reset(); 
+            await loadGlobalData(); // Reload untuk update cache pinjaman
+        }
+
+        async function deletePinjaman(id) {
+            if (confirm('Apakah Anda yakin ingin menghapus data pinjaman ini?')) {
+                await db.collection('pinjaman').doc(id).delete();
+                await logAudit('HAPUS_PINJAMAN', `Menghapus data pinjaman ID: ${id}`);
+                await loadGlobalData();
+            }
         }
 
         function renderPinjamanTable() {
             const tbody = document.getElementById('table-pinjaman-body');
             tbody.innerHTML = '';
             db.collection('pinjaman').get().then(snap => {
+                if (snap.empty) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-slate-500">Belum ada data pinjaman.</td></tr>';
+                    return;
+                }
                 snap.forEach(doc => {
                     const p = doc.data();
-                    tbody.innerHTML += `<tr class="border-b bg-white"><td class="p-3 font-semibold">${p.nama}</td><td class="p-3">Rp ${formatRibuan(p.plafon)}</td><td class="p-3">Rp ${formatRibuan(p.cicilan)}</td><td class="p-3 font-bold text-red-600">Rp ${formatRibuan(p.sisa)}</td></tr>`;
+                    tbody.innerHTML += `<tr class="border-b bg-white">
+                        <td class="p-3 font-semibold">${p.nama}</td>
+                        <td class="p-3">Rp ${formatRibuan(p.plafon)}</td>
+                        <td class="p-3">Rp ${formatRibuan(p.cicilan)}</td>
+                        <td class="p-3 font-bold text-red-600">Rp ${formatRibuan(p.sisa)}</td>
+                        <td class="p-3 text-right">
+                            <button onclick="deletePinjaman('${doc.id}')" class="text-red-600 hover:underline font-semibold text-xs">Hapus</button>
+                        </td>
+                    </tr>`;
                 });
             });
         }
@@ -1496,7 +1572,7 @@
             });
         }
 
-        // FUNGSI SLIP GAJI DENGAN LOGIKA PENAMPILAN PAJAK TERBARU & TANGGAL DINAMIS
+        // PERBAIKAN: Slip Gaji - Cicilan pinjaman, header periode, tanggal tanda tangan
         async function renderSlipGaji() {
             const id = document.getElementById('slip-select-karyawan').value;
             const k = globalKaryawan.find(item => item.id === id);
@@ -1513,7 +1589,7 @@
 
             const isEndMonthOfKaryawan = !!aData && aData.lastTaxMonth === periode;
             const p = getPayrollData(k.id);
-            
+
             const gp = p.gajiPokok || 0;
             const tk = getBpjsTkComponents(k, periode);
             const dasarKes = getDasarBpjsKes(k, periode);
@@ -1521,7 +1597,7 @@
             const gratifikasi = p.gratifikasi || 0;
             const thr = p.thr || 0;
             const potGaji = p.potGaji || 0;
-            
+
             const bpjsKes = dasarKes * BPJS_RATE.KES.KARYAWAN;
             const bpjsJht = tk.jht * BPJS_RATE.TK.JHT_KARYAWAN;
             const bpjsJp = tk.jp * BPJS_RATE.TK.JP_KARYAWAN;
@@ -1529,7 +1605,7 @@
 
             const bpjsPerusahaan = (tk.jkk * BPJS_RATE.TK.JKK) + (tk.jkm * BPJS_RATE.TK.JKM) + (dasarKes * BPJS_RATE.KES.PERUSAHAAN);
             const brutoAwal = gp + tunj + gratifikasi + thr + bpjsPerusahaan;
-            
+
             const metode = k.pajakMetode || 'NET';
             const calcPajak = calculatePajakKaryawan(k.ptkp, brutoAwal, metode);
 
@@ -1543,20 +1619,23 @@
             }
 
             if (metode === 'NET') {
-                if (pphMasa < 0) { lbVal = Math.abs(pphMasa); potPajak = 0; } 
+                if (pphMasa < 0) { lbVal = Math.abs(pphMasa); potPajak = 0; }
                 else { potPajak = pphMasa; lbVal = 0; }
                 tunjPajak = 0;
             } else if (metode === 'GROSS_UP') {
                 const nilaiPph = Math.max(0, pphMasa);
                 potPajak = nilaiPph;
                 tunjPajak = nilaiPph;
-                lbVal = 0; kbVal = 0;
             }
 
+            // PERBAIKAN: Ambil cicilan pinjaman dari cache global
+            const cicilanPinjaman = getCicilanPinjamanKaryawan(k.id);
+
             const totalPenerimaan = gp + tunj + gratifikasi + thr + tunjPajak + lbVal;
-            const totalPotongan = potGaji + totalBpjsPribadi + potPajak + kbVal;
+            const totalPotongan = potGaji + totalBpjsPribadi + potPajak + kbVal + cicilanPinjaman;
             const thp = totalPenerimaan - totalPotongan;
 
+            // Update DOM
             document.getElementById('slip-nama').innerText = k.nama;
             document.getElementById('slip-jabatan').innerText = k.jabatan;
             document.getElementById('slip-nik').innerText = k.nik;
@@ -1564,7 +1643,7 @@
             document.getElementById('slip-tunjangan').innerText = `Rp ${formatRibuan(tunj)}`;
             document.getElementById('slip-gratifikasi').innerText = `Rp ${formatRibuan(gratifikasi)}`;
             document.getElementById('slip-thr').innerText = `Rp ${formatRibuan(thr)}`;
-            
+
             document.getElementById('slip-tunj-pajak-row').style.display = (tunjPajak > 0) ? 'flex' : 'none';
             document.getElementById('slip-tunj-pajak').innerText = `Rp ${formatRibuan(tunjPajak)}`;
 
@@ -1575,35 +1654,36 @@
             document.getElementById('slip-bpjs-kes').innerText = `Rp ${formatRibuan(bpjsKes)}`;
             document.getElementById('slip-bpjs-jht').innerText = `Rp ${formatRibuan(bpjsJht)}`;
             document.getElementById('slip-bpjs-jp').innerText = `Rp ${formatRibuan(bpjsJp)}`;
-            
+
             document.getElementById('slip-pot-pajak-row').style.display = (potPajak > 0) ? 'flex' : 'none';
             document.getElementById('slip-pot-pajak').innerText = `Rp ${formatRibuan(potPajak)}`;
 
             document.getElementById('slip-kb-row').style.display = 'none';
+
+            // PERBAIKAN: Tampilkan cicilan pinjaman
+            document.getElementById('slip-pinjaman').innerText = `Rp ${formatRibuan(cicilanPinjaman)}`;
+
             document.getElementById('slip-thp-total').innerText = `Rp ${formatRibuan(thp)}`;
             document.getElementById('slip-nama-karyawan-ttd').innerText = `( ${k.nama} )`;
             document.getElementById('slip-nama-direktur').innerText = `( ${globalDirektur.nama || 'ABDUL HALEK'} )`;
-            
-            // =====================================================================
-            // PERBAIKAN: Format tanggal menjadi "Kota, DD Bulan YYYY" sesuai Tanggal Potong
-            // =====================================================================
-            const withholdingDateStr = document.getElementById('filter-withholding-date').value;
-            let tanggalCetak = "";
+
+            // PERBAIKAN: Format tanggal & header periode
             const bulanIndo = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+            const withholdingDateStr = document.getElementById('filter-withholding-date').value;
 
             if (withholdingDateStr) {
                 const [y, m, d] = withholdingDateStr.split('-');
                 const namaBulan = bulanIndo[parseInt(m, 10) - 1] || m;
-                tanggalCetak = `${parseInt(d, 10)} ${namaBulan} ${y}`;
+                // Header periode: "AGUSTUS 2026"
+                document.getElementById('slip-periode-text').innerText = `${namaBulan.toUpperCase()} ${y}`;
+                // Tanggal tanda tangan: "Pekanbaru, 31 Agustus 2026"
+                document.getElementById('slip-ttd-kota-tgl').innerText = `${globalDirektur.kota || 'Pekanbaru'}, ${parseInt(d, 10)} ${namaBulan} ${y}`;
             } else {
-                // Fallback jika tanggal potong belum diisi
-                const [y, m] = periode.split('-');
-                const namaBulan = bulanIndo[parseInt(m, 10) - 1] || m;
-                tanggalCetak = namaBulan + " " + y; 
+                const [yP, mP] = periode.split('-');
+                const namaBulanP = bulanIndo[parseInt(mP, 10) - 1] || mP;
+                document.getElementById('slip-periode-text').innerText = `${namaBulanP.toUpperCase()} ${yP}`;
+                document.getElementById('slip-ttd-kota-tgl').innerText = `${globalDirektur.kota || 'Pekanbaru'}, ${namaBulanP} ${yP}`;
             }
-
-            document.getElementById('slip-ttd-kota-tgl').innerText = `${globalDirektur.kota || 'Pekanbaru'}, ${tanggalCetak}`;
-            document.getElementById('slip-periode-text').innerText = tanggalCetak.toUpperCase();
         }
 
         async function saveDirektur(e) {
