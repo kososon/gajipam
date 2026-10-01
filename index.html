@@ -626,6 +626,8 @@
         function isKaryawanActiveInPeriode(kary, selectedPeriod) {
             const periode = normalizePeriode(selectedPeriod);
             if (!periode) return false;
+            // PERBAIKAN BACKWARD COMPATIBILITY: normalizePeriode akan memotong "YYYY-MM-DD" menjadi "YYYY-MM"
+            // sehingga data lama ("YYYY-MM") dan data baru ("YYYY-MM-DD") sama-sama valid.
             const start = normalizePeriode(kary.startKerja) || '0000-01';
             const isActiveFlag = kary.isActive !== false;
             const end = isActiveFlag ? '2099-12' : (normalizePeriode(kary.endKerja) || '0000-00');
@@ -689,6 +691,7 @@
             if (metode === 'GROSS_UP') {
                 let rate = getTerRateFull(category, base);
                 let brutoPajakFinal = base;
+                // PERBAIKAN: Loop dibatasi maksimal 30 iterasi untuk mencegah infinite loop
                 for (let i = 0; i < 30; i++) {
                     brutoPajakFinal = rate >= 1 ? base : base / (1 - rate);
                     const nextRate = getTerRateFull(category, brutoPajakFinal);
@@ -915,7 +918,14 @@
                     document.getElementById('kary-nama').value = k.nama || '';
                     document.getElementById('kary-jabatan').value = k.jabatan || '';
                     document.getElementById('kary-npwp').value = k.npwp || '';
-                    document.getElementById('kary-start').value = k.startKerja || '';
+                    
+                    // PERBAIKAN BACKWARD COMPATIBILITY: Jika data lama hanya "YYYY-MM", tambahkan "-01" agar bisa dibaca input type="date"
+                    let displayStartDate = k.startKerja || '';
+                    if (displayStartDate && displayStartDate.length === 7) {
+                        displayStartDate += '-01';
+                    }
+                    document.getElementById('kary-start').value = displayStartDate;
+
                     document.getElementById('kary-is-active').checked = (k.isActive !== false);
                     document.getElementById('kary-end').value = k.endKerja || '';
                     document.getElementById('kary-ptkp').value = k.ptkp || 'TK/0';
@@ -960,16 +970,23 @@
             e.preventDefault();
             const editId = document.getElementById('kary-id-edit').value;
             const isActive = document.getElementById('kary-is-active').checked;
-            const startKerja = normalizePeriode(document.getElementById('kary-start').value);
+            
+            // PERBAIKAN: Simpan format lengkap YYYY-MM-DD dari input type="date"
+            const startKerja = document.getElementById('kary-start').value; 
+            
+            // endKerja tetap pakai normalizePeriode karena inputnya type="month" (YYYY-MM)
             const endKerjaInput = normalizePeriode(document.getElementById('kary-end').value);
-            if (!startKerja) { alert('Tanggal/Bulan mulai kerja wajib diisi.'); return; }
+
+            if (!startKerja) { alert('Tanggal mulai kerja wajib diisi.'); return; }
             if (!isActive && !endKerjaInput) { alert('Untuk karyawan RESIGN, Masa Kerja Akhir wajib diisi.'); return; }
+            
             const data = {
                 nik: document.getElementById('kary-nik').value.trim(),
                 nama: document.getElementById('kary-nama').value.trim(),
                 jabatan: document.getElementById('kary-jabatan').value.trim(),
                 npwp: document.getElementById('kary-npwp').value.trim(),
-                startKerja, isActive,
+                startKerja: startKerja, // Disimpan sebagai YYYY-MM-DD
+                isActive: isActive,
                 endKerja: isActive ? null : endKerjaInput,
                 ptkp: document.getElementById('kary-ptkp').value,
                 pajakMetode: document.getElementById('kary-pajak-metode').value,
@@ -1288,6 +1305,7 @@
                 const ptkp = PTKP_DICT[k.ptkp] || 54000000;
                 if (metode === 'GROSS_UP') {
                     let x = 0;
+                    // PERBAIKAN: Loop dibatasi maksimal 50 iterasi untuk mencegah infinite loop
                     for (let i = 0; i < 50; i++) {
                         const brutoTotal = priorBrutoPajak + last.brutoPajakDasar + x;
                         const biayaJab = Math.min(brutoTotal * 0.05, months * 500000);
