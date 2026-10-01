@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payroll & PPh 21 - PT Prima Anugerah Makmur</title>
+    <title>Payroll & PPh 21 - PT Prima Anugerah Makmur - V 1.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
@@ -138,6 +138,7 @@
                                     <th class="p-3">Gaji Nett</th>
                                     <th class="p-3">Dasar JHT</th>
                                     <th class="p-3">Dasar BPJS Kes</th>
+                                    <th class="p-3">BPJS Kes Tambahan</th>
                                     <th class="p-3">Metode PPh 21</th>
                                 </tr>
                             </thead>
@@ -374,6 +375,7 @@
                             <div class="flex justify-between"><span>BPJS Kes (1%):</span><span id="slip-bpjs-kes">0</span></div>
                             <div class="flex justify-between"><span>BPJS TK JHT (2%):</span><span id="slip-bpjs-jht">0</span></div>
                             <div class="flex justify-between"><span>BPJS TK JP (1%):</span><span id="slip-bpjs-jp">0</span></div>
+                            <div class="flex justify-between" id="slip-bpjs-kes-tambahan-row" style="display:none;"><span>BPJS Kes Tambahan (Pribadi):</span><span id="slip-bpjs-kes-tambahan">0</span></div>
                             <div class="flex justify-between text-red-700 font-semibold" id="slip-pot-pajak-row" style="display:none;"><span>PPh 21 TER:</span><span id="slip-pot-pajak">0</span></div>
                             <div class="flex justify-between font-bold text-red-700 bg-red-50 px-1 py-0.5 rounded" id="slip-kb-row" style="display:none;"><span>Kurang Bayar PPh 21 (KB):</span><span id="slip-kb-val">0</span></div>
                             <div class="flex justify-between"><span>Cicilan Pinjaman:</span><span id="slip-pinjaman">0</span></div>
@@ -532,6 +534,13 @@
                             <input type="text" id="kary-bpjs-kes-base" onkeyup="formatInputRibuan(this)" class="w-full border rounded p-1.5 text-xs" placeholder="Misal: 5.000.000">
                         </div>
                         <div><label class="text-[11px] font-semibold text-slate-600 block">Berlaku Mulai Bulan/Tahun BPJS Kes</label><input type="month" id="kary-bpjs-kes-start" class="w-full border rounded p-1.5 text-xs bg-white" required></div>
+                        
+                        <!-- BARU: BPJS Kesehatan Tambahan Peserta (Pribadi) -->
+                        <div class="pt-2 mt-2 border-t border-teal-200">
+                            <label class="text-[11px] font-bold text-teal-800 block mb-1">BPJS Kes Tambahan Peserta (Ditanggung Pribadi)</label>
+                            <input type="text" id="kary-bpjs-kes-tambahan" onkeyup="formatInputRibuan(this)" class="w-full border border-teal-300 rounded p-1.5 text-xs bg-amber-50" placeholder="Misal: 150.000 (tidak masuk bruto pajak)">
+                            <p class="text-[10px] text-teal-700 mt-1"> Nilai ini TIDAK masuk bruto pajak, hanya mengurangi THP karyawan</p>
+                        </div>
                     </div>
                 </div>
                 <div class="flex justify-end gap-2 pt-2 border-t">
@@ -561,7 +570,7 @@
             KES: { KARYAWAN: 0.01, PERUSAHAAN: 0.04 }
         };
 
-        // PERBAIKAN: Batas atas upah Jaminan Pensiun sesuai regulasi BPJS TK 2026
+        // Batas atas upah Jaminan Pensiun sesuai regulasi BPJS TK 2026
         const MAX_DASAR_BPJS_JP = 11086300;
         const MAX_DASAR_BPJS_KES = 12000000;
 
@@ -626,8 +635,6 @@
         function isKaryawanActiveInPeriode(kary, selectedPeriod) {
             const periode = normalizePeriode(selectedPeriod);
             if (!periode) return false;
-            // PERBAIKAN BACKWARD COMPATIBILITY: normalizePeriode akan memotong "YYYY-MM-DD" menjadi "YYYY-MM"
-            // sehingga data lama ("YYYY-MM") dan data baru ("YYYY-MM-DD") sama-sama valid.
             const start = normalizePeriode(kary.startKerja) || '0000-01';
             const isActiveFlag = kary.isActive !== false;
             const end = isActiveFlag ? '2099-12' : (normalizePeriode(kary.endKerja) || '0000-00');
@@ -691,7 +698,6 @@
             if (metode === 'GROSS_UP') {
                 let rate = getTerRateFull(category, base);
                 let brutoPajakFinal = base;
-                // PERBAIKAN: Loop dibatasi maksimal 30 iterasi untuk mencegah infinite loop
                 for (let i = 0; i < 30; i++) {
                     brutoPajakFinal = rate >= 1 ? base : base / (1 - rate);
                     const nextRate = getTerRateFull(category, brutoPajakFinal);
@@ -787,6 +793,12 @@
             return Math.min(base, MAX_DASAR_BPJS_KES);
         }
 
+        // BARU: Helper untuk mendapatkan BPJS Kes Tambahan Peserta (Pribadi)
+        // Backward compatible: jika field tidak ada, return 0
+        function getBpjsKesTambahan(kary) {
+            return Number(kary.bpjsKesTambahan || 0);
+        }
+
         function getCicilanPinjamanKaryawan(karyId) {
             const pinjaman = globalPinjamanMap[karyId];
             if (!pinjaman) return 0;
@@ -856,6 +868,9 @@
                 const bpjsKesPerusahaan = dasarKes * BPJS_RATE.KES.PERUSAHAAN;
                 const bpjsKenaPajakPerusahaan = (tk.jkk * BPJS_RATE.TK.JKK) + (tk.jkm * BPJS_RATE.TK.JKM) + bpjsKesPerusahaan;
 
+                // BARU: Ambil BPJS Kes Tambahan Peserta (Pribadi)
+                const bpjsKesTambahan = getBpjsKesTambahan(k);
+
                 const metode = k.pajakMetode || 'NET';
                 const calcPajak = calculatePajakKaryawan(k.ptkp, gp + tunj + bpjsKenaPajakPerusahaan, metode);
                 const aData = globalAnnualCalculations[k.id];
@@ -868,7 +883,8 @@
                 const cicilanPinjaman = getCicilanPinjamanKaryawan(k.id);
 
                 const potPphFinal = (metode === 'GROSS_UP') ? pphMasa : (pphMasa > 0 ? pphMasa : 0);
-                const thp = gp + tunj + tunjPph + lb - potGaji - bpjsKesPribadi - bpjsTkPribadi - potPphFinal - cicilanPinjaman;
+                // BARU: THP dikurangi dengan BPJS Kes Tambahan Peserta
+                const thp = gp + tunj + tunjPph + lb - potGaji - bpjsKesPribadi - bpjsTkPribadi - potPphFinal - cicilanPinjaman - bpjsKesTambahan;
 
                 totalTHP += thp;
                 totalPPhDitanggung += pphMasa;
@@ -882,6 +898,7 @@
                     <td class="p-3 font-bold text-emerald-600">Rp ${formatRibuan(thp)}</td>
                     <td class="p-3">Rp ${formatRibuan(tk.jht)}</td>
                     <td class="p-3">Rp ${formatRibuan(dasarKes)}</td>
+                    <td class="p-3">${bpjsKesTambahan > 0 ? `<span class="bg-amber-100 text-amber-800 px-2 py-0.5 rounded text-xs font-semibold">Rp ${formatRibuan(bpjsKesTambahan)}</span>` : '<span class="text-slate-400">-</span>'}</td>
                     <td class="p-3"><span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-semibold">${metodeLabel} (TER ${calcPajak.category})</span></td>
                 </tr>`;
             });
@@ -919,7 +936,6 @@
                     document.getElementById('kary-jabatan').value = k.jabatan || '';
                     document.getElementById('kary-npwp').value = k.npwp || '';
                     
-                    // PERBAIKAN BACKWARD COMPATIBILITY: Jika data lama hanya "YYYY-MM", tambahkan "-01" agar bisa dibaca input type="date"
                     let displayStartDate = k.startKerja || '';
                     if (displayStartDate && displayStartDate.length === 7) {
                         displayStartDate += '-01';
@@ -937,6 +953,8 @@
                     document.getElementById('kary-bpjs-kes-auto').checked = (k.bpjsKesAuto !== false);
                     document.getElementById('kary-bpjs-kes-base').value = formatRibuan(k.bpjsKesBase || 0);
                     document.getElementById('kary-bpjs-kes-start').value = k.bpjsKesStart || currPeriode;
+                    // BARU: Load BPJS Kes Tambahan Peserta (Backward compatible)
+                    document.getElementById('kary-bpjs-kes-tambahan').value = formatRibuan(k.bpjsKesTambahan || 0);
                 }
             } else {
                 document.getElementById('modal-karyawan-title').innerText = "Tambah Master Karyawan Baru";
@@ -957,6 +975,7 @@
                 document.getElementById('kary-bpjs-kes-auto').checked = true;
                 document.getElementById('kary-bpjs-kes-base').value = "";
                 document.getElementById('kary-bpjs-kes-start').value = currPeriode;
+                document.getElementById('kary-bpjs-kes-tambahan').value = "";
             }
             toggleActiveStatusInput(); toggleModalBpjsInputs();
         }
@@ -970,11 +989,7 @@
             e.preventDefault();
             const editId = document.getElementById('kary-id-edit').value;
             const isActive = document.getElementById('kary-is-active').checked;
-            
-            // PERBAIKAN: Simpan format lengkap YYYY-MM-DD dari input type="date"
-            const startKerja = document.getElementById('kary-start').value; 
-            
-            // endKerja tetap pakai normalizePeriode karena inputnya type="month" (YYYY-MM)
+            const startKerja = document.getElementById('kary-start').value;
             const endKerjaInput = normalizePeriode(document.getElementById('kary-end').value);
 
             if (!startKerja) { alert('Tanggal mulai kerja wajib diisi.'); return; }
@@ -985,7 +1000,7 @@
                 nama: document.getElementById('kary-nama').value.trim(),
                 jabatan: document.getElementById('kary-jabatan').value.trim(),
                 npwp: document.getElementById('kary-npwp').value.trim(),
-                startKerja: startKerja, // Disimpan sebagai YYYY-MM-DD
+                startKerja: startKerja,
                 isActive: isActive,
                 endKerja: isActive ? null : endKerjaInput,
                 ptkp: document.getElementById('kary-ptkp').value,
@@ -996,7 +1011,9 @@
                 bpjsTkStart: document.getElementById('kary-bpjs-tk-start').value,
                 bpjsKesAuto: document.getElementById('kary-bpjs-kes-auto').checked,
                 bpjsKesBase: cleanNumber(document.getElementById('kary-bpjs-kes-base').value),
-                bpjsKesStart: document.getElementById('kary-bpjs-kes-start').value
+                bpjsKesStart: document.getElementById('kary-bpjs-kes-start').value,
+                // BARU: Simpan BPJS Kes Tambahan Peserta (Pribadi)
+                bpjsKesTambahan: cleanNumber(document.getElementById('kary-bpjs-kes-tambahan').value)
             };
             try {
                 if (editId) {
@@ -1112,6 +1129,7 @@
                     tl = p.tunjLain || 0; gr = p.gratifikasi || 0; thr = p.thr || 0; pot = p.potGaji || 0;
                 }
 
+                // BARU: Tambah kolom BPJS Kes Tambahan di Excel
                 return {
                     "Nama Karyawan": k.nama,
                     "NIK": k.nik,
@@ -1119,6 +1137,7 @@
                     "Gaji Pokok": gp,
                     "Dasar BPJS TK": tkBase,
                     "Dasar BPJS Kes": kesBase,
+                    "BPJS Kes Tambahan (Pribadi)": getBpjsKesTambahan(k),
                     "Tunjangan Jabatan": tj,
                     "Tunjangan Makan": tm,
                     "Tunjangan Pulsa/KDR": tp,
@@ -1305,7 +1324,6 @@
                 const ptkp = PTKP_DICT[k.ptkp] || 54000000;
                 if (metode === 'GROSS_UP') {
                     let x = 0;
-                    // PERBAIKAN: Loop dibatasi maksimal 50 iterasi untuk mencegah infinite loop
                     for (let i = 0; i < 50; i++) {
                         const brutoTotal = priorBrutoPajak + last.brutoPajakDasar + x;
                         const biayaJab = Math.min(brutoTotal * 0.05, months * 500000);
@@ -1461,7 +1479,7 @@
             }
 
             let sumBrutoAwal = 0, sumBpjsTkPers = 0, sumBpjsKesPers = 0, sumTunjPph = 0;
-            let sumTotalGajiBruto = 0, sumPotPph21 = 0, sumPotBpjsTkKary = 0, sumPotBpjsKesKary = 0, sumTHP = 0;
+            let sumTotalGajiBruto = 0, sumPotPph21 = 0, sumPotBpjsTkKary = 0, sumPotBpjsKesKary = 0, sumBpjsKesTambahan = 0, sumTHP = 0;
             let rowsHTML = '';
             let no = 1;
 
@@ -1489,16 +1507,22 @@
                 const potBpjsTkKary = (tk.jht * BPJS_RATE.TK.JHT_KARYAWAN) + (tk.jp * BPJS_RATE.TK.JP_KARYAWAN);
                 const potBpjsKesKary = dasarKes * BPJS_RATE.KES.KARYAWAN;
                 const lb = (metode === 'NET' && pphMasa < 0) ? Math.abs(pphMasa) : 0;
-                const thp = (totalBrutoAwal + tunjPph + lb) - (potGajiLain + potPph21 + potBpjsTkKary + potBpjsKesKary);
+                
+                // BARU: Ambil BPJS Kes Tambahan Peserta
+                const bpjsKesTambahan = getBpjsKesTambahan(k);
+                
+                // BARU: THP dikurangi BPJS Kes Tambahan
+                const thp = (totalBrutoAwal + tunjPph + lb) - (potGajiLain + potPph21 + potBpjsTkKary + potBpjsKesKary + bpjsKesTambahan);
 
                 sumBrutoAwal += totalBrutoAwal; sumBpjsTkPers += bpjsTkPers; sumBpjsKesPers += bpjsKesPers; sumTunjPph += tunjPph;
-                sumTotalGajiBruto += totalGajiBrutoAkhir; sumPotPph21 += potPph21; sumPotBpjsTkKary += potBpjsTkKary; sumPotBpjsKesKary += potBpjsKesKary; sumTHP += thp;
+                sumTotalGajiBruto += totalGajiBrutoAkhir; sumPotPph21 += potPph21; sumPotBpjsTkKary += potBpjsTkKary; sumPotBpjsKesKary += potBpjsKesKary; sumBpjsKesTambahan += bpjsKesTambahan; sumTHP += thp;
 
                 rowsHTML += `<tr>
                     <td>${no++}</td><td>${k.nik || '-'}</td><td class="left font-bold">${k.nama}</td>
                     <td>Rp ${formatRibuan(totalBrutoAwal)}</td><td>Rp ${formatRibuan(bpjsTkPers)}</td><td>Rp ${formatRibuan(bpjsKesPers)}</td>
                     <td>Rp ${formatRibuan(tunjPph)}</td><td class="font-bold">Rp ${formatRibuan(totalGajiBrutoAkhir)}</td>
                     <td>Rp ${formatRibuan(potPph21)}</td><td>Rp ${formatRibuan(potBpjsTkKary)}</td><td>Rp ${formatRibuan(potBpjsKesKary)}</td>
+                    <td>Rp ${formatRibuan(bpjsKesTambahan)}</td>
                     <td class="font-bold text-emerald">Rp ${formatRibuan(thp)}</td>
                 </tr>`;
             });
@@ -1506,20 +1530,21 @@
             const printHTML = `<!DOCTYPE html><html><head><title>Rekapitulasi Penggajian - ${periodeUpper}</title>
                 <style>@page { size: A4 landscape; margin: 6mm; } body { font-family: Arial, sans-serif; margin: 10px; color: #000; }
                 .header { text-align: center; margin-bottom: 15px; } .header h1 { margin: 0; font-size: 16px; text-transform: uppercase; }
-                .header h2 { margin: 3px 0 0 0; font-size: 12px; font-weight: normal; } table { width: 100%; border-collapse: collapse; font-size: 8px; }
-                th, td { border: 1px solid #000; padding: 5px 3px; text-align: center; } th { background-color: #f1f5f9; font-weight: bold; }
+                .header h2 { margin: 3px 0 0 0; font-size: 12px; font-weight: normal; } table { width: 100%; border-collapse: collapse; font-size: 7px; }
+                th, td { border: 1px solid #000; padding: 4px 2px; text-align: center; } th { background-color: #f1f5f9; font-weight: bold; }
                 .left { text-align: left; } .font-bold { font-weight: bold; } .text-emerald { color: #047857; } tfoot tr { background-color: #e2e8f0; font-weight: bold; }</style></head><body>
                 <div class="header"><h1>PT PRIMA ANUGERAH MAKMUR</h1><h2>REKAPITULASI PENGGAJIAN & PPH 21 - PERIODE ${periodeUpper}</h2>
                 <p style="margin:2px 0 0 0; font-size:10px;">NPWP Pemotong: ${formatNPWPDisplay(globalDirektur.npwpPemotong)}</p></div>
                 <table><thead><tr><th>No.</th><th>NIK</th><th>Nama Karyawan</th><th>Total Bruto (sblm BPJS Pers.)</th><th>BPJS TK (Perusahaan)</th>
                 <th>BPJS Kes (Perusahaan)</th><th>Tunj PPh (Net/Gross-Up)</th><th>Total Gaji Bruto Akhir</th><th>Pot. PPh 21</th>
-                <th>Pot. BPJS TK (Karyawan)</th><th>Pot. BPJS Kes (Karyawan)</th><th>THP (Take Home Pay)</th></tr></thead><tbody>${rowsHTML}</tbody>
+                <th>Pot. BPJS TK (Karyawan)</th><th>Pot. BPJS Kes (Karyawan)</th><th>BPJS Kes Tambahan (Pribadi)</th><th>THP (Take Home Pay)</th></tr></thead><tbody>${rowsHTML}</tbody>
                 <tfoot><tr><td colspan="3" class="font-bold">TOTAL</td><td>Rp ${formatRibuan(sumBrutoAwal)}</td><td>Rp ${formatRibuan(sumBpjsTkPers)}</td>
                 <td>Rp ${formatRibuan(sumBpjsKesPers)}</td><td>Rp ${formatRibuan(sumTunjPph)}</td><td>Rp ${formatRibuan(sumTotalGajiBruto)}</td>
                 <td>Rp ${formatRibuan(sumPotPph21)}</td><td>Rp ${formatRibuan(sumPotBpjsTkKary)}</td><td>Rp ${formatRibuan(sumPotBpjsKesKary)}</td>
+                <td>Rp ${formatRibuan(sumBpjsKesTambahan)}</td>
                 <td>Rp ${formatRibuan(sumTHP)}</td></tr></tfoot></table></body></html>`;
 
-            const printWin = window.open('', '_blank', 'width=1100,height=700');
+            const printWin = window.open('', '_blank', 'width=1200,height=700');
             printWin.document.open(); printWin.document.write(printHTML); printWin.document.close();
             printWin.onload = function() { printWin.focus(); printWin.print(); printWin.close(); };
         }
@@ -1636,9 +1661,12 @@
             }
 
             const cicilanPinjaman = getCicilanPinjamanKaryawan(k.id);
+            // BARU: Ambil BPJS Kes Tambahan Peserta
+            const bpjsKesTambahan = getBpjsKesTambahan(k);
 
             const totalPenerimaan = gp + tunj + gratifikasi + thr + tunjPajak + lbVal;
-            const totalPotongan = potGaji + totalBpjsPribadi + potPajak + kbVal + cicilanPinjaman;
+            // BARU: THP dikurangi BPJS Kes Tambahan
+            const totalPotongan = potGaji + totalBpjsPribadi + potPajak + kbVal + cicilanPinjaman + bpjsKesTambahan;
             const thp = totalPenerimaan - totalPotongan;
 
             document.getElementById('slip-nama').innerText = k.nama;
@@ -1659,6 +1687,10 @@
             document.getElementById('slip-bpjs-kes').innerText = `Rp ${formatRibuan(bpjsKes)}`;
             document.getElementById('slip-bpjs-jht').innerText = `Rp ${formatRibuan(bpjsJht)}`;
             document.getElementById('slip-bpjs-jp').innerText = `Rp ${formatRibuan(bpjsJp)}`;
+
+            // BARU: Tampilkan BPJS Kes Tambahan Peserta di slip gaji
+            document.getElementById('slip-bpjs-kes-tambahan-row').style.display = (bpjsKesTambahan > 0) ? 'flex' : 'none';
+            document.getElementById('slip-bpjs-kes-tambahan').innerText = `Rp ${formatRibuan(bpjsKesTambahan)}`;
 
             document.getElementById('slip-pot-pajak-row').style.display = (potPajak > 0) ? 'flex' : 'none';
             document.getElementById('slip-pot-pajak').innerText = `Rp ${formatRibuan(potPajak)}`;
