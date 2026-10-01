@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payroll & PPh 21 - PT Prima Anugerah Makmur - V 1.0</title>
+    <title>Payroll & PPh 21 v1.1.0 - PT Prima Anugerah Makmur</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
@@ -20,6 +20,9 @@
         .overflow-x-auto { max-height: 70vh; overflow: auto; }
         table thead { position: sticky; top: 0; z-index: 20; box-shadow: 0 2px 4px rgba(15, 23, 42, 0.08); }
         table thead th { position: sticky; top: 0; background-clip: padding-box; }
+
+        .bpjs-tambahan-row { transition: all 0.2s ease; }
+        .bpjs-tambahan-row:hover { background-color: #f0fdf4; }
 
         @media print {
             body * { visibility: hidden; }
@@ -39,7 +42,7 @@
         <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md border border-slate-200">
             <div class="text-center mb-6">
                 <h1 class="text-xl font-bold text-slate-900">PT PRIMA ANUGERAH MAKMUR</h1>
-                <p class="text-xs text-slate-500 mt-1">Sistem Input Payroll & PPh 21 TER / Pasal 17</p>
+                <p class="text-xs text-slate-500 mt-1">Sistem Input Payroll & PPh 21 TER / Pasal 17 - v1.1.0</p>
             </div>
             <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
                 <div>
@@ -60,7 +63,7 @@
         <header class="bg-slate-900 text-white shadow-md no-print">
             <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
                 <div>
-                    <h2 class="text-lg font-bold tracking-wide">PT PRIMA ANUGERAH MAKMUR</h2>
+                    <h2 class="text-lg font-bold tracking-wide">PT PRIMA ANUGERAH MAKMUR <span class="text-xs font-normal text-slate-400 ml-2">v1.1.0</span></h2>
                     <p class="text-xs text-slate-400">Pengelola Payroll & Tax System (NPWP Pemotong: 02.101.399.5-212.000)</p>
                 </div>
                 <div class="flex items-center gap-4">
@@ -93,7 +96,7 @@
                     </select>
                     <input type="month" id="filter-month" onchange="loadGlobalData(); syncDefaultWithholdingDate();" class="border rounded px-3 py-1.5 text-sm bg-slate-50 font-bold text-blue-600">
                     <label class="text-xs font-bold text-slate-500 uppercase">Tanggal Pemotongan:</label>
-                    <input type="date" id="filter-withholding-date" class="border rounded px-3 py-1.5 text-sm bg-amber-50 font-bold text-amber-700" title="Isi tanggal pemotongan aktual untuk BPMP Coretax dan Tanggal Slip Gaji">
+                    <input type="date" id="filter-withholding-date" class="border rounded px-3 py-1.5 text-sm bg-amber-50 font-bold text-amber-700">
                 </div>
                 <div class="flex items-center gap-2">
                     <button onclick="printRekapPDF()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-4 py-2 rounded-lg font-bold shadow transition flex items-center gap-1.5">
@@ -123,7 +126,7 @@
                         <p id="dash-total-bpjs-tk" class="text-xl font-bold text-indigo-600 mt-1">Rp 0</p>
                     </div>
                     <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                        <p class="text-xs font-semibold text-slate-500 uppercase">Total BPJS Kes (Pers + Kary)</p>
+                        <p class="text-xs font-semibold text-slate-500 uppercase">Total BPJS Kes (Pers + Kary + Tambahan)</p>
                         <p id="dash-total-bpjs-kes" class="text-xl font-bold text-teal-600 mt-1">Rp 0</p>
                     </div>
                 </div>
@@ -535,11 +538,20 @@
                         </div>
                         <div><label class="text-[11px] font-semibold text-slate-600 block">Berlaku Mulai Bulan/Tahun BPJS Kes</label><input type="month" id="kary-bpjs-kes-start" class="w-full border rounded p-1.5 text-xs bg-white" required></div>
                         
-                        <!-- BARU: BPJS Kesehatan Tambahan Peserta (Pribadi) -->
+                        <!-- BARU v1.1.0: BPJS Kesehatan Tambahan Peserta Multi-Entry -->
                         <div class="pt-2 mt-2 border-t border-teal-200">
-                            <label class="text-[11px] font-bold text-teal-800 block mb-1">BPJS Kes Tambahan Peserta (Ditanggung Pribadi)</label>
-                            <input type="text" id="kary-bpjs-kes-tambahan" onkeyup="formatInputRibuan(this)" class="w-full border border-teal-300 rounded p-1.5 text-xs bg-amber-50" placeholder="Misal: 150.000 (tidak masuk bruto pajak)">
-                            <p class="text-[10px] text-teal-700 mt-1"> Nilai ini TIDAK masuk bruto pajak, hanya mengurangi THP karyawan</p>
+                            <div class="flex items-center justify-between mb-2">
+                                <label class="text-[11px] font-bold text-teal-800">BPJS Kes Tambahan Peserta (Ditanggung Pribadi)</label>
+                                <button type="button" onclick="addBpjsKesTambahanRow()" id="btn-add-bpjs-kes" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-2 py-1 rounded font-bold flex items-center gap-1">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"></path></svg>
+                                    Tambah
+                                </button>
+                            </div>
+                            <p class="text-[10px] text-teal-700 mb-2">Nilai ini TIDAK masuk bruto pajak, hanya mengurangi THP. Maksimal 5 peserta tambahan.</p>
+                            <div id="bpjs-kes-tambahan-container" class="space-y-2">
+                                <!-- Baris tambahan peserta akan di-render di sini secara dinamis -->
+                            </div>
+                            <p id="bpjs-kes-tambahan-warning" class="text-[10px] text-red-600 mt-1 hidden">Maksimal 5 peserta tambahan!</p>
                         </div>
                     </div>
                 </div>
@@ -552,6 +564,12 @@
     </div>
 
     <script>
+        // ============================================
+        // VERSI APLIKASI: v1.1.0
+        // Perubahan: BPJS Kes Tambahan Multi-Entry
+        // ============================================
+        const APP_VERSION = '1.1.0';
+
         const firebaseConfig = {
             apiKey: "AIzaSyAn0GEPGWMEmDslzabkHR2DAnDFctHRjDw",
             authDomain: "payroll-multisarana.firebaseapp.com",
@@ -570,9 +588,9 @@
             KES: { KARYAWAN: 0.01, PERUSAHAAN: 0.04 }
         };
 
-        // Batas atas upah Jaminan Pensiun sesuai regulasi BPJS TK 2026
         const MAX_DASAR_BPJS_JP = 11086300;
         const MAX_DASAR_BPJS_KES = 12000000;
+        const MAX_BPJS_KES_TAMBAHAN = 5; // v1.1.0: Maksimal 5 peserta tambahan
 
         const PTKP_DICT = {
             'TK/0': 54000000, 'TK/1': 58500000, 'TK/2': 63000000, 'TK/3': 67500000,
@@ -586,6 +604,38 @@
         let globalAnnualCalculations = {};
         let globalPinjamanMap = {};
         let globalDirektur = { nama: "ABDUL HALEK", kota: "Pekanbaru", npwpPemotong: "0210139952122000", nitkuPemotong: "0210139952122000000000" };
+
+        // ============================================
+        // v1.1.0: Helper untuk BPJS Kes Tambahan Multi-Entry
+        // ============================================
+        
+        // Konversi data lama (single value) ke format array baru
+        function normalizeBpjsKesTambahanList(kary) {
+            // Jika sudah format array baru
+            if (Array.isArray(kary.bpjsKesTambahanList)) {
+                return kary.bpjsKesTambahanList.filter(item => item && item.nominal > 0);
+            }
+            // Backward compatible: data lama (single number)
+            if (kary.bpjsKesTambahan && Number(kary.bpjsKesTambahan) > 0) {
+                return [{ nominal: Number(kary.bpjsKesTambahan), mulai: kary.bpjsKesStart || getSelectedPeriode() }];
+            }
+            return [];
+        }
+
+        // Hitung total BPJS Kes Tambahan yang AKTIF di periode tertentu
+        function getBpjsKesTambahanTotal(kary, periode) {
+            const list = normalizeBpjsKesTambahanList(kary);
+            const periodeNorm = normalizePeriode(periode);
+            let total = 0;
+            list.forEach(item => {
+                const mulaiNorm = normalizePeriode(item.mulai);
+                // Aktif jika periode >= mulai
+                if (mulaiNorm && periodeNorm >= mulaiNorm) {
+                    total += Number(item.nominal || 0);
+                }
+            });
+            return total;
+        }
 
         function populateYearDropdown() {
             const yearSelect = document.getElementById('pph-akhir-year');
@@ -793,12 +843,6 @@
             return Math.min(base, MAX_DASAR_BPJS_KES);
         }
 
-        // BARU: Helper untuk mendapatkan BPJS Kes Tambahan Peserta (Pribadi)
-        // Backward compatible: jika field tidak ada, return 0
-        function getBpjsKesTambahan(kary) {
-            return Number(kary.bpjsKesTambahan || 0);
-        }
-
         function getCicilanPinjamanKaryawan(karyId) {
             const pinjaman = globalPinjamanMap[karyId];
             if (!pinjaman) return 0;
@@ -847,6 +891,9 @@
             renderKaryawanTable(); renderGajiTable(); renderPinjamanTable(); await renderLaporPPhTable(); renderDashboard(); populateDropdowns();
         }
 
+        // ============================================
+        // v1.1.0: DASHBOARD dengan BPJS Kes Tambahan
+        // ============================================
         function renderDashboard() {
             const tbody = document.getElementById('table-dashboard-body');
             tbody.innerHTML = '';
@@ -868,8 +915,8 @@
                 const bpjsKesPerusahaan = dasarKes * BPJS_RATE.KES.PERUSAHAAN;
                 const bpjsKenaPajakPerusahaan = (tk.jkk * BPJS_RATE.TK.JKK) + (tk.jkm * BPJS_RATE.TK.JKM) + bpjsKesPerusahaan;
 
-                // BARU: Ambil BPJS Kes Tambahan Peserta (Pribadi)
-                const bpjsKesTambahan = getBpjsKesTambahan(k);
+                // v1.1.0: Hitung BPJS Kes Tambahan yang AKTIF di periode ini
+                const bpjsKesTambahan = getBpjsKesTambahanTotal(k, periode);
 
                 const metode = k.pajakMetode || 'NET';
                 const calcPajak = calculatePajakKaryawan(k.ptkp, gp + tunj + bpjsKenaPajakPerusahaan, metode);
@@ -883,13 +930,14 @@
                 const cicilanPinjaman = getCicilanPinjamanKaryawan(k.id);
 
                 const potPphFinal = (metode === 'GROSS_UP') ? pphMasa : (pphMasa > 0 ? pphMasa : 0);
-                // BARU: THP dikurangi dengan BPJS Kes Tambahan Peserta
+                // v1.1.0: THP dikurangi dengan BPJS Kes Tambahan yang AKTIF di periode
                 const thp = gp + tunj + tunjPph + lb - potGaji - bpjsKesPribadi - bpjsTkPribadi - potPphFinal - cicilanPinjaman - bpjsKesTambahan;
 
                 totalTHP += thp;
                 totalPPhDitanggung += pphMasa;
                 totalSetorBpjsTK += bpjsTkPerusahaan + bpjsTkPribadi;
-                totalSetorBpjsKes += bpjsKesPerusahaan + bpjsKesPribadi;
+                // v1.1.0: Total BPJS Kes sekarang termasuk Tambahan Peserta
+                totalSetorBpjsKes += bpjsKesPerusahaan + bpjsKesPribadi + bpjsKesTambahan;
 
                 const metodeLabel = calcPajak.metode === 'GROSS UP' ? 'Gross Up' : 'Net (Auto)';
                 tbody.innerHTML += `<tr class="border-b bg-white hover:bg-slate-50">
@@ -922,10 +970,88 @@
             document.getElementById('container-modal-kes-base').style.display = document.getElementById('kary-bpjs-kes-auto').checked ? 'none' : 'block';
         }
 
+        // ============================================
+        // v1.1.0: UI Dinamis untuk BPJS Kes Tambahan Multi-Entry
+        // ============================================
+        function addBpjsKesTambahanRow(nominal = 0, mulai = '') {
+            const container = document.getElementById('bpjs-kes-tambahan-container');
+            const currentRows = container.querySelectorAll('.bpjs-tambahan-row');
+            
+            if (currentRows.length >= MAX_BPJS_KES_TAMBAHAN) {
+                document.getElementById('bpjs-kes-tambahan-warning').classList.remove('hidden');
+                setTimeout(() => document.getElementById('bpjs-kes-tambahan-warning').classList.add('hidden'), 2000);
+                return;
+            }
+
+            const rowIndex = currentRows.length;
+            const rowId = `bpjs-tambahan-${rowIndex}`;
+            
+            const row = document.createElement('div');
+            row.className = 'bpjs-tambahan-row flex items-center gap-2 p-2 bg-white border border-teal-200 rounded';
+            row.id = rowId;
+            row.innerHTML = `
+                <div class="flex-1">
+                    <label class="text-[10px] font-semibold text-slate-600 block">Nominal (Rp)</label>
+                    <input type="text" class="bpjs-tambahan-nominal w-full border rounded p-1 text-xs" onkeyup="formatInputRibuan(this)" value="${nominal > 0 ? formatRibuan(nominal) : ''}" placeholder="Misal: 150.000">
+                </div>
+                <div class="flex-1">
+                    <label class="text-[10px] font-semibold text-slate-600 block">Berlaku Mulai</label>
+                    <input type="month" class="bpjs-tambahan-mulai w-full border rounded p-1 text-xs" value="${mulai}" required>
+                </div>
+                <div class="flex items-end">
+                    <button type="button" onclick="removeBpjsKesTambahanRow('${rowId}')" class="bg-red-500 hover:bg-red-600 text-white text-xs px-2 py-1 rounded font-bold" title="Hapus">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+            `;
+            container.appendChild(row);
+            updateAddButtonState();
+        }
+
+        function removeBpjsKesTambahanRow(rowId) {
+            const row = document.getElementById(rowId);
+            if (row) {
+                row.remove();
+                updateAddButtonState();
+            }
+        }
+
+        function updateAddButtonState() {
+            const container = document.getElementById('bpjs-kes-tambahan-container');
+            const currentRows = container.querySelectorAll('.bpjs-tambahan-row');
+            const btnAdd = document.getElementById('btn-add-bpjs-kes');
+            if (currentRows.length >= MAX_BPJS_KES_TAMBAHAN) {
+                btnAdd.disabled = true;
+                btnAdd.classList.add('opacity-50', 'cursor-not-allowed');
+            } else {
+                btnAdd.disabled = false;
+                btnAdd.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        }
+
+        // Ambil data BPJS Kes Tambahan dari form (array)
+        function getBpjsKesTambahanFromForm() {
+            const container = document.getElementById('bpjs-kes-tambahan-container');
+            const rows = container.querySelectorAll('.bpjs-tambahan-row');
+            const result = [];
+            rows.forEach(row => {
+                const nominal = cleanNumber(row.querySelector('.bpjs-tambahan-nominal').value);
+                const mulai = row.querySelector('.bpjs-tambahan-mulai').value;
+                if (nominal > 0 && mulai) {
+                    result.push({ nominal: nominal, mulai: mulai });
+                }
+            });
+            return result;
+        }
+
         function openModalKaryawan(editId = null) {
             document.getElementById('modal-karyawan').classList.remove('hidden');
             document.getElementById('modal-karyawan').classList.add('flex');
             const currPeriode = getSelectedPeriode();
+            
+            // Reset container BPJS Kes Tambahan
+            document.getElementById('bpjs-kes-tambahan-container').innerHTML = '';
+            
             if (editId) {
                 const k = globalKaryawan.find(item => item.id === editId);
                 if (k) {
@@ -953,8 +1079,17 @@
                     document.getElementById('kary-bpjs-kes-auto').checked = (k.bpjsKesAuto !== false);
                     document.getElementById('kary-bpjs-kes-base').value = formatRibuan(k.bpjsKesBase || 0);
                     document.getElementById('kary-bpjs-kes-start').value = k.bpjsKesStart || currPeriode;
-                    // BARU: Load BPJS Kes Tambahan Peserta (Backward compatible)
-                    document.getElementById('kary-bpjs-kes-tambahan').value = formatRibuan(k.bpjsKesTambahan || 0);
+                    
+                    // v1.1.0: Load BPJS Kes Tambahan Multi-Entry
+                    const tambahanList = normalizeBpjsKesTambahanList(k);
+                    if (tambahanList.length === 0) {
+                        // Tambah 1 baris kosong default
+                        addBpjsKesTambahanRow(0, currPeriode);
+                    } else {
+                        tambahanList.forEach(item => {
+                            addBpjsKesTambahanRow(item.nominal, item.mulai);
+                        });
+                    }
                 }
             } else {
                 document.getElementById('modal-karyawan-title').innerText = "Tambah Master Karyawan Baru";
@@ -975,7 +1110,8 @@
                 document.getElementById('kary-bpjs-kes-auto').checked = true;
                 document.getElementById('kary-bpjs-kes-base').value = "";
                 document.getElementById('kary-bpjs-kes-start').value = currPeriode;
-                document.getElementById('kary-bpjs-kes-tambahan').value = "";
+                // v1.1.0: Default 1 baris kosong
+                addBpjsKesTambahanRow(0, currPeriode);
             }
             toggleActiveStatusInput(); toggleModalBpjsInputs();
         }
@@ -1012,8 +1148,8 @@
                 bpjsKesAuto: document.getElementById('kary-bpjs-kes-auto').checked,
                 bpjsKesBase: cleanNumber(document.getElementById('kary-bpjs-kes-base').value),
                 bpjsKesStart: document.getElementById('kary-bpjs-kes-start').value,
-                // BARU: Simpan BPJS Kes Tambahan Peserta (Pribadi)
-                bpjsKesTambahan: cleanNumber(document.getElementById('kary-bpjs-kes-tambahan').value)
+                // v1.1.0: Simpan BPJS Kes Tambahan sebagai array
+                bpjsKesTambahanList: getBpjsKesTambahanFromForm()
             };
             try {
                 if (editId) {
@@ -1129,7 +1265,9 @@
                     tl = p.tunjLain || 0; gr = p.gratifikasi || 0; thr = p.thr || 0; pot = p.potGaji || 0;
                 }
 
-                // BARU: Tambah kolom BPJS Kes Tambahan di Excel
+                // v1.1.0: Total BPJS Kes Tambahan yang aktif di periode
+                const bpjsKesTambahan = getBpjsKesTambahanTotal(k, periode);
+
                 return {
                     "Nama Karyawan": k.nama,
                     "NIK": k.nik,
@@ -1137,7 +1275,7 @@
                     "Gaji Pokok": gp,
                     "Dasar BPJS TK": tkBase,
                     "Dasar BPJS Kes": kesBase,
-                    "BPJS Kes Tambahan (Pribadi)": getBpjsKesTambahan(k),
+                    "BPJS Kes Tambahan (Pribadi)": bpjsKesTambahan,
                     "Tunjangan Jabatan": tj,
                     "Tunjangan Makan": tm,
                     "Tunjangan Pulsa/KDR": tp,
@@ -1470,6 +1608,7 @@
             downloadBlob(xml, `Rekap_PPh21_Tahunan_PT_PAM_${selectedYear}.xml`, 'application/xml;charset=UTF-8');
         }
 
+        // v1.1.0: Print Rekap PDF dengan BPJS Kes Tambahan
         async function printRekapPDF() {
             const periode = getSelectedPeriode();
             const periodeUpper = periode.toUpperCase();
@@ -1508,10 +1647,10 @@
                 const potBpjsKesKary = dasarKes * BPJS_RATE.KES.KARYAWAN;
                 const lb = (metode === 'NET' && pphMasa < 0) ? Math.abs(pphMasa) : 0;
                 
-                // BARU: Ambil BPJS Kes Tambahan Peserta
-                const bpjsKesTambahan = getBpjsKesTambahan(k);
+                // v1.1.0: BPJS Kes Tambahan yang aktif di periode
+                const bpjsKesTambahan = getBpjsKesTambahanTotal(k, periode);
                 
-                // BARU: THP dikurangi BPJS Kes Tambahan
+                // v1.1.0: THP dikurangi BPJS Kes Tambahan
                 const thp = (totalBrutoAwal + tunjPph + lb) - (potGajiLain + potPph21 + potBpjsTkKary + potBpjsKesKary + bpjsKesTambahan);
 
                 sumBrutoAwal += totalBrutoAwal; sumBpjsTkPers += bpjsTkPers; sumBpjsKesPers += bpjsKesPers; sumTunjPph += tunjPph;
@@ -1605,6 +1744,7 @@
             });
         }
 
+        // v1.1.0: Slip Gaji dengan BPJS Kes Tambahan Multi-Entry
         async function renderSlipGaji() {
             const id = document.getElementById('slip-select-karyawan').value;
             const k = globalKaryawan.find(item => item.id === id);
@@ -1661,11 +1801,11 @@
             }
 
             const cicilanPinjaman = getCicilanPinjamanKaryawan(k.id);
-            // BARU: Ambil BPJS Kes Tambahan Peserta
-            const bpjsKesTambahan = getBpjsKesTambahan(k);
+            // v1.1.0: Total BPJS Kes Tambahan yang AKTIF di periode
+            const bpjsKesTambahan = getBpjsKesTambahanTotal(k, periode);
 
             const totalPenerimaan = gp + tunj + gratifikasi + thr + tunjPajak + lbVal;
-            // BARU: THP dikurangi BPJS Kes Tambahan
+            // v1.1.0: THP dikurangi BPJS Kes Tambahan yang aktif
             const totalPotongan = potGaji + totalBpjsPribadi + potPajak + kbVal + cicilanPinjaman + bpjsKesTambahan;
             const thp = totalPenerimaan - totalPotongan;
 
@@ -1688,7 +1828,7 @@
             document.getElementById('slip-bpjs-jht').innerText = `Rp ${formatRibuan(bpjsJht)}`;
             document.getElementById('slip-bpjs-jp').innerText = `Rp ${formatRibuan(bpjsJp)}`;
 
-            // BARU: Tampilkan BPJS Kes Tambahan Peserta di slip gaji
+            // v1.1.0: Tampilkan BPJS Kes Tambahan di slip
             document.getElementById('slip-bpjs-kes-tambahan-row').style.display = (bpjsKesTambahan > 0) ? 'flex' : 'none';
             document.getElementById('slip-bpjs-kes-tambahan').innerText = `Rp ${formatRibuan(bpjsKesTambahan)}`;
 
