@@ -561,7 +561,8 @@
             KES: { KARYAWAN: 0.01, PERUSAHAAN: 0.04 }
         };
 
-        const MAX_DASAR_BPJS_JP = 10547400;
+        // PERBAIKAN: Batas atas upah Jaminan Pensiun sesuai regulasi BPJS TK 2026
+        const MAX_DASAR_BPJS_JP = 11086300;
         const MAX_DASAR_BPJS_KES = 12000000;
 
         const PTKP_DICT = {
@@ -574,7 +575,7 @@
         let globalKaryawan = [];
         let globalPayrollMap = {};
         let globalAnnualCalculations = {};
-        let globalPinjamanMap = {}; // Cache cicilan pinjaman per karyawan
+        let globalPinjamanMap = {};
         let globalDirektur = { nama: "ABDUL HALEK", kota: "Pekanbaru", npwpPemotong: "0210139952122000", nitkuPemotong: "0210139952122000000000" };
 
         function populateYearDropdown() {
@@ -783,11 +784,9 @@
             return Math.min(base, MAX_DASAR_BPJS_KES);
         }
 
-        // PERBAIKAN: Helper untuk mendapatkan cicilan pinjaman karyawan
         function getCicilanPinjamanKaryawan(karyId) {
             const pinjaman = globalPinjamanMap[karyId];
             if (!pinjaman) return 0;
-            // Hanya hitung cicilan jika masih ada sisa pinjaman
             return pinjaman.sisa > 0 ? (pinjaman.cicilan || 0) : 0;
         }
 
@@ -803,7 +802,6 @@
                 if (pSnap.exists) globalPayrollMap[k.id] = pSnap.data();
             }));
             
-            // PERBAIKAN: Load data pinjaman ke cache global
             try {
                 const pinjamSnap = await db.collection('pinjaman').get();
                 globalPinjamanMap = {};
@@ -834,7 +832,6 @@
             renderKaryawanTable(); renderGajiTable(); renderPinjamanTable(); await renderLaporPPhTable(); renderDashboard(); populateDropdowns();
         }
 
-        // PERBAIKAN: Fix double count LB pada THP
         function renderDashboard() {
             const tbody = document.getElementById('table-dashboard-body');
             tbody.innerHTML = '';
@@ -867,7 +864,6 @@
                 const potGaji = p.potGaji || 0;
                 const cicilanPinjaman = getCicilanPinjamanKaryawan(k.id);
 
-                // PERBAIKAN: Potongan PPh hanya jika positif, LB ditangani terpisah
                 const potPphFinal = (metode === 'GROSS_UP') ? pphMasa : (pphMasa > 0 ? pphMasa : 0);
                 const thp = gp + tunj + tunjPph + lb - potGaji - bpjsKesPribadi - bpjsTkPribadi - potPphFinal - cicilanPinjaman;
 
@@ -1065,7 +1061,6 @@
             });
         }
 
-        // PERBAIKAN: Export Excel mengambil data dari input fields (data terbaru yang belum disimpan)
         function exportGajiToExcel() {
             const periode = getSelectedPeriode();
             const activeKaryawan = globalKaryawan.filter(k => isKaryawanActiveInPeriode(k, periode));
@@ -1080,7 +1075,6 @@
                 let gp, tkBase, kesBase, tj, tm, tp, tl, gr, thr, pot;
 
                 if (elGp) {
-                    // Ambil dari input fields (data terbaru)
                     gp = cleanNumber(elGp.value);
                     tkBase = cleanNumber(document.getElementById(`bpjs-tk-base-${k.id}`).value);
                     kesBase = cleanNumber(document.getElementById(`bpjs-kes-base-${k.id}`).value);
@@ -1092,7 +1086,6 @@
                     thr = cleanNumber(document.getElementById(`thr-${k.id}`).value);
                     pot = cleanNumber(document.getElementById(`pot-${k.id}`).value);
                 } else {
-                    // Fallback ke data tersimpan
                     const p = getPayrollData(k.id);
                     const tkComp = getBpjsTkComponents(k, periode);
                     gp = p.gajiPokok || 0;
@@ -1441,7 +1434,6 @@
             downloadBlob(xml, `Rekap_PPh21_Tahunan_PT_PAM_${selectedYear}.xml`, 'application/xml;charset=UTF-8');
         }
 
-        // PERBAIKAN: Print Rekap PDF - Fix periode dan handle LB
         async function printRekapPDF() {
             const periode = getSelectedPeriode();
             const periodeUpper = periode.toUpperCase();
@@ -1474,12 +1466,10 @@
                 const pphMasa = isLastTaxMonth ? Number(aData.pph21MasaTerakhir || 0) : calcPajak.pph21;
 
                 const tunjPph = (metode === 'GROSS_UP') ? pphMasa : 0;
-                // PERBAIKAN: potPph21 hanya nilai positif
                 const potPph21 = pphMasa > 0 ? pphMasa : 0;
                 const totalGajiBrutoAkhir = totalBrutoAwal + bpjsTkPers + bpjsKesPers + tunjPph;
                 const potBpjsTkKary = (tk.jht * BPJS_RATE.TK.JHT_KARYAWAN) + (tk.jp * BPJS_RATE.TK.JP_KARYAWAN);
                 const potBpjsKesKary = dasarKes * BPJS_RATE.KES.KARYAWAN;
-                // PERBAIKAN: LB menambah THP, bukan potPph21 negatif
                 const lb = (metode === 'NET' && pphMasa < 0) ? Math.abs(pphMasa) : 0;
                 const thp = (totalBrutoAwal + tunjPph + lb) - (potGajiLain + potPph21 + potBpjsTkKary + potBpjsKesKary);
 
@@ -1525,7 +1515,7 @@
             await db.collection('pinjaman').add({ karyawanId: idKary, nama: k ? k.nama : '', plafon: plafon, cicilan: cicilan, sisa: plafon });
             await logAudit('TAMBAH_PINJAMAN', `Input pinjaman untuk ${k ? k.nama : ''} sebesar Rp ${formatRibuan(plafon)}`);
             document.getElementById('form-pinjaman').reset(); 
-            await loadGlobalData(); // Reload untuk update cache pinjaman
+            await loadGlobalData();
         }
 
         async function deletePinjaman(id) {
@@ -1572,7 +1562,6 @@
             });
         }
 
-        // PERBAIKAN: Slip Gaji - Cicilan pinjaman, header periode, tanggal tanda tangan
         async function renderSlipGaji() {
             const id = document.getElementById('slip-select-karyawan').value;
             const k = globalKaryawan.find(item => item.id === id);
@@ -1628,14 +1617,12 @@
                 tunjPajak = nilaiPph;
             }
 
-            // PERBAIKAN: Ambil cicilan pinjaman dari cache global
             const cicilanPinjaman = getCicilanPinjamanKaryawan(k.id);
 
             const totalPenerimaan = gp + tunj + gratifikasi + thr + tunjPajak + lbVal;
             const totalPotongan = potGaji + totalBpjsPribadi + potPajak + kbVal + cicilanPinjaman;
             const thp = totalPenerimaan - totalPotongan;
 
-            // Update DOM
             document.getElementById('slip-nama').innerText = k.nama;
             document.getElementById('slip-jabatan').innerText = k.jabatan;
             document.getElementById('slip-nik').innerText = k.nik;
@@ -1659,24 +1646,19 @@
             document.getElementById('slip-pot-pajak').innerText = `Rp ${formatRibuan(potPajak)}`;
 
             document.getElementById('slip-kb-row').style.display = 'none';
-
-            // PERBAIKAN: Tampilkan cicilan pinjaman
             document.getElementById('slip-pinjaman').innerText = `Rp ${formatRibuan(cicilanPinjaman)}`;
 
             document.getElementById('slip-thp-total').innerText = `Rp ${formatRibuan(thp)}`;
             document.getElementById('slip-nama-karyawan-ttd').innerText = `( ${k.nama} )`;
             document.getElementById('slip-nama-direktur').innerText = `( ${globalDirektur.nama || 'ABDUL HALEK'} )`;
 
-            // PERBAIKAN: Format tanggal & header periode
             const bulanIndo = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
             const withholdingDateStr = document.getElementById('filter-withholding-date').value;
 
             if (withholdingDateStr) {
                 const [y, m, d] = withholdingDateStr.split('-');
                 const namaBulan = bulanIndo[parseInt(m, 10) - 1] || m;
-                // Header periode: "AGUSTUS 2026"
                 document.getElementById('slip-periode-text').innerText = `${namaBulan.toUpperCase()} ${y}`;
-                // Tanggal tanda tangan: "Pekanbaru, 31 Agustus 2026"
                 document.getElementById('slip-ttd-kota-tgl').innerText = `${globalDirektur.kota || 'Pekanbaru'}, ${parseInt(d, 10)} ${namaBulan} ${y}`;
             } else {
                 const [yP, mP] = periode.split('-');
