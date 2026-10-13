@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payroll & PPh 21 v2.1.7 - PT Prima Anugerah Makmur</title>
+    <title>Payroll & PPh 21 v2.1.8 - PT Prima Anugerah Makmur</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
@@ -42,7 +42,7 @@
         <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md border border-slate-200">
             <div class="text-center mb-6">
                 <h1 class="text-xl font-bold text-slate-900">PT PRIMA ANUGERAH MAKMUR</h1>
-                <p class="text-xs text-slate-500 mt-1">Sistem Input Payroll & PPh 21 TER / Pasal 17 - v2.1.7</p>
+                <p class="text-xs text-slate-500 mt-1">Sistem Input Payroll & PPh 21 TER / Pasal 17 - v2.1.8</p>
             </div>
             <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
                 <div>
@@ -63,7 +63,7 @@
         <header class="bg-slate-900 text-white shadow-md no-print">
             <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
                 <div>
-                    <h2 class="text-lg font-bold tracking-wide">PT PRIMA ANUGERAH MAKMUR <span class="text-xs font-normal text-slate-400 ml-2">v2.1.7</span></h2>
+                    <h2 class="text-lg font-bold tracking-wide">PT PRIMA ANUGERAH MAKMUR <span class="text-xs font-normal text-slate-400 ml-2">v2.1.8</span></h2>
                     <p class="text-xs text-slate-400">Pengelola Payroll & Tax System (NPWP Pemotong: 02.101.399.5-212.000)</p>
                 </div>
                 <div class="flex items-center gap-4">
@@ -562,16 +562,14 @@
 
     <script>
         /* =========================================================================
-           CHANGELOG v2.1.7
-           1. Print Rekap PDF: Tambah 2 kolom "Total Setoran BPJS" setelah THP
-              - BPJS TK (Pers + Kary): JHT+JP+JKK+JKM lengkap
-              - BPJS Kes (Pers + Kary + Tambahan)
-           2. Export XML MmPayroll: Hapus filter skip karyawan masa terakhir
-              (karyawan resign/berhenti tetap di-export)
-           3. Print Rekap PDF: Karyawan masa terakhir tetap dimunculkan
-           Versi: v2.1.6 → v2.1.7
+           CHANGELOG v2.1.8
+           1. Print Rekap PDF: Kolom auto-fit mengikuti panjang isi (bukan fix width)
+           2. Print Rekap PDF: Font size tabel 8px, header group 9px
+           3. Print Rekap PDF: Hapus white-space: nowrap agar teks bisa wrap
+           4. Print Rekap PDF: Window size 1600x700 untuk 15 kolom
+           Versi: v2.1.7 → v2.1.8
            ========================================================================= */
-        const APP_VERSION = '2.1.7';
+        const APP_VERSION = '2.1.8';
 
         const firebaseConfig = {
             apiKey: "AIzaSyAn0GEPGWMEmDslzabkHR2DAnDFctHRjDw",
@@ -641,7 +639,6 @@
             return jkkPers + jkmPers + kesPers;
         }
 
-        // PERBAIKAN v2.1.7: Helper untuk total setoran BPJS TK (Pers + Kary)
         function getTotalSetoranBpjsTk(kary, selectedPeriod, customPayroll = null) {
             const tk = getBpjsTkComponents(kary, selectedPeriod, customPayroll);
             const jhtTotal = tk.jht * (BPJS_RATE.TK.JHT_KARYAWAN + BPJS_RATE.TK.JHT_PERUSAHAAN);
@@ -651,7 +648,6 @@
             return jhtTotal + jpTotal + jkkTotal + jkmTotal;
         }
 
-        // PERBAIKAN v2.1.7: Helper untuk total setoran BPJS Kes (Pers + Kary + Tambahan)
         function getTotalSetoranBpjsKes(kary, selectedPeriod, customPayroll = null) {
             const dasarKes = getDasarBpjsKes(kary, selectedPeriod, customPayroll);
             const kesTotal = dasarKes * (BPJS_RATE.KES.KARYAWAN + BPJS_RATE.KES.PERUSAHAAN);
@@ -1510,7 +1506,6 @@
             });
         }
 
-        // PERBAIKAN v2.1.7: Hapus filter skip karyawan masa terakhir di XML export
         async function exportToCoretaxXML() {
             const periode = getSelectedPeriode();
             const [year, month] = periode.split('-');
@@ -1523,35 +1518,27 @@
             const nitkuPemotong = nitkuFromFormClean.length === 22 
                 ? nitkuFromFormClean 
                 : (npwpPemotong + '000000').substring(0, 22);
-            
             syncDefaultWithholdingDate();
             const dateXml = document.getElementById('filter-withholding-date').value || '';
             const annualMap = await buildAnnualCalculations(year);
             const bpmpEmployees = [];
-            
             globalKaryawan.forEach(k => {
                 if (!isKaryawanActiveInPeriode(k, periode)) return;
-                // PERBAIKAN v2.1.7: HAPUS filter skip karyawan masa terakhir
-                // if (aData && aData.lastTaxMonth === periode) return; // DIHAPUS
-                
                 const p = getPayrollData(k.id);
                 const gp = p.gajiPokok || 0;
                 const tunj = (p.tunjJab || 0) + (p.tunjMakan || 0) + (p.tunjPulsa || 0) + (p.tunjLain || 0) + (p.gratifikasi || 0) + (p.thr || 0);
                 const bpjsPerusahaanKenaPajak = getBpjsPerusahaanKenaPajak(k, periode);
                 const bruto = gp + tunj + bpjsPerusahaanKenaPajak;
                 if (bruto <= 0) return;
-                
                 const calc = calculatePajakKaryawan(k.ptkp, bruto, k.pajakMetode || 'NET');
                 const cp = getBpmpCounterpart(k);
                 if (!cp.tin) return;
                 bpmpEmployees.push({ k, calc, cp, bruto });
             });
-            
             if (!bpmpEmployees.length) { 
                 alert(`Tidak ada data MmPayroll (BPMP) untuk periode ${periode}.`); 
                 return; 
             }
-            
             let xml = `<?xml version="1.0" encoding="utf-8"?>\n`;
             xml += `<MmPayrollBulk xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">\n`;
             xml += `  <TIN>${escapeXml(npwpPemotong)}</TIN>\n`;
@@ -1605,7 +1592,9 @@
             alert('Export XML 1721-A1 berhasil! File telah diunduh.');
         }
 
-        // PERBAIKAN v2.1.7: Print Rekap PDF - Tambah kolom Total Setoran BPJS + Hapus filter masa terakhir
+        // =====================================================================
+        // PERBAIKAN v2.1.8: Print Rekap PDF - Auto-fit kolom, font 8px, header group 9px
+        // =====================================================================
         async function printRekapPDF() {
             const periode = getSelectedPeriode();
             const periodeUpper = periode.toUpperCase();
@@ -1616,7 +1605,7 @@
 
             let sumBrutoAwal = 0, sumBpjsTkPers = 0, sumBpjsKesPers = 0, sumTunjPph = 0;
             let sumTotalGajiBruto = 0, sumPotPph21 = 0, sumPotBpjsTkKary = 0, sumPotBpjsKesKary = 0, sumPinjaman = 0, sumTHP = 0;
-            let sumTotalBpjsTk = 0, sumTotalBpjsKes = 0; // PERBAIKAN v2.1.7
+            let sumTotalBpjsTk = 0, sumTotalBpjsKes = 0;
             let rowsHTML = '';
             let no = 1;
 
@@ -1650,7 +1639,6 @@
                 const lb = (metode === 'NET' && pphMasa < 0) ? Math.abs(pphMasa) : 0;
                 const thp = (totalBrutoAwal + tunjPph + lb) - (potGajiLain + potPph21 + potBpjsTkKary + potBpjsKesTotal);
 
-                // PERBAIKAN v2.1.7: Hitung total setoran BPJS
                 const totalSetoranBpjsTk = getTotalSetoranBpjsTk(k, periode);
                 const totalSetoranBpjsKes = getTotalSetoranBpjsKes(k, periode);
 
@@ -1686,24 +1674,41 @@
                 </tr>`;
             });
 
+            // PERBAIKAN v2.1.8: CSS untuk auto-fit kolom
             const printHTML = `<!DOCTYPE html><html><head><title>Rekapitulasi Penggajian - ${periodeUpper}</title>
                 <style>
-                    @page { size: A4 landscape; margin: 6mm; }
-                    body { font-family: Arial, sans-serif; margin: 8px; color: #000; }
-                    .header { text-align: center; margin-bottom: 10px; }
+                    @page { size: A4 landscape; margin: 4mm; }
+                    body { font-family: Arial, sans-serif; margin: 4px; color: #000; }
+                    .header { text-align: center; margin-bottom: 8px; }
                     .header h1 { margin: 0; font-size: 14px; text-transform: uppercase; }
                     .header h2 { margin: 3px 0 0 0; font-size: 11px; font-weight: normal; }
                     .header p { margin: 2px 0 0 0; font-size: 9px; }
-                    table { width: 100%; border-collapse: collapse; table-layout: auto; font-size: 7px; }
-                    th, td { border: 1px solid #000; padding: 3px 4px; text-align: center; white-space: nowrap; }
-                    th { background-color: #fef08a; font-weight: bold; }
-                    th.group-header { background-color: #facc15; font-size: 8px; }
+                    
+                    /* PERBAIKAN v2.1.8: Table auto-fit, font 8px */
+                    table { 
+                        border-collapse: collapse; 
+                        font-size: 8px;
+                    }
+                    th, td { 
+                        border: 1px solid #000; 
+                        padding: 2px 3px; 
+                        text-align: center;
+                        /* Hapus white-space: nowrap agar bisa wrap */
+                    }
+                    th { 
+                        background-color: #fef08a; 
+                        font-weight: bold; 
+                    }
+                    th.group-header { 
+                        background-color: #facc15; 
+                        font-size: 9px;
+                    }
                     .left { text-align: left; }
                     .right { text-align: right; }
                     .font-bold { font-weight: bold; }
                     .text-emerald { color: #047857; }
                     tfoot tr { background-color: #fef08a; font-weight: bold; }
-                    tfoot td { border: 1px solid #000; padding: 3px 4px; }
+                    tfoot td { border: 1px solid #000; padding: 2px 3px; }
                 </style></head><body>
                 <div class="header">
                     <h1>PT PRIMA ANUGERAH MAKMUR</h1>
@@ -1755,7 +1760,8 @@
                     </tfoot>
                 </table></body></html>`;
 
-            const printWin = window.open('', '_blank', 'width=1400,height=700');
+            // PERBAIKAN v2.1.8: Window lebih lebar untuk 15 kolom
+            const printWin = window.open('', '_blank', 'width=1600,height=700');
             printWin.document.open(); printWin.document.write(printHTML); printWin.document.close();
             printWin.onload = function() { printWin.focus(); printWin.print(); printWin.close(); };
         }
