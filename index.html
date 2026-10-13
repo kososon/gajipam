@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payroll & PPh 21 v2.1.6 - PT Prima Anugerah Makmur</title>
+    <title>Payroll & PPh 21 v2.1.7 - PT Prima Anugerah Makmur</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
@@ -42,7 +42,7 @@
         <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md border border-slate-200">
             <div class="text-center mb-6">
                 <h1 class="text-xl font-bold text-slate-900">PT PRIMA ANUGERAH MAKMUR</h1>
-                <p class="text-xs text-slate-500 mt-1">Sistem Input Payroll & PPh 21 TER / Pasal 17 - v2.1.6</p>
+                <p class="text-xs text-slate-500 mt-1">Sistem Input Payroll & PPh 21 TER / Pasal 17 - v2.1.7</p>
             </div>
             <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
                 <div>
@@ -63,7 +63,7 @@
         <header class="bg-slate-900 text-white shadow-md no-print">
             <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
                 <div>
-                    <h2 class="text-lg font-bold tracking-wide">PT PRIMA ANUGERAH MAKMUR <span class="text-xs font-normal text-slate-400 ml-2">v2.1.6</span></h2>
+                    <h2 class="text-lg font-bold tracking-wide">PT PRIMA ANUGERAH MAKMUR <span class="text-xs font-normal text-slate-400 ml-2">v2.1.7</span></h2>
                     <p class="text-xs text-slate-400">Pengelola Payroll & Tax System (NPWP Pemotong: 02.101.399.5-212.000)</p>
                 </div>
                 <div class="flex items-center gap-4">
@@ -562,22 +562,16 @@
 
     <script>
         /* =========================================================================
-           CHANGELOG v2.1.6
-           PERBAIKAN FUNDAMENTAL: Revert logika bruto pajak sesuai peraturan yang benar
-           
-           Yang MASUK Bruto Pajak (Objek Pajak):
-           ✅ JKK Perusahaan (0.54%) - murni beban perusahaan
-           ✅ JKM Perusahaan (0.3%) - murni beban perusahaan
-           ✅ BPJS Kesehatan Perusahaan (4%) - murni beban perusahaan
-           
-           Yang TIDAK MASUK Bruto Pajak (Bukan Objek Pajak):
-           ❌ JHT Perusahaan (3.7%) - tabungan hari tua karyawan
-           ❌ JP Perusahaan (2%) - tabungan pensiun karyawan
-            Semua iuran yang dibayar karyawan
-           
-           Versi: v2.1.5 → v2.1.6
+           CHANGELOG v2.1.7
+           1. Print Rekap PDF: Tambah 2 kolom "Total Setoran BPJS" setelah THP
+              - BPJS TK (Pers + Kary): JHT+JP+JKK+JKM lengkap
+              - BPJS Kes (Pers + Kary + Tambahan)
+           2. Export XML MmPayroll: Hapus filter skip karyawan masa terakhir
+              (karyawan resign/berhenti tetap di-export)
+           3. Print Rekap PDF: Karyawan masa terakhir tetap dimunculkan
+           Versi: v2.1.6 → v2.1.7
            ========================================================================= */
-        const APP_VERSION = '2.1.6';
+        const APP_VERSION = '2.1.7';
 
         const firebaseConfig = {
             apiKey: "AIzaSyAn0GEPGWMEmDslzabkHR2DAnDFctHRjDw",
@@ -638,9 +632,6 @@
             };
         }
 
-        // PERBAIKAN v2.1.6: Helper untuk menghitung BPJS Perusahaan yang KENA PAJAK
-        // Sesuai peraturan: JKK + JKM + BPJS Kes = objek pajak
-        // JHT dan JP = BUKAN objek pajak (tabungan karyawan)
         function getBpjsPerusahaanKenaPajak(kary, selectedPeriod, customPayroll = null) {
             const tk = getBpjsTkComponents(kary, selectedPeriod, customPayroll);
             const dasarKes = getDasarBpjsKes(kary, selectedPeriod, customPayroll);
@@ -648,6 +639,24 @@
             const jkmPers = tk.jkm * BPJS_RATE.TK.JKM;
             const kesPers = dasarKes * BPJS_RATE.KES.PERUSAHAAN;
             return jkkPers + jkmPers + kesPers;
+        }
+
+        // PERBAIKAN v2.1.7: Helper untuk total setoran BPJS TK (Pers + Kary)
+        function getTotalSetoranBpjsTk(kary, selectedPeriod, customPayroll = null) {
+            const tk = getBpjsTkComponents(kary, selectedPeriod, customPayroll);
+            const jhtTotal = tk.jht * (BPJS_RATE.TK.JHT_KARYAWAN + BPJS_RATE.TK.JHT_PERUSAHAAN);
+            const jpTotal = tk.jp * (BPJS_RATE.TK.JP_KARYAWAN + BPJS_RATE.TK.JP_PERUSAHAAN);
+            const jkkTotal = tk.jkk * BPJS_RATE.TK.JKK;
+            const jkmTotal = tk.jkm * BPJS_RATE.TK.JKM;
+            return jhtTotal + jpTotal + jkkTotal + jkmTotal;
+        }
+
+        // PERBAIKAN v2.1.7: Helper untuk total setoran BPJS Kes (Pers + Kary + Tambahan)
+        function getTotalSetoranBpjsKes(kary, selectedPeriod, customPayroll = null) {
+            const dasarKes = getDasarBpjsKes(kary, selectedPeriod, customPayroll);
+            const kesTotal = dasarKes * (BPJS_RATE.KES.KARYAWAN + BPJS_RATE.KES.PERUSAHAAN);
+            const tambahan = getBpjsKesTambahanTotal(kary, selectedPeriod);
+            return kesTotal + tambahan;
         }
 
         function normalizeBpjsKesTambahanList(kary) {
@@ -946,10 +955,7 @@
                 const bpjsTkPribadi = (tk.jht * BPJS_RATE.TK.JHT_KARYAWAN) + (tk.jp * BPJS_RATE.TK.JP_KARYAWAN);
                 const bpjsTkPerusahaan = (tk.jht * BPJS_RATE.TK.JHT_PERUSAHAAN) + (tk.jkk * BPJS_RATE.TK.JKK) + (tk.jkm * BPJS_RATE.TK.JKM) + (tk.jp * BPJS_RATE.TK.JP_PERUSAHAAN);
                 const bpjsKesPerusahaan = dasarKes * BPJS_RATE.KES.PERUSAHAAN;
-                
-                // PERBAIKAN v2.1.6: Bruto pajak = JKK + JKM + Kes (bukan JHT + JP)
                 const bpjsKenaPajakPerusahaan = getBpjsPerusahaanKenaPajak(k, periode);
-
                 const bpjsKesTambahan = getBpjsKesTambahanTotal(k, periode);
 
                 const metode = k.pajakMetode || 'NET';
@@ -1306,7 +1312,6 @@
             } catch (err) { console.error("Gagal simpan batch gaji:", err); alert('Terjadi kesalahan saat menyimpan data gaji.'); }
         }
 
-        // PERBAIKAN v2.1.6: renderLaporPPhTable menggunakan perhitungan bruto pajak yang benar
         async function renderLaporPPhTable() {
             const tbody = document.getElementById('table-lapor-pph-body');
             tbody.innerHTML = '';
@@ -1321,11 +1326,8 @@
                 const gp = p.gajiPokok || 0;
                 const tunj = (p.tunjJab || 0) + (p.tunjMakan || 0) + (p.tunjPulsa || 0) + (p.tunjLain || 0) + (p.gratifikasi || 0) + (p.thr || 0);
                 const brutoTHP = gp + tunj;
-                
-                // PERBAIKAN v2.1.6: JKK + JKM + Kes = objek pajak
                 const bpjsKenaPajakPerusahaan = getBpjsPerusahaanKenaPajak(k, periode);
                 const brutoAwalTanpaPajak = brutoTHP + bpjsKenaPajakPerusahaan;
-                
                 const aData = globalAnnualCalculations[k.id];
                 const isLast = !!aData && aData.lastTaxMonth === periode;
                 let calc;
@@ -1365,7 +1367,6 @@
             return { neto, netoDisetahunkan: neto, pkp: Math.max(0, Math.floor((pkp || 0) / 1000) * 1000), pphDisetahunkan: calculatePajakPasal17Tahunan(pkp), pphBagianTahun: calculatePajakPasal17Tahunan(pkp) };
         }
 
-        // PERBAIKAN v2.1.6: buildAnnualCalculations menggunakan perhitungan bruto pajak yang benar
         async function buildAnnualCalculations(selectedYear) {
             const annualMap = {};
             const fetchPromises = [];
@@ -1394,8 +1395,6 @@
                         const tunj = (Number(p.tunjJab) || 0) + (Number(p.tunjMakan) || 0) + (Number(p.tunjPulsa) || 0) + (Number(p.tunjLain) || 0) + (Number(p.gratifikasi) || 0) + (Number(p.thr) || 0);
                         const brutoBulan = gp + tunj;
                         if (brutoBulan === 0) return;
-                        
-                        // PERBAIKAN v2.1.6: JKK + JKM + Kes = objek pajak
                         const bpjsPerusahaanKenaPajak = (tk.jkk * BPJS_RATE.TK.JKK) + (tk.jkm * BPJS_RATE.TK.JKM) + (dasarKes * BPJS_RATE.KES.PERUSAHAAN);
                         const bpjsKaryawanBulan = (tk.jht * BPJS_RATE.TK.JHT_KARYAWAN) + (tk.jp * BPJS_RATE.TK.JP_KARYAWAN);
                         const brutoPajakDasar = brutoBulan + bpjsPerusahaanKenaPajak;
@@ -1511,7 +1510,7 @@
             });
         }
 
-        // PERBAIKAN v2.1.6: exportToCoretaxXML menggunakan perhitungan bruto pajak yang benar
+        // PERBAIKAN v2.1.7: Hapus filter skip karyawan masa terakhir di XML export
         async function exportToCoretaxXML() {
             const periode = getSelectedPeriode();
             const [year, month] = periode.split('-');
@@ -1532,14 +1531,12 @@
             
             globalKaryawan.forEach(k => {
                 if (!isKaryawanActiveInPeriode(k, periode)) return;
-                const aData = annualMap[k.id];
-                if (aData && aData.lastTaxMonth === periode) return;
+                // PERBAIKAN v2.1.7: HAPUS filter skip karyawan masa terakhir
+                // if (aData && aData.lastTaxMonth === periode) return; // DIHAPUS
                 
                 const p = getPayrollData(k.id);
                 const gp = p.gajiPokok || 0;
                 const tunj = (p.tunjJab || 0) + (p.tunjMakan || 0) + (p.tunjPulsa || 0) + (p.tunjLain || 0) + (p.gratifikasi || 0) + (p.thr || 0);
-                
-                // PERBAIKAN v2.1.6: Gunakan helper yang benar (JKK + JKM + Kes)
                 const bpjsPerusahaanKenaPajak = getBpjsPerusahaanKenaPajak(k, periode);
                 const bruto = gp + tunj + bpjsPerusahaanKenaPajak;
                 if (bruto <= 0) return;
@@ -1608,7 +1605,7 @@
             alert('Export XML 1721-A1 berhasil! File telah diunduh.');
         }
 
-        // PERBAIKAN v2.1.6: printRekapPDF menggunakan perhitungan bruto pajak yang benar
+        // PERBAIKAN v2.1.7: Print Rekap PDF - Tambah kolom Total Setoran BPJS + Hapus filter masa terakhir
         async function printRekapPDF() {
             const periode = getSelectedPeriode();
             const periodeUpper = periode.toUpperCase();
@@ -1619,6 +1616,7 @@
 
             let sumBrutoAwal = 0, sumBpjsTkPers = 0, sumBpjsKesPers = 0, sumTunjPph = 0;
             let sumTotalGajiBruto = 0, sumPotPph21 = 0, sumPotBpjsTkKary = 0, sumPotBpjsKesKary = 0, sumPinjaman = 0, sumTHP = 0;
+            let sumTotalBpjsTk = 0, sumTotalBpjsKes = 0; // PERBAIKAN v2.1.7
             let rowsHTML = '';
             let no = 1;
 
@@ -1634,8 +1632,6 @@
                 
                 const bpjsTkPers = (tk.jkk * BPJS_RATE.TK.JKK) + (tk.jkm * BPJS_RATE.TK.JKM);
                 const bpjsKesPers = dasarKes * BPJS_RATE.KES.PERUSAHAAN;
-                
-                // PERBAIKAN v2.1.6: Bruto untuk PPh 21 = JKK + JKM + Kes
                 const brutoAwalTanpaPajak = (gp + tunj) + (tk.jkk * BPJS_RATE.TK.JKK) + (tk.jkm * BPJS_RATE.TK.JKM) + bpjsKesPers;
                 
                 const metode = k.pajakMetode || 'NET';
@@ -1654,8 +1650,22 @@
                 const lb = (metode === 'NET' && pphMasa < 0) ? Math.abs(pphMasa) : 0;
                 const thp = (totalBrutoAwal + tunjPph + lb) - (potGajiLain + potPph21 + potBpjsTkKary + potBpjsKesTotal);
 
-                sumBrutoAwal += totalBrutoAwal; sumBpjsTkPers += bpjsTkPers; sumBpjsKesPers += bpjsKesPers; sumTunjPph += tunjPph;
-                sumTotalGajiBruto += totalGajiBrutoAkhir; sumPotPph21 += potPph21; sumPotBpjsTkKary += potBpjsTkKary; sumPotBpjsKesKary += potBpjsKesTotal; sumPinjaman += potGajiLain; sumTHP += thp;
+                // PERBAIKAN v2.1.7: Hitung total setoran BPJS
+                const totalSetoranBpjsTk = getTotalSetoranBpjsTk(k, periode);
+                const totalSetoranBpjsKes = getTotalSetoranBpjsKes(k, periode);
+
+                sumBrutoAwal += totalBrutoAwal; 
+                sumBpjsTkPers += bpjsTkPers; 
+                sumBpjsKesPers += bpjsKesPers; 
+                sumTunjPph += tunjPph;
+                sumTotalGajiBruto += totalGajiBrutoAkhir; 
+                sumPotPph21 += potPph21; 
+                sumPotBpjsTkKary += potBpjsTkKary; 
+                sumPotBpjsKesKary += potBpjsKesTotal; 
+                sumPinjaman += potGajiLain;
+                sumTHP += thp;
+                sumTotalBpjsTk += totalSetoranBpjsTk;
+                sumTotalBpjsKes += totalSetoranBpjsKes;
 
                 rowsHTML += `<tr>
                     <td>${no++}</td>
@@ -1671,6 +1681,8 @@
                     <td class="right">${potBpjsKesTotal > 0 ? 'Rp ' + formatRibuan(potBpjsKesTotal) : '-'}</td>
                     <td class="right">${potGajiLain > 0 ? 'Rp ' + formatRibuan(potGajiLain) : '-'}</td>
                     <td class="right font-bold text-emerald">Rp ${formatRibuan(thp)}</td>
+                    <td class="right">Rp ${formatRibuan(totalSetoranBpjsTk)}</td>
+                    <td class="right">Rp ${formatRibuan(totalSetoranBpjsKes)}</td>
                 </tr>`;
             });
 
@@ -1682,10 +1694,10 @@
                     .header h1 { margin: 0; font-size: 14px; text-transform: uppercase; }
                     .header h2 { margin: 3px 0 0 0; font-size: 11px; font-weight: normal; }
                     .header p { margin: 2px 0 0 0; font-size: 9px; }
-                    table { width: 100%; border-collapse: collapse; table-layout: auto; font-size: 8px; }
+                    table { width: 100%; border-collapse: collapse; table-layout: auto; font-size: 7px; }
                     th, td { border: 1px solid #000; padding: 3px 4px; text-align: center; white-space: nowrap; }
                     th { background-color: #fef08a; font-weight: bold; }
-                    th.group-header { background-color: #facc15; font-size: 9px; }
+                    th.group-header { background-color: #facc15; font-size: 8px; }
                     .left { text-align: left; }
                     .right { text-align: right; }
                     .font-bold { font-weight: bold; }
@@ -1707,6 +1719,7 @@
                             <th colspan="5" class="group-header">PENERIMAAN</th>
                             <th colspan="4" class="group-header">POTONGAN</th>
                             <th rowspan="2" class="group-header">THP</th>
+                            <th colspan="2" class="group-header">TOTAL SETORAN BPJS</th>
                         </tr>
                         <tr>
                             <th>Total Bruto<br>(sblm Tunj BPJS)</th>
@@ -1718,6 +1731,8 @@
                             <th>Pot BPJS TK<br>(Karyawan)</th>
                             <th>Pot BPJS Kes<br>(Kary + Pribadi)</th>
                             <th>Pinjaman<br>(Pot. Gaji)</th>
+                            <th>BPJS TK<br>(Pers + Kary)</th>
+                            <th>BPJS Kes<br>(Pers + Kary + Tambahan)</th>
                         </tr>
                     </thead>
                     <tbody>${rowsHTML}</tbody>
@@ -1734,11 +1749,13 @@
                             <td class="right">Rp ${formatRibuan(sumPotBpjsKesKary)}</td>
                             <td class="right">Rp ${formatRibuan(sumPinjaman)}</td>
                             <td class="right text-emerald">Rp ${formatRibuan(sumTHP)}</td>
+                            <td class="right">Rp ${formatRibuan(sumTotalBpjsTk)}</td>
+                            <td class="right">Rp ${formatRibuan(sumTotalBpjsKes)}</td>
                         </tr>
                     </tfoot>
                 </table></body></html>`;
 
-            const printWin = window.open('', '_blank', 'width=1200,height=700');
+            const printWin = window.open('', '_blank', 'width=1400,height=700');
             printWin.document.open(); printWin.document.write(printHTML); printWin.document.close();
             printWin.onload = function() { printWin.focus(); printWin.print(); printWin.close(); };
         }
@@ -1799,7 +1816,6 @@
             });
         }
 
-        // PERBAIKAN v2.1.6: renderSlipGaji menggunakan perhitungan bruto pajak yang benar
         async function renderSlipGaji() {
             const id = document.getElementById('slip-select-karyawan').value;
             const k = globalKaryawan.find(item => item.id === id);
@@ -1824,11 +1840,8 @@
             const bpjsJht = tk.jht * BPJS_RATE.TK.JHT_KARYAWAN;
             const bpjsJp = tk.jp * BPJS_RATE.TK.JP_KARYAWAN;
             const totalBpjsPribadi = bpjsKes + bpjsJht + bpjsJp;
-            
-            // PERBAIKAN v2.1.6: Bruto untuk PPh 21 = JKK + JKM + Kes
             const bpjsPerusahaanKenaPajak = (tk.jkk * BPJS_RATE.TK.JKK) + (tk.jkm * BPJS_RATE.TK.JKM) + (dasarKes * BPJS_RATE.KES.PERUSAHAAN);
             const brutoAwal = gp + tunj + gratifikasi + thr + bpjsPerusahaanKenaPajak;
-            
             const metode = k.pajakMetode || 'NET';
             const calcPajak = calculatePajakKaryawan(k.ptkp, brutoAwal, metode);
             let potPajak = 0, tunjPajak = 0, lbVal = 0, kbVal = 0;
