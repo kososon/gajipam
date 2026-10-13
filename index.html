@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payroll & PPh 21 v2.1.2 - PT Prima Anugerah Makmur</title>
+    <title>Payroll & PPh 21 v2.1.3 - PT Prima Anugerah Makmur</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
@@ -42,7 +42,7 @@
         <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md border border-slate-200">
             <div class="text-center mb-6">
                 <h1 class="text-xl font-bold text-slate-900">PT PRIMA ANUGERAH MAKMUR</h1>
-                <p class="text-xs text-slate-500 mt-1">Sistem Input Payroll & PPh 21 TER / Pasal 17 - v2.1.2</p>
+                <p class="text-xs text-slate-500 mt-1">Sistem Input Payroll & PPh 21 TER / Pasal 17 - v2.1.3</p>
             </div>
             <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
                 <div>
@@ -63,7 +63,7 @@
         <header class="bg-slate-900 text-white shadow-md no-print">
             <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
                 <div>
-                    <h2 class="text-lg font-bold tracking-wide">PT PRIMA ANUGERAH MAKMUR <span class="text-xs font-normal text-slate-400 ml-2">v2.1.2</span></h2>
+                    <h2 class="text-lg font-bold tracking-wide">PT PRIMA ANUGERAH MAKMUR <span class="text-xs font-normal text-slate-400 ml-2">v2.1.3</span></h2>
                     <p class="text-xs text-slate-400">Pengelola Payroll & Tax System (NPWP Pemotong: 02.101.399.5-212.000)</p>
                 </div>
                 <div class="flex items-center gap-4">
@@ -562,14 +562,13 @@
 
     <script>
         /* =========================================================================
-           CHANGELOG v2.1.2
-           1. Print Rekap PDF: Header 2 baris dengan grouping (Penerimaan/Potongan)
-           2. Print Rekap PDF: Header warna kuning (baris 1: #facc15, baris 2: #fef08a)
-           3. Print Rekap PDF: Auto-fit kolom (white-space: nowrap, table-layout: auto)
-           4. Print Rekap PDF: Urutan kolom baru (12 kolom, BPJS Kes Kary+Pribadi digabung)
-           5. Versi: v2.1.1 → v2.1.2
+           CHANGELOG v2.1.3
+           1. Print Rekap PDF: Tunj BPJS TK hanya JKK (0.54%) + JKM (0.3%) = 0.84%
+              Sebelumnya: JHT(3.7%) + JKK(0.54%) + JKM(0.3%) + JP(2%) = 6.54%
+           2. Total Bruto & THP di Print PDF disesuaikan dengan perubahan di atas.
+           3. Versi: v2.1.2 → v2.1.3
            ========================================================================= */
-        const APP_VERSION = '2.1.2';
+        const APP_VERSION = '2.1.3';
 
         const firebaseConfig = {
             apiKey: "AIzaSyAn0GEPGWMEmDslzabkHR2DAnDFctHRjDw",
@@ -1579,7 +1578,7 @@
         }
 
         // =====================================================================
-        // PERBAIKAN v2.1.2: Print Rekap PDF - Header 2 baris, warna kuning, auto-fit
+        // PERBAIKAN v2.1.3: Print Rekap PDF - Tunj BPJS TK hanya JKK + JKM
         // =====================================================================
         async function printRekapPDF() {
             const periode = getSelectedPeriode();
@@ -1603,7 +1602,11 @@
                 const tunj = (p.tunjJab || 0) + (p.tunjMakan || 0) + (p.tunjPulsa || 0) + (p.tunjLain || 0) + (p.gratifikasi || 0) + (p.thr || 0);
                 const potGajiLain = p.potGaji || 0;
                 const totalBrutoAwal = Math.max(0, gp + tunj);
-                const bpjsTkPers = (tk.jht * BPJS_RATE.TK.JHT_PERUSAHAAN) + (tk.jkk * BPJS_RATE.TK.JKK) + (tk.jkm * BPJS_RATE.TK.JKM) + (tk.jp * BPJS_RATE.TK.JP_PERUSAHAAN);
+                
+                // PERBAIKAN v2.1.3: Tunj BPJS TK hanya JKK + JKM (murni beban perusahaan)
+                // JHT (3.7%) dan JP (2%) TIDAK dimasukkan karena itu adalah tabungan karyawan
+                const bpjsTkPers = (tk.jkk * BPJS_RATE.TK.JKK) + (tk.jkm * BPJS_RATE.TK.JKM);
+                
                 const bpjsKesPers = dasarKes * BPJS_RATE.KES.PERUSAHAAN;
                 const brutoAwalTanpaPajak = (gp + tunj) + (tk.jkk * BPJS_RATE.TK.JKK) + (tk.jkm * BPJS_RATE.TK.JKM) + bpjsKesPers;
                 const metode = k.pajakMetode || 'NET';
@@ -1614,12 +1617,17 @@
 
                 const tunjPph = (metode === 'GROSS_UP') ? pphMasa : 0;
                 const potPph21 = pphMasa > 0 ? pphMasa : 0;
+                
+                // PERBAIKAN v2.1.3: Total Bruto hanya menambahkan Tunj BPJS TK (JKK+JKM)
                 const totalGajiBrutoAkhir = totalBrutoAwal + bpjsTkPers + bpjsKesPers + tunjPph;
+                
                 const potBpjsTkKary = (tk.jht * BPJS_RATE.TK.JHT_KARYAWAN) + (tk.jp * BPJS_RATE.TK.JP_KARYAWAN);
                 const potBpjsKesKary = dasarKes * BPJS_RATE.KES.KARYAWAN;
                 const bpjsKesTambahan = getBpjsKesTambahanTotal(k, periode);
                 const potBpjsKesTotal = potBpjsKesKary + bpjsKesTambahan;
                 const lb = (metode === 'NET' && pphMasa < 0) ? Math.abs(pphMasa) : 0;
+                
+                // PERBAIKAN v2.1.3: THP disesuaikan dengan Total Bruto yang baru
                 const thp = (totalBrutoAwal + tunjPph + lb) - (potGajiLain + potPph21 + potBpjsTkKary + potBpjsKesTotal);
 
                 sumBrutoAwal += totalBrutoAwal; sumBpjsTkPers += bpjsTkPers; sumBpjsKesPers += bpjsKesPers; sumTunjPph += tunjPph;
@@ -1677,7 +1685,7 @@
                         </tr>
                         <tr>
                             <th>Total Bruto<br>(sblm Tunj BPJS)</th>
-                            <th>Tunj BPJS TK<br>(Perusahaan)</th>
+                            <th>Tunj BPJS TK<br>(JKK+JKM saja)</th>
                             <th>Tunj Kes<br>(Perusahaan)</th>
                             <th>Tunj PPh 21</th>
                             <th>Total Bruto</th>
