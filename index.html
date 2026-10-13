@@ -1512,13 +1512,17 @@
         }
 
         // =====================================================================
-        // PERBAIKAN: Export XML MmPayroll sesuai format Coretax resmi
+        // PERBAIKAN FINAL: Export XML MmPayroll - Format Persis File Contoh Coretax
         // =====================================================================
         async function exportToCoretaxXML() {
             const periode = getSelectedPeriode();
             const [year, month] = periode.split('-');
+            
+            // NPWP Pemotong 16 digit (tanpa titik/dash)
             const npwpPemotong = normalizeTin16(globalDirektur.npwpPemotong || '');
+            // NITKU 22 digit
             const nitkuPemotong = getNitkuPemotong();
+            
             syncDefaultWithholdingDate();
             const dateXml = document.getElementById('filter-withholding-date').value || '';
             
@@ -1563,32 +1567,35 @@
                 return;
             }
             
-            // Build XML sesuai format Coretax MmPayroll
-            let xml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n`;
-            xml += `<MmPayrollBulk xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">\n`;
-            xml += `<TIN>${escapeXml(npwpPemotong)}</TIN>\n`;
-            xml += `<ListOfMmPayroll>\n`;
+            // Build XML - Format Compact (tanpa indentasi) sesuai file contoh
+            const lines = [];
+            lines.push('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>');
+            lines.push('<MmPayrollBulk xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">');
+            lines.push(`<TIN>${escapeXml(npwpPemotong)}</TIN>`);
+            lines.push('<ListOfMmPayroll>');
             
             mmPayrollEmployees.forEach(({k, calc, tin, statusPegawai, bruto}) => {
-                xml += `<MmPayroll>\n`;
-                xml += `<TaxPeriodMonth>${Number(month)}</TaxPeriodMonth>\n`;
-                xml += `<TaxPeriodYear>${Number(year)}</TaxPeriodYear>\n`;
-                xml += `<CounterpartOpt>${escapeXml(statusPegawai)}</CounterpartOpt>\n`;
-                xml += `<CounterpartPassport xsi:nil="true"/>\n`;
-                xml += `<CounterpartTin>${escapeXml(tin)}</CounterpartTin>\n`;
-                xml += `<StatusTaxExemption>${escapeXml(k.ptkp || 'TK/0')}</StatusTaxExemption>\n`;
-                xml += `<Position>${escapeXml(k.jabatan || '')}</Position>\n`;
-                xml += `<TaxCertificate>N/A</TaxCertificate>\n`;
-                xml += `<TaxObjectCode>21-100-01</TaxObjectCode>\n`;
-                xml += `<Gross>${Math.round(bruto)}</Gross>\n`;
-                xml += `<Rate>0</Rate>\n`;
-                xml += `<IDPlaceOfBusinessActivity>${escapeXml(nitkuPemotong)}</IDPlaceOfBusinessActivity>\n`;
-                xml += `<WithholdingDate>${dateXml}</WithholdingDate>\n`;
-                xml += `</MmPayroll>\n`;
+                lines.push('<MmPayroll>');
+                lines.push(`<TaxPeriodMonth>${Number(month)}</TaxPeriodMonth>`);
+                lines.push(`<TaxPeriodYear>${Number(year)}</TaxPeriodYear>`);
+                lines.push(`<CounterpartOpt>${escapeXml(statusPegawai)}</CounterpartOpt>`);
+                lines.push('<CounterpartPassport xsi:nil="true"/>');
+                lines.push(`<CounterpartTin>${escapeXml(tin)}</CounterpartTin>`);
+                lines.push(`<StatusTaxExemption>${escapeXml(k.ptkp || 'TK/0')}</StatusTaxExemption>`);
+                lines.push(`<Position>${escapeXml(k.jabatan || '')}</Position>`);
+                lines.push('<TaxCertificate>N/A</TaxCertificate>');
+                lines.push('<TaxObjectCode>21-100-01</TaxObjectCode>');
+                lines.push(`<Gross>${Math.round(bruto)}</Gross>`);
+                lines.push('<Rate>0</Rate>');
+                lines.push(`<IDPlaceOfBusinessActivity>${escapeXml(nitkuPemotong)}</IDPlaceOfBusinessActivity>`);
+                lines.push(`<WithholdingDate>${dateXml}</WithholdingDate>`);
+                lines.push('</MmPayroll>');
             });
             
-            xml += `</ListOfMmPayroll>\n`;
-            xml += `</MmPayrollBulk>`;
+            lines.push('</ListOfMmPayroll>');
+            lines.push('</MmPayrollBulk>');
+            
+            const xml = lines.join('\n');
             
             downloadBlob(xml, `MmPayroll_Coretax_PT_PAM_${periode}.xml`, 'application/xml;charset=UTF-8');
             await logAudit('EXPORT_MM_PAYROLL', `Export XML MmPayroll ${mmPayrollEmployees.length} karyawan periode ${periode}`);
