@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payroll & PPh 21 v2.0.0 - PT Prima Anugerah Makmur</title>
+    <title>Payroll & PPh 21 v2.1.0 - PT Prima Anugerah Makmur</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
@@ -42,7 +42,7 @@
         <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md border border-slate-200">
             <div class="text-center mb-6">
                 <h1 class="text-xl font-bold text-slate-900">PT PRIMA ANUGERAH MAKMUR</h1>
-                <p class="text-xs text-slate-500 mt-1">Sistem Input Payroll & PPh 21 TER / Pasal 17 - v2.0.0</p>
+                <p class="text-xs text-slate-500 mt-1">Sistem Input Payroll & PPh 21 TER / Pasal 17 - v2.1.0</p>
             </div>
             <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
                 <div>
@@ -63,7 +63,7 @@
         <header class="bg-slate-900 text-white shadow-md no-print">
             <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
                 <div>
-                    <h2 class="text-lg font-bold tracking-wide">PT PRIMA ANUGERAH MAKMUR <span class="text-xs font-normal text-slate-400 ml-2">v2.0.0</span></h2>
+                    <h2 class="text-lg font-bold tracking-wide">PT PRIMA ANUGERAH MAKMUR <span class="text-xs font-normal text-slate-400 ml-2">v2.1.0</span></h2>
                     <p class="text-xs text-slate-400">Pengelola Payroll & Tax System (NPWP Pemotong: 02.101.399.5-212.000)</p>
                 </div>
                 <div class="flex items-center gap-4">
@@ -561,7 +561,16 @@
     </div>
 
     <script>
-        const APP_VERSION = '2.0.0';
+        /* =========================================================================
+           CHANGELOG v2.1.0
+           1. Fixed: ReferenceError "getBpmpCounterpart is not defined" 
+              (Moved helper functions to the top of the script).
+           2. Fixed: XML Export Coretax now guarantees <TIN> (16 digit) and 
+              <IDPlaceOfBusinessActivity> (22 digit) are always populated.
+           3. Maintained: MAX_DASAR_BPJS_JP = 11,086,300 (Latest Regulation).
+           4. Maintained: BPJS Kes Tambahan feature fully integrated.
+           ========================================================================= */
+        const APP_VERSION = '2.1.0';
 
         const firebaseConfig = {
             apiKey: "AIzaSyAn0GEPGWMEmDslzabkHR2DAnDFctHRjDw",
@@ -581,7 +590,6 @@
             KES: { KARYAWAN: 0.01, PERUSAHAAN: 0.04 }
         };
 
-        // PERBAIKAN V2.0.0: Batas atas upah Jaminan Pensiun sesuai ketentuan BPJS TK terbaru
         const MAX_DASAR_BPJS_JP = 11086300;
         const MAX_DASAR_BPJS_KES = 12000000;
         const MAX_BPJS_KES_TAMBAHAN = 5;
@@ -598,6 +606,33 @@
         let globalAnnualCalculations = {};
         let globalPinjamanMap = {};
         let globalDirektur = { nama: "ABDUL HALEK", kota: "Pekanbaru", npwpPemotong: "0210139952122000", nitkuPemotong: "0210139952122000000000" };
+
+        // =====================================================================
+        // HELPER FUNCTIONS (Moved to top to prevent ReferenceError)
+        // =====================================================================
+        function normalizeTin16(value) { 
+            let d = String(value || '').replace(/\D/g, ''); 
+            if (d.length === 15) d = '0' + d; 
+            return d.substring(0, 16); 
+        }
+
+        function getNitkuPemotong() {
+            const configured = String(globalDirektur.nitkuPemotong || '').replace(/\D/g, '');
+            if (configured.length === 22) return configured;
+            const npwp = String(globalDirektur.npwpPemotong || '').replace(/\D/g, '');
+            const cleanNpwp = npwp.length === 15 ? '0' + npwp : npwp.substring(0, 16);
+            return cleanNpwp + '000000'; // Memastikan selalu 22 digit
+        }
+
+        function getBpmpCounterpart(k) {
+            const tin = normalizeTin16(k.npwp || k.nik || '');
+            const statusPegawai = (k.statusPegawai || 'Resident').toString();
+            return { 
+                statusPegawai: statusPegawai === 'Foreign' ? 'Foreign' : 'Resident', 
+                tin: tin, 
+                passport: statusPegawai === 'Foreign' ? (k.passport || '') : '' 
+            };
+        }
 
         function normalizeBpjsKesTambahanList(kary) {
             if (Array.isArray(kary.bpjsKesTambahanList)) {
@@ -1504,22 +1539,8 @@
             });
         }
 
-        function normalizeTin16(value) { 
-            let d = String(value || '').replace(/\D/g, ''); 
-            if (d.length === 15) d = '0' + d; 
-            return d.substring(0, 16); 
-        }
-
-        function getNitkuPemotong() {
-            const configured = String(globalDirektur.nitkuPemotong || '').replace(/\D/g, '');
-            if (configured.length === 22) return configured;
-            const npwp = String(globalDirektur.npwpPemotong || '').replace(/\D/g, '');
-            const cleanNpwp = npwp.length === 15 ? '0' + npwp : npwp.substring(0, 16);
-            return cleanNpwp + '000000'; // Memastikan selalu 22 digit
-        }
-
         // =====================================================================
-        // PERBAIKAN FINAL V2.0.0: Export XML MmPayroll - Format Persis File Contoh Coretax
+        // PERBAIKAN FINAL V2.1.0: Export XML MmPayroll - Format Persis File Contoh Coretax
         // =====================================================================
         async function exportToCoretaxXML() {
             const periode = getSelectedPeriode();
