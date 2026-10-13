@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payroll & PPh 21 v2.1.0 - PT Prima Anugerah Makmur</title>
+    <title>Payroll & PPh 21 v2.1.1 - PT Prima Anugerah Makmur</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
@@ -42,7 +42,7 @@
         <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md border border-slate-200">
             <div class="text-center mb-6">
                 <h1 class="text-xl font-bold text-slate-900">PT PRIMA ANUGERAH MAKMUR</h1>
-                <p class="text-xs text-slate-500 mt-1">Sistem Input Payroll & PPh 21 TER / Pasal 17 - v2.1.0</p>
+                <p class="text-xs text-slate-500 mt-1">Sistem Input Payroll & PPh 21 TER / Pasal 17 - v2.1.1</p>
             </div>
             <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
                 <div>
@@ -63,7 +63,7 @@
         <header class="bg-slate-900 text-white shadow-md no-print">
             <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
                 <div>
-                    <h2 class="text-lg font-bold tracking-wide">PT PRIMA ANUGERAH MAKMUR <span class="text-xs font-normal text-slate-400 ml-2">v2.1.0</span></h2>
+                    <h2 class="text-lg font-bold tracking-wide">PT PRIMA ANUGERAH MAKMUR <span class="text-xs font-normal text-slate-400 ml-2">v2.1.1</span></h2>
                     <p class="text-xs text-slate-400">Pengelola Payroll & Tax System (NPWP Pemotong: 02.101.399.5-212.000)</p>
                 </div>
                 <div class="flex items-center gap-4">
@@ -562,15 +562,15 @@
 
     <script>
         /* =========================================================================
-           CHANGELOG v2.1.0
-           1. Fixed: ReferenceError "getBpmpCounterpart is not defined" 
-              (Moved helper functions to the top of the script).
-           2. Fixed: XML Export Coretax now guarantees <TIN> (16 digit) and 
-              <IDPlaceOfBusinessActivity> (22 digit) are always populated.
-           3. Maintained: MAX_DASAR_BPJS_JP = 11,086,300 (Latest Regulation).
-           4. Maintained: BPJS Kes Tambahan feature fully integrated.
+           CHANGELOG v2.1.1
+           1. Fixed: <IDPlaceOfBusinessActivity> menghasilkan 22 angka nol.
+              Penyebab: getNitkuPemotong() membaca dari globalDirektur.npwpPemotong
+              yang bisa kosong jika belum ter-load dari Firebase.
+              Solusi: getNitkuPemotong(npwpOverride) menerima NPWP yang sudah
+              divalidasi dari input form, sehingga NITKU selalu = NPWP + "000000".
+           2. Versi: v2.1.0 → v2.1.1
            ========================================================================= */
-        const APP_VERSION = '2.1.0';
+        const APP_VERSION = '2.1.1';
 
         const firebaseConfig = {
             apiKey: "AIzaSyAn0GEPGWMEmDslzabkHR2DAnDFctHRjDw",
@@ -616,10 +616,16 @@
             return d.substring(0, 16); 
         }
 
-        function getNitkuPemotong() {
+        // PERBAIKAN v2.1.1: Terima parameter npwpOverride yang sudah divalidasi (16 digit)
+        // agar NITKU selalu dibangun dari NPWP yang valid, bukan dari globalDirektur
+        // yang bisa saja kosong jika belum ter-load dari Firebase.
+        function getNitkuPemotong(npwpOverride) {
             const configured = String(globalDirektur.nitkuPemotong || '').replace(/\D/g, '');
             if (configured.length === 22) return configured;
-            const npwp = String(globalDirektur.npwpPemotong || '').replace(/\D/g, '');
+            
+            // Gunakan npwpOverride jika ada (sudah pasti 16 digit), 
+            // fallback ke globalDirektur.npwpPemotong
+            const npwp = npwpOverride || String(globalDirektur.npwpPemotong || '').replace(/\D/g, '');
             const cleanNpwp = npwp.length === 15 ? '0' + npwp : npwp.substring(0, 16);
             return cleanNpwp + '000000'; // Memastikan selalu 22 digit
         }
@@ -1540,22 +1546,31 @@
         }
 
         // =====================================================================
-        // PERBAIKAN FINAL V2.1.0: Export XML MmPayroll - Format Persis File Contoh Coretax
+        // PERBAIKAN v2.1.1: Export XML MmPayroll - NITKU selalu dari NPWP valid
         // =====================================================================
         async function exportToCoretaxXML() {
             const periode = getSelectedPeriode();
             const [year, month] = periode.split('-');
             
-            // 1. Ambil NPWP (16 digit) dari form, fallback ke global, fallback ke default
-            let npwpRaw = document.getElementById('dir-npwp')?.value || globalDirektur.npwpPemotong || '0210139952122000';
-            const npwpPemotong = normalizeTin16(npwpRaw);
+            // 1. Ambil NPWP (16 digit) - prioritas: input form > globalDirektur > default
+            const npwpFromForm = document.getElementById('dir-npwp')?.value || '';
+            const npwpFromGlobal = globalDirektur.npwpPemotong || '';
+            const npwpDefault = '0210139952122000';
+            const npwpRaw = npwpFromForm || npwpFromGlobal || npwpDefault;
+            const npwpPemotong = normalizeTin16(npwpRaw); // PASTI 16 DIGIT
             
-            // 2. Ambil NITKU (22 digit) dari form, fallback ke logic generator
-            let nitkuRaw = document.getElementById('dir-nitku')?.value;
-            if (!nitkuRaw || nitkuRaw.replace(/\D/g, '').length < 22) {
-                nitkuRaw = getNitkuPemotong();
+            // 2. Ambil NITKU (22 digit) - prioritas: input form > build dari NPWP yang sudah divalidasi
+            const nitkuFromForm = document.getElementById('dir-nitku')?.value || '';
+            const nitkuFromFormClean = nitkuFromForm.replace(/\D/g, '');
+            
+            let nitkuPemotong;
+            if (nitkuFromFormClean.length === 22) {
+                nitkuPemotong = nitkuFromFormClean;
+            } else {
+                // PERBAIKAN v2.1.1: Bangun NITKU dari npwpPemotong (yang sudah pasti 16 digit)
+                // bukan dari getNitkuPemotong() yang membaca dari globalDirektur
+                nitkuPemotong = (npwpPemotong + '000000').substring(0, 22);
             }
-            const nitkuPemotong = String(nitkuRaw).replace(/\D/g, '').padEnd(22, '0').substring(0, 22);
             
             syncDefaultWithholdingDate();
             const dateXml = document.getElementById('filter-withholding-date').value || '';
@@ -1566,7 +1581,7 @@
             globalKaryawan.forEach(k => {
                 if (!isKaryawanActiveInPeriode(k, periode)) return;
                 const aData = annualMap[k.id];
-                if (aData && aData.lastTaxMonth === periode) return; // Skip jika bulan terakhir (masuk 1721-A1)
+                if (aData && aData.lastTaxMonth === periode) return;
                 
                 const p = getPayrollData(k.id);
                 const gp = p.gajiPokok || 0;
@@ -1591,7 +1606,7 @@
             
             let xml = `<?xml version="1.0" encoding="utf-8"?>\n`;
             xml += `<MmPayrollBulk xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">\n`;
-            xml += `  <TIN>${escapeXml(npwpPemotong)}</TIN>\n`;  // PASTI TERISI 16 DIGIT
+            xml += `  <TIN>${escapeXml(npwpPemotong)}</TIN>\n`;
             xml += `  <ListOfMmPayroll>\n`;
             
             bpmpEmployees.forEach(({k, calc, cp, bruto}) => {
@@ -1608,7 +1623,7 @@
                 xml += `      <TaxObjectCode>21-100-01</TaxObjectCode>\n`;
                 xml += `      <Gross>${Math.round(calc.brutoPajakFinal || bruto)}</Gross>\n`;
                 xml += `      <Rate>${Number(taxRatePercent.toFixed(8))}</Rate>\n`;
-                xml += `      <IDPlaceOfBusinessActivity>${escapeXml(nitkuPemotong)}</IDPlaceOfBusinessActivity>\n`;  // PASTI TERISI 22 DIGIT
+                xml += `      <IDPlaceOfBusinessActivity>${escapeXml(nitkuPemotong)}</IDPlaceOfBusinessActivity>\n`;
                 xml += `      <WithholdingDate>${dateXml}</WithholdingDate>\n`;
                 xml += `    </MmPayroll>\n`;
             });
