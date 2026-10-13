@@ -1515,91 +1515,83 @@
         // PERBAIKAN FINAL: Export XML MmPayroll - Format Persis File Contoh Coretax
         // =====================================================================
         async function exportToCoretaxXML() {
-            const periode = getSelectedPeriode();
-            const [year, month] = periode.split('-');
-            
-            // NPWP Pemotong 16 digit (tanpa titik/dash)
-            const npwpPemotong = normalizeTin16(globalDirektur.npwpPemotong || '');
-            // NITKU 22 digit
-            const nitkuPemotong = getNitkuPemotong();
-            
-            syncDefaultWithholdingDate();
-            const dateXml = document.getElementById('filter-withholding-date').value || '';
-            
-            const annualMap = await buildAnnualCalculations(year);
-            const mmPayrollEmployees = [];
-            
-            globalKaryawan.forEach(k => {
-                if (!isKaryawanActiveInPeriode(k, periode)) return;
-                const aData = annualMap[k.id];
-                // Skip jika ini masa terakhir (pakai 1721-A1)
-                if (aData && aData.lastTaxMonth === periode) return;
-                
-                const p = getPayrollData(k.id);
-                const gp = p.gajiPokok || 0;
-                const tk = getBpjsTkComponents(k, periode);
-                const dasarKes = getDasarBpjsKes(k, periode);
-                const tunj = (p.tunjJab || 0) + (p.tunjMakan || 0) + (p.tunjPulsa || 0) + (p.tunjLain || 0) + (p.gratifikasi || 0) + (p.thr || 0);
-                
-                const bpjsPerusahaanKenaPajak = (tk.jkk * BPJS_RATE.TK.JKK) + (tk.jkm * BPJS_RATE.TK.JKM) + (dasarKes * BPJS_RATE.KES.PERUSAHAAN);
-                const bruto = gp + tunj + bpjsPerusahaanKenaPajak;
-                if (bruto <= 0) return;
-                
-                const calc = calculatePajakKaryawan(k.ptkp, bruto, k.pajakMetode || 'NET');
-                
-                // CounterpartTin: NIK 16 digit untuk resident
-                const tin = normalizeTin16(k.nik || k.npwp || '');
-                if (!tin) return;
-                
-                const statusPegawai = (k.statusPegawai || 'Resident').toString();
-                
-                mmPayrollEmployees.push({
-                    k,
-                    calc,
-                    tin,
-                    statusPegawai,
-                    bruto: calc.brutoPajakFinal || bruto
-                });
-            });
-            
-            if (!mmPayrollEmployees.length) {
-                alert(`Tidak ada data MmPayroll untuk ${periode}.`);
-                return;
-            }
-            
-            // Build XML - Format Compact (tanpa indentasi) sesuai file contoh
-            const lines = [];
-            lines.push('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>');
-            lines.push('<MmPayrollBulk xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">');
-            lines.push(`<TIN>${escapeXml(npwpPemotong)}</TIN>`);
-            lines.push('<ListOfMmPayroll>');
-            
-            mmPayrollEmployees.forEach(({k, calc, tin, statusPegawai, bruto}) => {
-                lines.push('<MmPayroll>');
-                lines.push(`<TaxPeriodMonth>${Number(month)}</TaxPeriodMonth>`);
-                lines.push(`<TaxPeriodYear>${Number(year)}</TaxPeriodYear>`);
-                lines.push(`<CounterpartOpt>${escapeXml(statusPegawai)}</CounterpartOpt>`);
-                lines.push('<CounterpartPassport xsi:nil="true"/>');
-                lines.push(`<CounterpartTin>${escapeXml(tin)}</CounterpartTin>`);
-                lines.push(`<StatusTaxExemption>${escapeXml(k.ptkp || 'TK/0')}</StatusTaxExemption>`);
-                lines.push(`<Position>${escapeXml(k.jabatan || '')}</Position>`);
-                lines.push('<TaxCertificate>N/A</TaxCertificate>');
-                lines.push('<TaxObjectCode>21-100-01</TaxObjectCode>');
-                lines.push(`<Gross>${Math.round(bruto)}</Gross>`);
-                lines.push('<Rate>0</Rate>');
-                lines.push(`<IDPlaceOfBusinessActivity>${escapeXml(nitkuPemotong)}</IDPlaceOfBusinessActivity>`);
-                lines.push(`<WithholdingDate>${dateXml}</WithholdingDate>`);
-                lines.push('</MmPayroll>');
-            });
-            
-            lines.push('</ListOfMmPayroll>');
-            lines.push('</MmPayrollBulk>');
-            
-            const xml = lines.join('\n');
-            
-            downloadBlob(xml, `MmPayroll_Coretax_PT_PAM_${periode}.xml`, 'application/xml;charset=UTF-8');
-            await logAudit('EXPORT_MM_PAYROLL', `Export XML MmPayroll ${mmPayrollEmployees.length} karyawan periode ${periode}`);
-        }
+    const periode = getSelectedPeriode();
+    const [year, month] = periode.split('-');
+    
+    // PERBAIKAN: Ambil NPWP dan NITKU dari input form atau default
+    const npwpPemotong = normalizeTin16(
+        document.getElementById('dir-npwp')?.value || 
+        globalDirektur.npwpPemotong || 
+        '0210139952122000'
+    );
+    
+    const nitkuPemotong = 
+        document.getElementById('dir-nitku')?.value || 
+        getNitkuPemotong() || 
+        '0210139952122000000000';
+    
+    syncDefaultWithholdingDate();
+    const dateXml = document.getElementById('filter-withholding-date').value || '';
+    
+    const annualMap = await buildAnnualCalculations(year);
+    const bpmpEmployees = [];
+    
+    globalKaryawan.forEach(k => {
+        if (!isKaryawanActiveInPeriode(k, periode)) return;
+        const aData = annualMap[k.id];
+        if (aData && aData.lastTaxMonth === periode) return;
+        
+        const p = getPayrollData(k.id);
+        const gp = p.gajiPokok || 0;
+        const tk = getBpjsTkComponents(k, periode);
+        const dasarKes = getDasarBpjsKes(k, periode);
+        const tunj = (p.tunjJab || 0) + (p.tunjMakan || 0) + (p.tunjPulsa || 0) + (p.tunjLain || 0) + (p.gratifikasi || 0) + (p.thr || 0);
+        const bpjsPerusahaanKenaPajak = (tk.jkk * BPJS_RATE.TK.JKK) + (tk.jkm * BPJS_RATE.TK.JKM) + (dasarKes * BPJS_RATE.KES.PERUSAHAAN);
+        const bruto = gp + tunj + bpjsPerusahaanKenaPajak;
+        if (bruto <= 0) return;
+        
+        const calc = calculatePajakKaryawan(k.ptkp, bruto, k.pajakMetode || 'NET');
+        const cp = getBpmpCounterpart(k);
+        if (!cp.tin) return;
+        
+        bpmpEmployees.push({ k, calc, cp, bruto });
+    });
+    
+    if (!bpmpEmployees.length) { 
+        alert(`Tidak ada data BPMP untuk ${periode}.`); 
+        return; 
+    }
+    
+    // PERBAIKAN: Pastikan TIN dan IDPlaceOfBusinessActivity terisi
+    let xml = `<?xml version="1.0" encoding="utf-8"?>\n`;
+    xml += `<MmPayrollBulk xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">\n`;
+    xml += `  <TIN>${escapeXml(npwpPemotong)}</TIN>\n`;  // PASTI TERISI
+    xml += `  <ListOfMmPayroll>\n`;
+    
+    bpmpEmployees.forEach(({k, calc, cp, bruto}) => {
+        const taxRatePercent = calc.rate * 100;
+        xml += `    <MmPayroll>\n`;
+        xml += `      <TaxPeriodMonth>${Number(month)}</TaxPeriodMonth>\n`;
+        xml += `      <TaxPeriodYear>${Number(year)}</TaxPeriodYear>\n`;
+        xml += `      <CounterpartOpt>${escapeXml(cp.statusPegawai)}</CounterpartOpt>\n`;
+        xml += `      <CounterpartTin>${escapeXml(cp.tin)}</CounterpartTin>\n`;
+        xml += `      <CounterpartPassport xsi:nil="true"/>\n`;
+        xml += `      <StatusTaxExemption>${escapeXml(k.ptkp || 'TK/0')}</StatusTaxExemption>\n`;
+        xml += `      <Position>${escapeXml(k.jabatan || '')}</Position>\n`;
+        xml += `      <TaxCertificate>N/A</TaxCertificate>\n`;
+        xml += `      <TaxObjectCode>21-100-01</TaxObjectCode>\n`;
+        xml += `      <Gross>${Math.round(calc.brutoPajakFinal || bruto)}</Gross>\n`;
+        xml += `      <Rate>${Number(taxRatePercent.toFixed(8))}</Rate>\n`;
+        xml += `      <IDPlaceOfBusinessActivity>${escapeXml(nitkuPemotong)}</IDPlaceOfBusinessActivity>\n`;  // PASTI TERISI
+        xml += `      <WithholdingDate>${dateXml}</WithholdingDate>\n`;
+        xml += `    </MmPayroll>\n`;
+    });
+    
+    xml += `  </ListOfMmPayroll>\n`;
+    xml += `</MmPayrollBulk>`;
+    
+    downloadBlob(xml, `BPMP_Coretax_PT_PAM_${periode}.xml`, 'application/xml;charset=UTF-8');
+}
 
         async function exportAnnualCoretaxXML() {
             const selectedYear = document.getElementById('pph-akhir-year').value || new Date().getFullYear().toString();
