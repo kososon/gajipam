@@ -382,6 +382,7 @@
                             <tfoot id="table-lapor-pph-foot"></tfoot>
                         </table>
                     </div>
+                    <p id="lapor-pph-hidden-note" class="text-[11px] text-slate-500 p-3 border-t" style="display:none;"></p>
                 </div>
             </section>
 
@@ -1878,10 +1879,11 @@
             const tbody = document.getElementById('table-lapor-pph-body');
             const tfoot = document.getElementById('table-lapor-pph-foot');
             const periode = getSelectedPeriode();
-            let html = '', totBrutoTHP = 0, totBpjs = 0, totBrutoPajak = 0, totPph = 0;
+            let html = '', totBrutoTHP = 0, totBpjs = 0, totBrutoPajak = 0, totPph = 0; const hiddenNames = [];
             globalKaryawan.forEach(k => {
                 if (!isKaryawanActiveInPeriode(k, periode)) return;
                 const r = calcPeriod(k, periode);
+                if (r.brutoTHP <= 0) { hiddenNames.push(k.nama); return; } // tanpa penghasilan: tidak ditampilkan & tidak masuk XML
                 totBrutoTHP += r.brutoTHP; totBpjs += r.bpjsKenaPajak; totBrutoPajak += r.brutoPajakFinal; totPph += r.pphMasa;
                 let rateLabel = `${(r.rate * 100).toFixed(2)}%`;
                 if (r.isLast) rateLabel = 'MASA TERAKHIR (Pasal 17 · BPA1)';
@@ -1899,6 +1901,11 @@
                 </tr>`;
             });
             tbody.innerHTML = html || '<tr><td colspan="9" class="p-4 text-center text-slate-500">Tidak ada karyawan aktif pada periode ini.</td></tr>';
+            const note = document.getElementById('lapor-pph-hidden-note');
+            if (note) {
+                note.innerText = hiddenNames.length ? `${hiddenNames.length} karyawan aktif disembunyikan karena belum ada penghasilan pada periode ini (tidak ikut XML): ${hiddenNames.join(', ')}` : '';
+                note.style.display = hiddenNames.length ? 'block' : 'none';
+            }
             tfoot.innerHTML = html ? `<tr><td colspan="4" class="p-3">TOTAL</td><td class="p-3">Rp ${formatRibuan(totBrutoTHP)}</td><td class="p-3">Rp ${formatRibuan(totBpjs)}</td><td class="p-3">Rp ${formatRibuan(totBrutoPajak)}</td><td class="p-3"></td><td class="p-3">Rp ${formatRibuan(totPph)}</td></tr>` : '';
         }
 
@@ -2106,7 +2113,7 @@
                 if (!isKaryawanActiveInPeriode(k, periode)) return;
                 if (isLastTaxMonthFor(k, periode)) { excluded.push(k.nama); return; }
                 const r = calcPeriod(k, periode);
-                if (r.brutoDasar <= 0) return;
+                if (r.brutoTHP <= 0) return; // tanpa penghasilan (premi BPJS saja bukan penghasilan yang dilaporkan)
                 const cp = getBpmpCounterpart(k);
                 if (!cp.tin) return;
                 bpmpEmployees.push({ k, r, cp });
