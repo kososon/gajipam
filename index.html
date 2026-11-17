@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payroll & PPh 21 v2.2.0 - PT Prima Anugerah Makmur</title>
+    <title>Payroll & PPh 21 v2.2.1 - PT Prima Anugerah Makmur</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&display=swap" rel="stylesheet">
@@ -116,7 +116,7 @@
             <div class="text-center mb-6">
                 <span class="brand-mark mb-3">P</span>
                 <h1 class="text-2xl font-semibold text-slate-900">PT Prima Anugerah Makmur</h1>
-                <p class="text-xs text-slate-500 mt-1">Sistem Payroll & PPh 21 TER / Pasal 17 · v2.2.0</p>
+                <p class="text-xs text-slate-500 mt-1">Sistem Payroll & PPh 21 TER / Pasal 17 · v2.2.1</p>
             </div>
             <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
                 <div>
@@ -140,7 +140,7 @@
                 <div class="flex items-center gap-3">
                     <span class="brand-mark">P</span>
                     <div>
-                        <h2 class="text-lg font-semibold text-slate-900">PT Prima Anugerah Makmur <span class="text-xs font-normal text-slate-500 ml-1 font-sans">v2.2.0</span></h2>
+                        <h2 class="text-lg font-semibold text-slate-900">PT Prima Anugerah Makmur <span class="text-xs font-normal text-slate-500 ml-1 font-sans">v2.2.1</span></h2>
                         <p class="text-xs text-slate-500">Payroll & Tax System · NPWP Pemotong: 02.101.399.5-212.000</p>
                     </div>
                 </div>
@@ -419,6 +419,9 @@
                                     <th class="p-2.5 border">PPh 21 Terutang (Pasal 17)</th>
                                     <th class="p-2.5 border">PPh 21 Dipotong s.d. Sebelum Masa Terakhir</th>
                                     <th class="p-2.5 border">PPh 21 Dipotong Pemberi Kerja Lama</th>
+                                    <th class="p-2.5 border bg-amber-50">Tunjangan PPh 21 Jan–Sebelum Masa Terakhir (Gross-Up)</th>
+                                    <th class="p-2.5 border bg-amber-50">Tunjangan PPh 21 Masa Terakhir (Gross-Up, bisa negatif)</th>
+                                    <th class="p-2.5 border bg-amber-50">Kelebihan Dikembalikan ke Perusahaan</th>
                                     <th class="p-2.5 border text-center">Selisih Status</th>
                                 </tr>
                             </thead>
@@ -460,7 +463,7 @@
                             <div class="flex justify-between"><span>Tunjangan:</span><span id="slip-tunjangan">0</span></div>
                             <div class="flex justify-between" id="slip-gratifikasi-row"><span>Gratifikasi:</span><span id="slip-gratifikasi">0</span></div>
                             <div class="flex justify-between" id="slip-thr-row"><span>THR:</span><span id="slip-thr">0</span></div>
-                            <div class="flex justify-between font-semibold text-blue-700" id="slip-tunj-pajak-row" style="display:none;"><span>Tunjangan Pajak:</span><span id="slip-tunj-pajak">0</span></div>
+                            <div class="flex justify-between font-semibold text-blue-700" id="slip-tunj-pajak-row" style="display:none;"><span id="slip-tunj-pajak-label">Tunjangan Pajak:</span><span id="slip-tunj-pajak">0</span></div>
                             <div class="flex justify-between font-bold text-emerald-700 bg-emerald-50 px-1 py-0.5 rounded" id="slip-lb-row" style="display:none;"><span>Pengembalian PPh 21 (LB):</span><span id="slip-lb-val">0</span></div>
                         </div>
                         <div>
@@ -688,6 +691,9 @@
 
     <script>
         /* =========================================================================
+           v2.2.1: Gross-Up lebih bayar -> tunjangan PPh 21 masa terakhir boleh negatif (koreksi),
+                   kelebihan dikembalikan ke perusahaan; THP karyawan tidak berubah; kolom tunjangan
+                   PPh 21 ditambahkan di tab Akhir Tahun, Excel rekap tahunan, slip, dan print rekap.
            CHANGELOG v2.2.0  (dari v2.1.8)
            TAMPILAN : tema gaya Claude (krem, terakota, judul serif).
            DATA AMAN: tombol Backup JSON; karyawan & pinjaman DIARSIPKAN (bukan dihapus);
@@ -705,7 +711,7 @@
                       berkurang otomatis; periode slip dari periode data; escape HTML (XSS);
                       login Firebase Auth (email) + login lama (hash) sementara.
            ========================================================================= */
-        const APP_VERSION = '2.2.0';
+        const APP_VERSION = '2.2.1';
 
         // ---- Login ----
         // Isi email superuser (akses tab Direktur & Audit) untuk login Firebase Auth.
@@ -1141,7 +1147,9 @@
                 category = c.category; rate = c.rate; brutoPajakFinal = c.brutoPajakFinal; pphMasa = c.pph21;
             }
 
-            const nilaiPph = Math.max(0, pphMasa);
+            // Gross-Up masa terakhir: bila lebih bayar, tunjangan PPh 21 dikoreksi negatif dan
+            // pengembalian PPh 21 (negatif) menjadi hak perusahaan -> THP karyawan tidak berubah.
+            const nilaiPph = metode === 'GROSS_UP' ? pphMasa : Math.max(0, pphMasa);
             const tunjPajak = metode === 'GROSS_UP' ? nilaiPph : 0;
             const potPajak = nilaiPph;
             const lb = (metode === 'NET' && pphMasa < 0) ? Math.abs(pphMasa) : 0;
@@ -1980,6 +1988,7 @@
                     const pkpSementara = Math.max(0, netoYtd - ptkp);
                     aData.pphSebelumMasaTerakhir = priorPph; aData.pph21TerutangBagianTahun = 0; aData.pph21MasaTerakhir = 0;
                     aData.pphTerSetahun = priorPph; aData.brutoPajakMasaTerakhir = 0;
+                    if (metode === 'GROSS_UP') { aData.tunjPphJanNov = priorPph; aData.tunjPphMasaTerakhir = 0; aData.tunjPphSetahun = priorPph; aData.kelebihanKePerusahaan = 0; }
                     aData.netoSaatIni = netoCur; aData.netoSetahun = netoYtd;
                     aData.netoDisetahunkan = netoYtd; aData.pkpMasa = Math.floor(pkpSementara / 1000) * 1000;
                     aData.dataTersediaSampai = aData.monthlyRecords.length ? aData.monthlyRecords[aData.monthlyRecords.length - 1].periode : null;
@@ -1997,7 +2006,7 @@
                         const brutoTotal = priorBrutoPajak + last.brutoPajakDasar + x;
                         const biayaJab = hitungBiayaJabatan(brutoTotal, months);
                         const annualTax = calculatePph21BagianTahun({ brutoSetahun: brutoTotal, biayaJabatan: biayaJab, bpjsKarySetahun: bpjsTotal, ptkp, masaBulan: months, annualizePartYear, netoSebelumnya: netoPrev }).pphBagianTahun;
-                        const nextX = Math.max(0, annualTax - kreditSebelumnya);
+                        const nextX = annualTax - kreditSebelumnya; // boleh negatif = kelebihan tunjangan PPh 21 yang ditarik kembali
                         if (Math.abs(nextX - x) < 0.01) { x = nextX; break; }
                         x = nextX;
                     }
@@ -2014,6 +2023,12 @@
                 aData.pph21TerutangBagianTahun = finalTax.pphBagianTahun;
                 aData.pph21MasaTerakhir = last.pph21;
                 aData.pphTerSetahun = priorPph + last.pph21;
+                if (metode === 'GROSS_UP') {
+                    aData.tunjPphJanNov = priorPph;
+                    aData.tunjPphMasaTerakhir = last.pph21;
+                    aData.tunjPphSetahun = priorPph + last.pph21;
+                    aData.kelebihanKePerusahaan = last.pph21 < -0.5 ? Math.abs(last.pph21) : 0;
+                }
                 aData.brutoPajakMasaTerakhir = last.brutoPajakFinal;
                 aData.netoSaatIni = finalTax.netoSaatIni; aData.netoSetahun = finalTax.neto; aData.netoDisetahunkan = finalTax.netoDisetahunkan; aData.pkpMasa = finalTax.pkp;
                 aData.annualizePartYear = annualizePartYear;
@@ -2025,14 +2040,14 @@
 
         async function renderPphAkhirTahunTable(force = false) {
             const tbody = document.getElementById('table-pph-akhir-body');
-            tbody.innerHTML = '<tr><td colspan="13" class="p-4 text-center text-slate-500 font-semibold">Memuat & mengkalkulasi data tahunan...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="16" class="p-4 text-center text-slate-500 font-semibold">Memuat & mengkalkulasi data tahunan...</td></tr>';
             const selectedYear = document.getElementById('pph-akhir-year').value || new Date().getFullYear().toString();
             let annualMap;
             try { annualMap = await buildAnnualCalculations(selectedYear, force); }
-            catch (err) { console.error(err); tbody.innerHTML = `<tr><td colspan="13" class="p-4 text-center text-red-600">Gagal memuat data: ${esc(err.message)}</td></tr>`; return; }
+            catch (err) { console.error(err); tbody.innerHTML = `<tr><td colspan="16" class="p-4 text-center text-red-600">Gagal memuat data: ${esc(err.message)}</td></tr>`; return; }
             const employees = globalKaryawan.filter(k => annualMap[k.id] && (annualMap[k.id].monthlyRecords.length > 0 || annualMap[k.id].prev));
             if (employees.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="13" class="p-4 text-center text-slate-500">Tidak ada karyawan yang mempunyai penghasilan pada tahun terpilih.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="16" class="p-4 text-center text-slate-500">Tidak ada karyawan yang mempunyai penghasilan pada tahun terpilih.</td></tr>';
                 return;
             }
             let html = '';
@@ -2040,9 +2055,12 @@
                 const aData = annualMap[k.id];
                 const ptkpAnnual = PTKP_DICT[k.ptkp] || 54000000;
                 const pph21MasaTerakhir = aData.pph21MasaTerakhir;
+                const gu = (k.pajakMetode || 'NET') === 'GROSS_UP';
                 let statusBadge = '<span class="bg-slate-100 text-slate-700 px-2 py-1 rounded font-bold">Nihil</span>';
                 if (aData.finalPayrollMissing) statusBadge = `<span class="bg-amber-100 text-amber-800 px-2 py-1 rounded font-bold">Menunggu ${esc(aData.lastTaxMonth)}</span>`;
-                else if (pph21MasaTerakhir < -0.5) statusBadge = `<span class="bg-emerald-100 text-emerald-800 px-2 py-1 rounded font-bold">Lebih Bayar (LB): Rp ${formatRibuan(Math.abs(pph21MasaTerakhir))}</span>`;
+                else if (pph21MasaTerakhir < -0.5) statusBadge = gu
+                    ? `<span class="bg-emerald-100 text-emerald-800 px-2 py-1 rounded font-bold">Lebih Bayar (LB) Gross-Up: Rp ${formatRibuan(Math.abs(pph21MasaTerakhir))} → kembali ke perusahaan</span>`
+                    : `<span class="bg-emerald-100 text-emerald-800 px-2 py-1 rounded font-bold">Lebih Bayar (LB): Rp ${formatRibuan(Math.abs(pph21MasaTerakhir))}</span>`;
                 else if (pph21MasaTerakhir > 0.5) statusBadge = `<span class="bg-red-100 text-red-800 px-2 py-1 rounded font-bold">Kurang Bayar (KB): Rp ${formatRibuan(pph21MasaTerakhir)}</span>`;
                 const warn = aData.missingMonths.length ? `<div class="text-[10px] text-amber-700 font-semibold mt-0.5">${aData.missingMonths.length} bln belum ada data gaji</div>` : '';
                 const prevInfo = aData.prev ? `<div class="text-[10px] text-slate-500 mt-0.5">+ PK lama ${aData.prev.masaBulan} bln${aData.prev.bpa1 ? ' · A1 ' + esc(aData.prev.bpa1) : ''}</div>` : '';
@@ -2059,6 +2077,10 @@
                     <td class="p-2.5 border font-bold text-indigo-700">${aData.finalPayrollMissing ? '<span class="text-amber-700">Belum final</span>' : `Rp ${formatRibuan(aData.pph21TerutangBagianTahun)}`}</td>
                     <td class="p-2.5 border font-bold text-blue-700">Rp ${formatRibuan(aData.pphSebelumMasaTerakhir)}</td>
                     <td class="p-2.5 border font-bold text-slate-700">Rp ${formatRibuan(aData.pphPrev)}</td>
+                    ${gu ? `<td class="p-2.5 border bg-amber-50/40">Rp ${formatRibuan(aData.tunjPphJanNov || 0)}</td>
+                    <td class="p-2.5 border bg-amber-50/40 font-semibold ${(aData.tunjPphMasaTerakhir || 0) < 0 ? 'text-red-600' : ''}">${aData.finalPayrollMissing ? '<span class="text-amber-700">Belum final</span>' : 'Rp ' + formatRibuan(aData.tunjPphMasaTerakhir || 0)}</td>
+                    <td class="p-2.5 border bg-amber-50/40 font-bold text-emerald-700">${aData.finalPayrollMissing ? '-' : ((aData.kelebihanKePerusahaan || 0) > 0 ? 'Rp ' + formatRibuan(aData.kelebihanKePerusahaan) : 'Rp 0')}</td>`
+                    : `<td class="p-2.5 border text-slate-400 text-center" colspan="3">Metode NET — tidak ada tunjangan PPh 21</td>`}
                     <td class="p-2.5 border text-center">${statusBadge}</td>
                 </tr>`;
             });
@@ -2140,9 +2162,13 @@
                     "PTKP": PTKP_DICT[k.ptkp] || 54000000, "PKP": Math.round(a.pkpMasa),
                     "PPh 21 Terutang (Pasal 17)": a.finalPayrollMissing ? '' : Math.round(a.pph21TerutangBagianTahun),
                     "PPh 21 Dipotong Pemberi Kerja Lama": Math.round(a.pphPrev),
+                    "Tunjangan PPh 21 Jan-Sebelum Masa Terakhir (Gross-Up)": (k.pajakMetode || 'NET') === 'GROSS_UP' ? Math.round(a.tunjPphJanNov || 0) : '',
+                    "Tunjangan PPh 21 Masa Terakhir (Gross-Up)": (k.pajakMetode || 'NET') === 'GROSS_UP' && !a.finalPayrollMissing ? Math.round(a.tunjPphMasaTerakhir || 0) : '',
+                    "Total Tunjangan PPh 21 Setahun (Gross-Up)": (k.pajakMetode || 'NET') === 'GROSS_UP' && !a.finalPayrollMissing ? Math.round(a.tunjPphSetahun || 0) : '',
+                    "Kelebihan Dikembalikan ke Perusahaan": (k.pajakMetode || 'NET') === 'GROSS_UP' && !a.finalPayrollMissing ? Math.round(a.kelebihanKePerusahaan || 0) : '',
                     "PPh 21 Dipotong s.d. Sebelum Masa Terakhir": Math.round(a.pphSebelumMasaTerakhir),
                     "PPh 21 Masa Pajak Terakhir": a.finalPayrollMissing ? '' : Math.round(selisih),
-                    "Status": a.finalPayrollMissing ? `Menunggu data ${a.lastTaxMonth}` : (selisih < -0.5 ? 'Lebih Bayar (LB)' : selisih > 0.5 ? 'Kurang Bayar (KB)' : 'Nihil'),
+                    "Status": a.finalPayrollMissing ? `Menunggu data ${a.lastTaxMonth}` : (selisih < -0.5 ? ((k.pajakMetode || 'NET') === 'GROSS_UP' ? 'Lebih Bayar (LB) Gross-Up - kembali ke perusahaan' : 'Lebih Bayar (LB)') : selisih > 0.5 ? 'Kurang Bayar (KB)' : 'Nihil'),
                     "Bulan Tanpa Data Gaji": a.missingMonths.join(', ')
                 });
             });
@@ -2174,9 +2200,9 @@
                     <td class="right">Rp ${formatRibuan(r.brutoTHP)}</td>
                     <td class="right">Rp ${formatRibuan(r.bpjsPersTk)}</td>
                     <td class="right">Rp ${formatRibuan(r.bpjsPersKes)}</td>
-                    <td class="right">${r.tunjPajak > 0 ? 'Rp ' + formatRibuan(r.tunjPajak) : '-'}</td>
+                    <td class="right">${r.tunjPajak !== 0 ? 'Rp ' + formatRibuan(r.tunjPajak) : '-'}</td>
                     <td class="right font-bold">Rp ${formatRibuan(totalBrutoAkhir)}</td>
-                    <td class="right">${r.potPajak > 0 ? 'Rp ' + formatRibuan(r.potPajak) : '-'}</td>
+                    <td class="right">${r.potPajak !== 0 ? 'Rp ' + formatRibuan(r.potPajak) : '-'}</td>
                     <td class="right">Rp ${formatRibuan(r.bpjsTkKary)}</td>
                     <td class="right">${potKes > 0 ? 'Rp ' + formatRibuan(potKes) : '-'}</td>
                     <td class="right">${potLain > 0 ? 'Rp ' + formatRibuan(potLain) : '-'}</td>
@@ -2249,7 +2275,8 @@
             set('slip-status-kerja', k.statusKerja === 'PKWT' ? 'Kontrak (PKWT)' : 'Tetap (PKWTT)');
             set('slip-gaji-pokok', rp(r.gp)); set('slip-tunjangan', rp(r.tunjLainnya));
             set('slip-gratifikasi', rp(r.gratifikasi)); set('slip-thr', rp(r.thr));
-            document.getElementById('slip-tunj-pajak-row').style.display = (r.tunjPajak > 0) ? 'flex' : 'none';
+            document.getElementById('slip-tunj-pajak-row').style.display = (Math.abs(r.tunjPajak) > 0.005) ? 'flex' : 'none';
+            set('slip-tunj-pajak-label', r.tunjPajak < 0 ? 'Koreksi Tunjangan PPh 21 (kelebihan):' : 'Tunjangan Pajak:');
             set('slip-tunj-pajak', rp(r.tunjPajak));
             document.getElementById('slip-lb-row').style.display = (r.lb > 0.005) ? 'flex' : 'none';
             set('slip-lb-val', rp(r.lb));
@@ -2257,8 +2284,8 @@
             set('slip-bpjs-jht', rp(r.bpjsJhtKary)); set('slip-bpjs-jp', rp(r.bpjsJpKary));
             document.getElementById('slip-bpjs-kes-tambahan-row').style.display = (r.bpjsKesTambahan > 0) ? 'flex' : 'none';
             set('slip-bpjs-kes-tambahan', rp(r.bpjsKesTambahan));
-            document.getElementById('slip-pot-pajak-row').style.display = (r.potPajak > 0) ? 'flex' : 'none';
-            set('slip-pot-pajak-label', r.isLast ? 'PPh 21 Masa Terakhir (Pasal 17):' : 'PPh 21 TER:');
+            document.getElementById('slip-pot-pajak-row').style.display = (Math.abs(r.potPajak) > 0.005) ? 'flex' : 'none';
+            set('slip-pot-pajak-label', r.potPajak < 0 ? 'Pengembalian PPh 21 (lebih bayar → perusahaan):' : (r.isLast ? 'PPh 21 Masa Terakhir (Pasal 17):' : 'PPh 21 TER:'));
             set('slip-pot-pajak', rp(r.potPajak));
             set('slip-pinjaman', rp(r.cicilan));
             set('slip-thp-total', rp(r.thp));
