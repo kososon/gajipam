@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payroll & PPh 21 v2.1.8 - PT Prima Anugerah Makmur</title>
+    <title>Payroll & PPh 21 v2.2.0 - PT Prima Anugerah Makmur</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
@@ -11,18 +14,88 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
 
     <style>
-        #table-gaji-body tr { transition: background-color 120ms ease; }
-        #table-gaji-body tr:hover > td,
-        #table-gaji-body tr:focus-within > td { background-color: #fff7cc !important; }
-        #table-gaji-body tr:hover > td:first-child,
-        #table-gaji-body tr:focus-within > td:first-child { box-shadow: inset 4px 0 0 #f59e0b; font-weight: 800; }
+        /* ===== Tema gaya Claude: krem hangat, aksen terakota, judul serif ===== */
+        :root {
+            --bg: #FAF9F5;
+            --surface: #FFFFFF;
+            --surface-2: #F5F4ED;
+            --border: #E8E6DC;
+            --ink: #141413;
+            --ink-2: #3D3D3A;
+            --muted: #6F6E68;
+            --accent: #D97757;
+            --accent-dark: #BD5D3A;
+            --accent-soft: #F8E9E1;
+            --accent-line: #EBCDBF;
+        }
+        html { scroll-behavior: smooth; }
+        body, body.bg-slate-100 { background: var(--bg); color: var(--ink-2); font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif; -webkit-font-smoothing: antialiased; }
+        h1, h2, h3, h4 { font-family: 'Source Serif 4', Georgia, 'Times New Roman', serif; letter-spacing: -0.01em; color: var(--ink); }
+        ::selection { background: var(--accent-soft); color: var(--ink); }
+        html * { border-color: var(--border); }
 
-        .overflow-x-auto { max-height: 70vh; overflow: auto; }
-        table thead { position: sticky; top: 0; z-index: 20; box-shadow: 0 2px 4px rgba(15, 23, 42, 0.08); }
-        table thead th { position: sticky; top: 0; background-clip: padding-box; }
+        /* Permukaan & teks */
+        body .bg-white { background: var(--surface); }
+        body .bg-slate-50 { background: var(--surface-2); }
+        body .bg-slate-100 { background: #F0EEE6; }
+        body .text-slate-900, body .text-slate-800 { color: var(--ink); }
+        body .text-slate-700, body .text-slate-600 { color: var(--ink-2); }
+        body .text-slate-500, body .text-slate-400 { color: var(--muted); }
+        body .border-slate-200, body .border-slate-300 { border-color: var(--border); }
+        body .rounded-xl { border-radius: 16px; }
+        body .rounded-lg { border-radius: 10px; }
+        body .shadow-sm { box-shadow: 0 1px 2px rgba(20,20,19,.04), 0 1px 1px rgba(20,20,19,.03); }
+        body .shadow-2xl, body .shadow-xl { box-shadow: 0 20px 50px -12px rgba(61,57,41,.25); }
+        body .bg-slate-900\/80 { background: rgba(61,57,41,.55); }
+        body .bg-slate-900\/50 { background: rgba(61,57,41,.40); }
+
+        /* Aksen: biru -> terakota */
+        body .bg-blue-600 { background: var(--accent); }
+        body .hover\:bg-blue-700:hover { background: var(--accent-dark); }
+        body .bg-blue-50, body .bg-blue-50\/50, body .bg-blue-100 { background: var(--accent-soft); }
+        body .text-blue-600, body .text-blue-700, body .text-blue-900, body .text-blue-300 { color: var(--accent-dark); }
+        body .border-blue-200, body .border-blue-500\/30 { border-color: var(--accent-line); }
+        body .bg-blue-600\/30 { background: var(--accent-soft); }
+        body .focus\:ring-blue-500:focus { --tw-ring-color: rgba(217,119,87,.45); }
+
+        /* Tombol sekunder */
+        body .bg-indigo-600 { background: var(--ink); }
+        body .hover\:bg-indigo-700:hover { background: #2b2b29; }
+        body .bg-slate-800 { background: var(--ink); }
+        button { transition: background-color .15s ease, box-shadow .15s ease, transform .05s ease; }
+        button:active { transform: translateY(1px); }
+
+        /* Input */
+        input[type="text"], input[type="password"], input[type="date"], input[type="month"], input[type="number"], select {
+            background: var(--surface); border-color: var(--border);
+        }
+        input:focus, select:focus { outline: none; border-color: var(--accent) !important; box-shadow: 0 0 0 3px rgba(217,119,87,.18); }
+        input:disabled { background: var(--surface-2); }
+
+        /* Navigasi tab */
+        .tab-btn { border-radius: 10px; color: var(--ink-2); white-space: nowrap; }
+        .tab-btn:hover { background: var(--surface-2); }
+        .tab-btn.bg-blue-50 { background: var(--accent-soft); color: var(--accent-dark); box-shadow: inset 0 0 0 1px var(--accent-line); }
+
+        /* Tabel */
+        .overflow-x-auto { max-height: 70vh; overflow: auto; scrollbar-width: thin; scrollbar-color: #D8D5C8 transparent; }
+        table thead { position: sticky; top: 0; z-index: 20; box-shadow: 0 1px 0 var(--border); }
+        table thead th { position: sticky; top: 0; background-clip: padding-box; background: var(--surface-2) !important; color: var(--muted); font-weight: 600; letter-spacing: .02em; }
+        table tbody tr { transition: background-color 120ms ease; }
+        table tbody tr:hover > td { background-color: #FBF6F2; }
+        table tfoot td { background: var(--surface-2); font-weight: 700; }
+        #table-gaji-body tr:hover > td,
+        #table-gaji-body tr:focus-within > td { background-color: var(--accent-soft) !important; }
+        #table-gaji-body tr:hover > td:first-child,
+        #table-gaji-body tr:focus-within > td:first-child { box-shadow: inset 3px 0 0 var(--accent); font-weight: 800; }
+        .row-arsip td { opacity: .55; }
 
         .bpjs-tambahan-row { transition: all 0.2s ease; }
-        .bpjs-tambahan-row:hover { background-color: #f0fdf4; }
+        .bpjs-tambahan-row:hover { background-color: #F3F8F5; }
+
+        .brand-mark { width: 34px; height: 34px; border-radius: 10px; background: var(--accent); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-family: 'Source Serif 4', Georgia, serif; font-weight: 700; font-size: 17px; }
+        .stat-card { position: relative; overflow: hidden; }
+        .stat-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--accent-line); }
 
         @media print {
             body * { visibility: hidden; }
@@ -30,7 +103,7 @@
             #slip-print-area, #slip-print-area * { visibility: visible; }
             #slip-print-area {
                 position: absolute; left: 0; top: 0; width: 100%; height: 50vh;
-                padding: 10mm; box-sizing: border-box;
+                padding: 10mm; box-sizing: border-box; border: none;
             }
         }
     </style>
@@ -41,18 +114,20 @@
     <div id="login-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-50">
         <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md border border-slate-200">
             <div class="text-center mb-6">
-                <h1 class="text-xl font-bold text-slate-900">PT PRIMA ANUGERAH MAKMUR</h1>
-                <p class="text-xs text-slate-500 mt-1">Sistem Input Payroll & PPh 21 TER / Pasal 17 - v2.1.8</p>
+                <span class="brand-mark mb-3">P</span>
+                <h1 class="text-2xl font-semibold text-slate-900">PT Prima Anugerah Makmur</h1>
+                <p class="text-xs text-slate-500 mt-1">Sistem Payroll & PPh 21 TER / Pasal 17 · v2.2.0</p>
             </div>
             <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
                 <div>
-                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Username</label>
-                    <input type="text" id="login-username" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none uppercase">
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Email / Username</label>
+                    <input type="text" id="login-username" required autocomplete="username" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Password</label>
-                    <input type="password" id="login-password" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                    <input type="password" id="login-password" required autocomplete="current-password" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
                 </div>
+                <p id="login-error" class="text-xs text-red-600 hidden"></p>
                 <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg transition shadow-md">Masuk ke Sistem</button>
             </form>
         </div>
@@ -60,21 +135,28 @@
 
     <!-- Main Application Wrapper -->
     <div id="app-content" class="hidden min-h-screen flex flex-col">
-        <header class="bg-slate-900 text-white shadow-md no-print">
+        <header class="bg-white border-b border-slate-200 no-print">
             <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
-                <div>
-                    <h2 class="text-lg font-bold tracking-wide">PT PRIMA ANUGERAH MAKMUR <span class="text-xs font-normal text-slate-400 ml-2">v2.1.8</span></h2>
-                    <p class="text-xs text-slate-400">Pengelola Payroll & Tax System (NPWP Pemotong: 02.101.399.5-212.000)</p>
+                <div class="flex items-center gap-3">
+                    <span class="brand-mark">P</span>
+                    <div>
+                        <h2 class="text-lg font-semibold text-slate-900">PT Prima Anugerah Makmur <span class="text-xs font-normal text-slate-500 ml-1 font-sans">v2.2.0</span></h2>
+                        <p class="text-xs text-slate-500">Payroll & Tax System · NPWP Pemotong: 02.101.399.5-212.000</p>
+                    </div>
                 </div>
-                <div class="flex items-center gap-4">
-                    <span id="user-badge" class="bg-blue-600/30 text-blue-300 text-xs px-3 py-1 rounded-full border border-blue-500/30 font-semibold uppercase"></span>
-                    <button onclick="handleLogout()" class="text-xs bg-red-600/20 hover:bg-red-600 text-red-300 hover:text-white px-3 py-1.5 rounded transition border border-red-500/30">Logout</button>
+                <div class="flex items-center gap-3">
+                    <button onclick="downloadBackup()" class="text-xs border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5" title="Unduh seluruh data Firebase sebagai file JSON">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        Backup Data
+                    </button>
+                    <span id="user-badge" class="bg-blue-100 text-blue-700 text-xs px-3 py-1 rounded-full border border-blue-200 font-semibold uppercase"></span>
+                    <button onclick="handleLogout()" class="text-xs border border-slate-200 hover:bg-slate-50 text-slate-600 px-3 py-1.5 rounded-lg transition">Logout</button>
                 </div>
             </div>
         </header>
 
         <nav class="bg-white border-b border-slate-200 no-print">
-            <div class="max-w-7xl mx-auto px-4 flex gap-2 overflow-x-auto text-sm font-medium py-2">
+            <div class="max-w-7xl mx-auto px-4 flex gap-1 overflow-x-auto text-sm font-medium py-2">
                 <button onclick="switchTab('dashboard')" class="tab-btn px-4 py-2 rounded-lg hover:bg-slate-100 text-slate-700 active-tab bg-blue-50 text-blue-600 font-bold" id="btn-dashboard">Dashboard</button>
                 <button onclick="switchTab('karyawan')" class="tab-btn px-4 py-2 rounded-lg hover:bg-slate-100 text-slate-700" id="btn-karyawan">Data Karyawan</button>
                 <button onclick="switchTab('gaji')" class="tab-btn px-4 py-2 rounded-lg hover:bg-slate-100 text-slate-700" id="btn-gaji">Data Gaji & THR</button>
@@ -89,7 +171,7 @@
 
         <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6">
             <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-6 flex flex-wrap justify-between items-center gap-4 no-print">
-                <div class="flex items-center gap-3">
+                <div class="flex items-center gap-3 flex-wrap">
                     <label class="text-xs font-bold text-slate-500 uppercase">Periode Data:</label>
                     <select id="filter-periode-type" onchange="loadGlobalData()" class="border rounded px-3 py-1.5 text-sm bg-slate-50">
                         <option value="monthly">Bulanan</option>
@@ -109,36 +191,36 @@
             <!-- TAB 1: DASHBOARD -->
             <section id="tab-dashboard" class="tab-content">
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <div class="stat-card bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
                         <p class="text-xs font-semibold text-slate-500 uppercase">Total Karyawan Aktif</p>
                         <p id="dash-total-karyawan" class="text-2xl font-bold text-slate-800 mt-1">0</p>
                     </div>
-                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <div class="stat-card bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
                         <p class="text-xs font-semibold text-slate-500 uppercase">Total THP</p>
-                        <p id="dash-total-bruto" class="text-xl font-bold text-emerald-600 mt-1">Rp 0</p>
+                        <p id="dash-total-bruto" class="text-xl font-bold text-emerald-700 mt-1">Rp 0</p>
                     </div>
-                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <div class="stat-card bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
                         <p class="text-xs font-semibold text-slate-500 uppercase">Total PPh 21</p>
                         <p id="dash-total-pph" class="text-xl font-bold text-blue-600 mt-1">Rp 0</p>
                     </div>
-                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <div class="stat-card bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
                         <p class="text-xs font-semibold text-slate-500 uppercase">Total BPJS TK (Pers + Kary)</p>
-                        <p id="dash-total-bpjs-tk" class="text-xl font-bold text-indigo-600 mt-1">Rp 0</p>
+                        <p id="dash-total-bpjs-tk" class="text-xl font-bold text-indigo-700 mt-1">Rp 0</p>
                     </div>
-                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <div class="stat-card bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
                         <p class="text-xs font-semibold text-slate-500 uppercase">Total BPJS Kes (Pers + Kary + Tambahan)</p>
-                        <p id="dash-total-bpjs-kes" class="text-xl font-bold text-teal-600 mt-1">Rp 0</p>
+                        <p id="dash-total-bpjs-kes" class="text-xl font-bold text-teal-700 mt-1">Rp 0</p>
                     </div>
                 </div>
                 <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                    <div class="p-4 border-b border-slate-200 font-bold text-slate-700">Ringkasan Payroll Per Karyawan Aktif (A-Z)</div>
+                    <div class="p-4 border-b border-slate-200 font-semibold text-slate-800" style="font-family:'Source Serif 4',Georgia,serif;font-size:1.05rem">Ringkasan Payroll Per Karyawan Aktif (A-Z)</div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-sm text-left text-slate-600">
                             <thead class="bg-slate-50 text-xs uppercase text-slate-500 border-b">
                                 <tr>
                                     <th class="p-3">Nama</th>
                                     <th class="p-3">Jabatan</th>
-                                    <th class="p-3">Gaji Nett</th>
+                                    <th class="p-3">Gaji Nett (THP)</th>
                                     <th class="p-3">Dasar JHT</th>
                                     <th class="p-3">Dasar BPJS Kes</th>
                                     <th class="p-3">BPJS Kes Tambahan</th>
@@ -154,7 +236,7 @@
             <!-- TAB 2: DATA KARYAWAN -->
             <section id="tab-karyawan" class="tab-content hidden">
                 <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
-                    <h3 class="font-bold text-slate-700">Master Data Karyawan & Masa Kerja (A-Z)</h3>
+                    <h3 class="font-semibold text-lg text-slate-800">Master Data Karyawan & Masa Kerja (A-Z)</h3>
                     <div class="flex items-center gap-2">
                         <input type="text" id="search-karyawan" onkeyup="renderKaryawanTable()" placeholder="Cari nama karyawan..." class="border rounded-lg px-3 py-1.5 text-xs bg-white focus:ring-2 focus:ring-blue-500 outline-none w-48 sm:w-64">
                         <button onclick="openModalKaryawan()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-2 rounded-lg font-medium">+ Tambah Karyawan</button>
@@ -180,6 +262,7 @@
                         </table>
                     </div>
                 </div>
+                <p class="text-[11px] text-slate-500 mt-2">Karyawan yang diarsipkan tidak dihapus: riwayat gaji tetap tersimpan dan masih dihitung pada PPh 21 Akhir Tahun. Gunakan "Pulihkan" untuk mengaktifkan kembali.</p>
             </section>
 
             <!-- TAB 3: DATA GAJI & THR -->
@@ -187,8 +270,8 @@
                 <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                     <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
                         <div>
-                            <h3 class="font-bold text-slate-700">Input & Edit Gaji Bulanan Per Periode (A-Z)</h3>
-                            <p class="text-xs text-slate-500">Nilai Dasar BPJS TK/Kes bulanan dapat disesuaikan manual & terkunci permanen per periode</p>
+                            <h3 class="font-semibold text-lg text-slate-800">Input & Edit Gaji Bulanan Per Periode (A-Z)</h3>
+                            <p class="text-xs text-slate-500">Nilai Dasar BPJS TK/Kes bulanan dapat disesuaikan manual & terkunci permanen per periode. Nilai PPh 21 yang dipotong ikut tersimpan saat menekan Simpan.</p>
                         </div>
                         <div class="flex items-center gap-2">
                             <input type="text" id="search-gaji" onkeyup="renderGajiTable()" placeholder="Cari nama karyawan..." class="border rounded-lg px-3 py-1.5 text-xs bg-white focus:ring-2 focus:ring-blue-500 outline-none w-48 sm:w-64">
@@ -229,7 +312,7 @@
             <section id="tab-pinjaman" class="tab-content hidden">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                        <h4 class="font-bold text-slate-700 mb-3 text-sm">Form Pinjaman Karyawan</h4>
+                        <h4 class="font-semibold text-slate-800 mb-3 text-base">Form Pinjaman Karyawan</h4>
                         <form id="form-pinjaman" onsubmit="savePinjaman(event)" class="space-y-3">
                             <div>
                                 <label class="text-xs font-semibold text-slate-600">Pilih Karyawan</label>
@@ -243,11 +326,12 @@
                                 <label class="text-xs font-semibold text-slate-600">Cicilan Per Bulan</label>
                                 <input type="text" id="pinjam-cicilan" onkeyup="formatInputRibuan(this)" class="w-full border rounded p-2 text-sm" required>
                             </div>
+                            <p class="text-[11px] text-slate-500">Cicilan mulai dipotong dari periode yang sedang dipilih. Sisa pinjaman berkurang otomatis satu kali per periode saat "Simpan Semua" di Data Gaji.</p>
                             <button type="submit" class="w-full bg-blue-600 text-white text-xs py-2 rounded-lg font-medium">Simpan Data Pinjaman</button>
                         </form>
                     </div>
                     <div class="md:col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                        <div class="p-3 border-b font-bold text-sm text-slate-700">Tracking Pinjaman Active</div>
+                        <div class="p-3 border-b font-semibold text-base text-slate-800">Tracking Pinjaman</div>
                         <div class="overflow-x-auto">
                             <table class="w-full text-xs text-left">
                                 <thead class="bg-slate-50 border-b uppercase text-slate-500">
@@ -256,6 +340,7 @@
                                         <th class="p-3">Total Plafon</th>
                                         <th class="p-3">Cicilan/Bln</th>
                                         <th class="p-3">Sisa Pinjaman</th>
+                                        <th class="p-3">Terakhir Dipotong</th>
                                         <th class="p-3 text-right">Aksi</th>
                                     </tr>
                                 </thead>
@@ -268,8 +353,11 @@
 
             <!-- TAB 5: LAPOR PPH 21 BULANAN -->
             <section id="tab-lapor-pph" class="tab-content hidden">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="font-bold text-slate-700">Kalkulasi PPh 21 TER Bulanan & Export XML Coretax (A-Z)</h3>
+                <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
+                    <div>
+                        <h3 class="font-semibold text-lg text-slate-800">Kalkulasi PPh 21 TER Bulanan & Export XML Coretax (A-Z)</h3>
+                        <p class="text-xs text-slate-500">Masa pajak terakhir (Desember / bulan resign) memakai tarif Pasal 17 dan dilaporkan lewat BPA1, sehingga tidak ikut di XML BPMP.</p>
+                    </div>
                     <button onclick="exportToCoretaxXML()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3 py-2 rounded-lg font-medium shadow transition">
                         Export XML MmPayroll Coretax
                     </button>
@@ -291,6 +379,7 @@
                                 </tr>
                             </thead>
                             <tbody id="table-lapor-pph-body"></tbody>
+                            <tfoot id="table-lapor-pph-foot"></tfoot>
                         </table>
                     </div>
                 </div>
@@ -300,16 +389,16 @@
             <section id="tab-pph-akhir" class="tab-content hidden">
                 <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-4 flex flex-wrap justify-between items-center gap-4">
                     <div>
-                        <h3 class="font-bold text-slate-800 text-base">Penghitungan PPh 21 Tahunan (Pasal 17 vs TER Proporsional) (A-Z)</h3>
-                        <p class="text-xs text-slate-500">Evaluasi Lebih/Kurang Bayar PPh 21 Disesuaikan Masa Kerja Efektif Karyawan</p>
+                        <h3 class="font-semibold text-lg text-slate-800">Penghitungan PPh 21 Tahunan (Pasal 17 vs TER Proporsional) (A-Z)</h3>
+                        <p class="text-xs text-slate-500">Memperhitungkan penghasilan neto & PPh 21 dari pemberi kerja sebelumnya (isi di Data Karyawan → Edit → Penghasilan Pemberi Kerja Sebelumnya).</p>
                     </div>
                     <div class="flex items-center gap-3">
                         <div class="flex items-center gap-2">
-                            <label class="text-xs font-bold text-slate-600 uppercase">Pilih Tahun Pajak:</label>
-                            <select id="pph-akhir-year" onchange="renderPphAkhirTahunTable()" class="border rounded px-3 py-1.5 text-sm bg-slate-50 font-bold text-amber-700 border-amber-300"></select>
+                            <label class="text-xs font-bold text-slate-600 uppercase">Tahun Pajak:</label>
+                            <select id="pph-akhir-year" onchange="renderPphAkhirTahunTable(true)" class="border rounded px-3 py-1.5 text-sm bg-slate-50 font-bold text-amber-700 border-amber-300"></select>
                         </div>
-                        <button onclick="exportAnnualCoretaxXML()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3 py-1.5 rounded-lg font-bold shadow transition">
-                            Export Rekap PPh Tahunan (XML)
+                        <button onclick="exportAnnualRekapExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3 py-1.5 rounded-lg font-bold shadow transition">
+                            Export Rekap Tahunan (Excel)
                         </button>
                     </div>
                 </div>
@@ -321,13 +410,15 @@
                                     <th class="p-2.5 border">Karyawan</th>
                                     <th class="p-2.5 border">Masa Kerja (Bln)</th>
                                     <th class="p-2.5 border">Bruto Masa Kerja</th>
-                                    <th class="p-2.5 border">Max Biaya Jabatan</th>
+                                    <th class="p-2.5 border">Biaya Jabatan</th>
                                     <th class="p-2.5 border">Iuran BPJS Kary</th>
-                                    <th class="p-2.5 border">Neto Masa Kerja</th>
+                                    <th class="p-2.5 border">Neto Pemberi Kerja Lama</th>
+                                    <th class="p-2.5 border">Neto Setahun</th>
                                     <th class="p-2.5 border">PTKP Setahun</th>
-                                    <th class="p-2.5 border">PKP Masa Kerja</th>
+                                    <th class="p-2.5 border">PKP</th>
                                     <th class="p-2.5 border">PPh 21 Terutang (Pasal 17)</th>
                                     <th class="p-2.5 border">PPh 21 Dipotong s.d. Sebelum Masa Terakhir</th>
+                                    <th class="p-2.5 border">PPh 21 Dipotong Pemberi Kerja Lama</th>
                                     <th class="p-2.5 border text-center">Selisih Status</th>
                                 </tr>
                             </thead>
@@ -348,7 +439,7 @@
                 <div id="slip-print-area" class="bg-white p-6 rounded-xl border border-slate-300 max-w-2xl mx-auto text-xs leading-relaxed">
                     <div class="text-center border-b pb-3 mb-3">
                         <h2 class="font-bold text-base uppercase">PT PRIMA ANUGERAH MAKMUR</h2>
-                        <p class="text-slate-500">SLIP GAJI KARYAWAN - PERIODE <span id="slip-periode-text">AGUSTUS 2026</span></p>
+                        <p class="text-slate-500">SLIP GAJI KARYAWAN - PERIODE <span id="slip-periode-text">-</span></p>
                     </div>
 
                     <div class="grid grid-cols-2 gap-2 mb-4">
@@ -358,7 +449,7 @@
                         </div>
                         <div>
                             <p><strong>NIK:</strong> <span id="slip-nik">-</span></p>
-                            <p><strong>Status Pegawai:</strong> Tetap (PKWTT)</p>
+                            <p><strong>Status Pegawai:</strong> <span id="slip-status-kerja">Tetap (PKWTT)</span></p>
                         </div>
                     </div>
 
@@ -379,8 +470,7 @@
                             <div class="flex justify-between"><span>BPJS TK JHT (2%):</span><span id="slip-bpjs-jht">0</span></div>
                             <div class="flex justify-between"><span>BPJS TK JP (1%):</span><span id="slip-bpjs-jp">0</span></div>
                             <div class="flex justify-between" id="slip-bpjs-kes-tambahan-row" style="display:none;"><span>BPJS Kes Tambahan (Pribadi):</span><span id="slip-bpjs-kes-tambahan">0</span></div>
-                            <div class="flex justify-between text-red-700 font-semibold" id="slip-pot-pajak-row" style="display:none;"><span>PPh 21 TER:</span><span id="slip-pot-pajak">0</span></div>
-                            <div class="flex justify-between font-bold text-red-700 bg-red-50 px-1 py-0.5 rounded" id="slip-kb-row" style="display:none;"><span>Kurang Bayar PPh 21 (KB):</span><span id="slip-kb-val">0</span></div>
+                            <div class="flex justify-between text-red-700 font-semibold" id="slip-pot-pajak-row" style="display:none;"><span id="slip-pot-pajak-label">PPh 21 TER:</span><span id="slip-pot-pajak">0</span></div>
                             <div class="flex justify-between"><span>Cicilan Pinjaman:</span><span id="slip-pinjaman">0</span></div>
                         </div>
                     </div>
@@ -392,7 +482,7 @@
 
                     <div class="grid grid-cols-2 text-center mt-8">
                         <div>
-                            <p id="slip-ttd-kota-tgl">Pekanbaru, 31 Agustus 2026</p>
+                            <p id="slip-ttd-kota-tgl">Pekanbaru</p>
                             <p class="font-semibold">Direktur,</p>
                             <br><br><br>
                             <p class="font-bold text-underline" id="slip-nama-direktur">( ABDUL HALEK )</p>
@@ -409,8 +499,8 @@
 
             <!-- TAB 8: DATA DIREKTUR & PERUSAHAAN -->
             <section id="tab-direktur" class="tab-content hidden">
-                <div class="bg-white p-4 rounded-xl border max-w-md mx-auto shadow-sm">
-                    <h3 class="font-bold text-slate-700 mb-4">Pengaturan Master Direktur & Perusahaan</h3>
+                <div class="bg-white p-5 rounded-xl border max-w-md mx-auto shadow-sm">
+                    <h3 class="font-semibold text-lg text-slate-800 mb-4">Pengaturan Master Direktur & Perusahaan</h3>
                     <form onsubmit="saveDirektur(event)" class="space-y-3">
                         <div>
                             <label class="text-xs font-semibold text-slate-600">Nama Direktur</label>
@@ -437,8 +527,8 @@
             <!-- TAB 9: AUDIT LOG -->
             <section id="tab-audit" class="tab-content hidden">
                 <div class="flex justify-between items-center mb-4">
-                    <h3 class="font-bold text-slate-700">Audit Log Aktivitas Admin</h3>
-                    <button onclick="clearAllAuditLogs()" id="btn-clear-audit" class="superuser-only hidden bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-2 rounded-lg font-medium transition shadow">
+                    <h3 class="font-semibold text-lg text-slate-800">Audit Log Aktivitas Admin</h3>
+                    <button onclick="clearAllAuditLogs()" id="btn-clear-audit" class="superuser-only hidden border border-red-300 text-red-700 hover:bg-red-50 text-xs px-3 py-2 rounded-lg font-medium transition">
                         Hapus Semua Log
                     </button>
                 </div>
@@ -465,7 +555,7 @@
     <!-- Modal Form Karyawan -->
     <div id="modal-karyawan" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50">
         <div class="bg-white p-6 rounded-xl shadow-xl w-full max-w-lg border max-h-[90vh] overflow-y-auto">
-            <h3 id="modal-karyawan-title" class="font-bold text-slate-800 mb-4 text-base">Tambah Data Karyawan</h3>
+            <h3 id="modal-karyawan-title" class="font-semibold text-slate-800 mb-4 text-xl">Tambah Data Karyawan</h3>
             <form onsubmit="saveKaryawan(event)" class="space-y-4">
                 <input type="hidden" id="kary-id-edit">
                 <div class="grid grid-cols-2 gap-3">
@@ -475,6 +565,22 @@
                 <div class="grid grid-cols-2 gap-3">
                     <div><label class="text-xs font-semibold text-slate-600">Jabatan</label><input type="text" id="kary-jabatan" class="w-full border rounded p-2 text-sm" required></div>
                     <div><label class="text-xs font-semibold text-slate-600">NPWP / NIK Pajak</label><input type="text" id="kary-npwp" class="w-full border rounded p-2 text-sm"></div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-xs font-semibold text-slate-600">Status Pegawai (untuk slip)</label>
+                        <select id="kary-status-kerja" class="w-full border rounded p-2 text-sm bg-slate-50">
+                            <option value="PKWTT">Tetap (PKWTT)</option>
+                            <option value="PKWT">Kontrak (PKWT)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold text-slate-600">Status Wajib Pajak</label>
+                        <select id="kary-status-pegawai" class="w-full border rounded p-2 text-sm bg-slate-50">
+                            <option value="Resident">Resident (WNI / WPDN)</option>
+                            <option value="Foreign">Foreign (WNA / WPLN)</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="p-3 bg-blue-50/50 border border-blue-200 rounded-lg space-y-3">
                     <div class="flex items-center gap-2">
@@ -511,6 +617,26 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Penghasilan pemberi kerja sebelumnya -->
+                <div class="border-t pt-3 bg-slate-50 p-3 rounded-lg border">
+                    <div class="flex items-center justify-between mb-1">
+                        <h4 class="font-bold text-xs text-slate-700 uppercase">Penghasilan Pemberi Kerja Sebelumnya</h4>
+                        <select id="kary-prev-year" onchange="onPrevYearChange()" class="border rounded p-1 text-xs bg-white font-bold"></select>
+                    </div>
+                    <p class="text-[10px] text-slate-500 mb-2">Isi bila karyawan pindahan pada tahun pajak terpilih dan menyerahkan bukti potong A1 dari pemberi kerja lama. Dikosongkan = tidak ada. Data ini dipakai di PPh 21 masa pajak terakhir.</p>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="col-span-2"><label class="text-[11px] font-semibold text-slate-600 block">Nama Pemberi Kerja Lama</label><input type="text" id="kary-prev-nama" class="w-full border rounded p-1.5 text-xs bg-white"></div>
+                        <div><label class="text-[11px] font-semibold text-slate-600 block">Nomor Bukti Potong A1 Lama</label><input type="text" id="kary-prev-bpa1" class="w-full border rounded p-1.5 text-xs bg-white"></div>
+                        <div><label class="text-[11px] font-semibold text-slate-600 block">Masa Kerja di Sana (bulan, 0–11)</label><input type="number" min="0" max="11" id="kary-prev-masa" class="w-full border rounded p-1.5 text-xs bg-white"></div>
+                        <div><label class="text-[11px] font-semibold text-slate-600 block">Penghasilan Bruto</label><input type="text" id="kary-prev-bruto" onkeyup="formatInputRibuan(this); recalcPrevNeto()" class="w-full border rounded p-1.5 text-xs bg-white text-right"></div>
+                        <div><label class="text-[11px] font-semibold text-slate-600 block">Biaya Jabatan</label><input type="text" id="kary-prev-bj" onkeyup="formatInputRibuan(this); recalcPrevNeto()" class="w-full border rounded p-1.5 text-xs bg-white text-right"></div>
+                        <div><label class="text-[11px] font-semibold text-slate-600 block">Iuran Pensiun/JHT/JP Karyawan</label><input type="text" id="kary-prev-iuran" onkeyup="formatInputRibuan(this); recalcPrevNeto()" class="w-full border rounded p-1.5 text-xs bg-white text-right"></div>
+                        <div><label class="text-[11px] font-semibold text-slate-600 block">Penghasilan Neto (otomatis, bisa diubah)</label><input type="text" id="kary-prev-neto" onkeyup="formatInputRibuan(this)" class="w-full border rounded p-1.5 text-xs bg-white text-right font-bold"></div>
+                        <div class="col-span-2"><label class="text-[11px] font-semibold text-slate-600 block">PPh 21 yang Sudah Dipotong Pemberi Kerja Lama</label><input type="text" id="kary-prev-pph" onkeyup="formatInputRibuan(this)" class="w-full border rounded p-1.5 text-xs bg-white text-right font-bold"></div>
+                    </div>
+                </div>
+
                 <div class="border-t pt-3 bg-slate-50 p-3 rounded-lg border">
                     <h4 class="font-bold text-xs text-indigo-700 uppercase mb-2">Master BPJS Ketenagakerjaan</h4>
                     <div class="space-y-2">
@@ -537,7 +663,7 @@
                             <input type="text" id="kary-bpjs-kes-base" onkeyup="formatInputRibuan(this)" class="w-full border rounded p-1.5 text-xs" placeholder="Misal: 5.000.000">
                         </div>
                         <div><label class="text-[11px] font-semibold text-slate-600 block">Berlaku Mulai Bulan/Tahun BPJS Kes</label><input type="month" id="kary-bpjs-kes-start" class="w-full border rounded p-1.5 text-xs bg-white" required></div>
-                        
+
                         <div class="pt-2 mt-2 border-t border-teal-200">
                             <div class="flex items-center justify-between mb-2">
                                 <label class="text-[11px] font-bold text-teal-800">BPJS Kes Tambahan Peserta (Ditanggung Pribadi)</label>
@@ -562,14 +688,34 @@
 
     <script>
         /* =========================================================================
-           CHANGELOG v2.1.8
-           1. Print Rekap PDF: Kolom auto-fit mengikuti panjang isi (bukan fix width)
-           2. Print Rekap PDF: Font size tabel 8px, header group 9px
-           3. Print Rekap PDF: Hapus white-space: nowrap agar teks bisa wrap
-           4. Print Rekap PDF: Window size 1600x700 untuk 15 kolom
-           Versi: v2.1.7 → v2.1.8
+           CHANGELOG v2.2.0  (dari v2.1.8)
+           TAMPILAN : tema gaya Claude (krem, terakota, judul serif).
+           DATA AMAN: tombol Backup JSON; karyawan & pinjaman DIARSIPKAN (bukan dihapus);
+                      simpan gaji memakai merge + menyimpan versi sebelumnya; batch dipecah;
+                      hapus audit log harus ketik HAPUS & otomatis diunduh dulu.
+           PPh 21   : data penghasilan neto & PPh 21 pemberi kerja sebelumnya (per tahun);
+                      masa pajak terakhir (Desember / bulan resign) = Pasal 17 gabungan;
+                      PPh 21 Jan-Nov memakai nilai yang benar-benar dipotong (disimpan saat
+                      Simpan Semua), fallback hitung ulang untuk data lama; BPMP XML tidak
+                      memuat masa pajak terakhir; XML tahunan karangan diganti rekap Excel;
+                      TER kategori C: baris 33% (965jt-1,419M) ditambahkan;
+                      plafon JP per periode (Mar-2022, Mar-2023, Mar-2024, Mar-2025, Mar-2026).
+           BUG      : kartu dashboard tidak lagi tertimpa tab Lapor; perhitungan THP satu
+                      sumber (calcPeriod) untuk dashboard/slip/rekap; cicilan pinjaman
+                      berkurang otomatis; periode slip dari periode data; escape HTML (XSS);
+                      login Firebase Auth (email) + login lama (hash) sementara.
            ========================================================================= */
-        const APP_VERSION = '2.1.8';
+        const APP_VERSION = '2.2.0';
+
+        // ---- Login ----
+        // Isi email superuser (akses tab Direktur & Audit) untuk login Firebase Auth.
+        const SUPERUSER_EMAILS = [];
+        // Setelah akun Firebase Auth dibuat & aturan Firestore dikunci, ubah ke false.
+        const LEGACY_LOGIN_ENABLED = true;
+        const LEGACY_USERS = {
+            WILSON: { hash: '29b669e5ba52a28041e707b2573822fb1867dbd8753efa9daf098636b62c133d', role: 'SUPERUSER' },
+            ADMIN:  { hash: '84c0f939436fd939d52bd7b1f1105e909d98d737497101d71c3671ba4b700827', role: 'ADMIN' }
+        };
 
         const firebaseConfig = {
             apiKey: "AIzaSyAn0GEPGWMEmDslzabkHR2DAnDFctHRjDw",
@@ -580,18 +726,35 @@
             appId: "1:222267264541:web:d175748e05ea7f5e5f80f4",
             measurementId: "G-TWBFQCSGY5"
         };
-        
+
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
+        const auth = firebase.auth();
 
         const BPJS_RATE = {
             TK: { JHT_KARYAWAN: 0.02, JHT_PERUSAHAAN: 0.037, JP_KARYAWAN: 0.01, JP_PERUSAHAAN: 0.02, JKK: 0.0054, JKK_LABEL: 'SESUAI RISIKO PERUSAHAAN', JKM: 0.003 },
             KES: { KARYAWAN: 0.01, PERUSAHAAN: 0.04 }
         };
 
-        const MAX_DASAR_BPJS_JP = 11086300;
+        // Batas upah iuran JP naik tiap Maret (sumber: surat BPJS Ketenagakerjaan).
+        const JP_CAP_TABLE = [
+            ['2026-03', 11086300],
+            ['2025-03', 10547400],
+            ['2024-03', 10042300],
+            ['2023-03', 9559600],
+            ['2022-03', 9077600],
+            ['0000-01', 8754600]
+        ];
+        function getMaxDasarJp(periode) {
+            const p = normalizePeriode(periode) || '9999-12';
+            for (const [from, cap] of JP_CAP_TABLE) { if (p >= from) return cap; }
+            return JP_CAP_TABLE[JP_CAP_TABLE.length - 1][1];
+        }
         const MAX_DASAR_BPJS_KES = 12000000;
         const MAX_BPJS_KES_TAMBAHAN = 5;
+        const BIAYA_JABATAN_RATE = 0.05;
+        const BIAYA_JABATAN_MAX_BULAN = 500000;
+        const BIAYA_JABATAN_MAX_TAHUN = 6000000;
 
         const PTKP_DICT = {
             'TK/0': 54000000, 'TK/1': 58500000, 'TK/2': 63000000, 'TK/3': 67500000,
@@ -602,14 +765,22 @@
         let activeTab = 'dashboard';
         let globalKaryawan = [];
         let globalPayrollMap = {};
-        let globalAnnualCalculations = {};
-        let globalPinjamanMap = {};
+        let annualCache = {};
+        let globalPinjamanDocs = [];
+        let globalPinjamanByKary = {};
         let globalDirektur = { nama: "ABDUL HALEK", kota: "Pekanbaru", npwpPemotong: "0210139952122000", nitkuPemotong: "0210139952122000000000" };
+        let loadSeq = 0;
 
-        function normalizeTin16(value) { 
-            let d = String(value || '').replace(/\D/g, ''); 
-            if (d.length === 15) d = '0' + d; 
-            return d.substring(0, 16); 
+        // ---------- Util umum ----------
+        function esc(value) {
+            return String(value === null || value === undefined ? '' : value)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
+        function normalizeTin16(value) {
+            let d = String(value || '').replace(/\D/g, '');
+            if (d.length === 15) d = '0' + d;
+            return d.substring(0, 16);
         }
 
         function getNitkuPemotong(npwpOverride) {
@@ -623,60 +794,14 @@
         function getBpmpCounterpart(k) {
             const tin = normalizeTin16(k.npwp || k.nik || '');
             const statusPegawai = (k.statusPegawai || 'Resident').toString();
-            return { 
-                statusPegawai: statusPegawai === 'Foreign' ? 'Foreign' : 'Resident', 
-                tin: tin, 
-                passport: statusPegawai === 'Foreign' ? (k.passport || '') : '' 
+            return {
+                statusPegawai: statusPegawai === 'Foreign' ? 'Foreign' : 'Resident',
+                tin: tin,
+                passport: statusPegawai === 'Foreign' ? (k.passport || '') : ''
             };
         }
 
-        function getBpjsPerusahaanKenaPajak(kary, selectedPeriod, customPayroll = null) {
-            const tk = getBpjsTkComponents(kary, selectedPeriod, customPayroll);
-            const dasarKes = getDasarBpjsKes(kary, selectedPeriod, customPayroll);
-            const jkkPers = tk.jkk * BPJS_RATE.TK.JKK;
-            const jkmPers = tk.jkm * BPJS_RATE.TK.JKM;
-            const kesPers = dasarKes * BPJS_RATE.KES.PERUSAHAAN;
-            return jkkPers + jkmPers + kesPers;
-        }
-
-        function getTotalSetoranBpjsTk(kary, selectedPeriod, customPayroll = null) {
-            const tk = getBpjsTkComponents(kary, selectedPeriod, customPayroll);
-            const jhtTotal = tk.jht * (BPJS_RATE.TK.JHT_KARYAWAN + BPJS_RATE.TK.JHT_PERUSAHAAN);
-            const jpTotal = tk.jp * (BPJS_RATE.TK.JP_KARYAWAN + BPJS_RATE.TK.JP_PERUSAHAAN);
-            const jkkTotal = tk.jkk * BPJS_RATE.TK.JKK;
-            const jkmTotal = tk.jkm * BPJS_RATE.TK.JKM;
-            return jhtTotal + jpTotal + jkkTotal + jkmTotal;
-        }
-
-        function getTotalSetoranBpjsKes(kary, selectedPeriod, customPayroll = null) {
-            const dasarKes = getDasarBpjsKes(kary, selectedPeriod, customPayroll);
-            const kesTotal = dasarKes * (BPJS_RATE.KES.KARYAWAN + BPJS_RATE.KES.PERUSAHAAN);
-            const tambahan = getBpjsKesTambahanTotal(kary, selectedPeriod);
-            return kesTotal + tambahan;
-        }
-
-        function normalizeBpjsKesTambahanList(kary) {
-            if (Array.isArray(kary.bpjsKesTambahanList)) {
-                return kary.bpjsKesTambahanList.filter(item => item && item.nominal > 0);
-            }
-            if (kary.bpjsKesTambahan && Number(kary.bpjsKesTambahan) > 0) {
-                return [{ nominal: Number(kary.bpjsKesTambahan), mulai: kary.bpjsKesStart || getSelectedPeriode() }];
-            }
-            return [];
-        }
-
-        function getBpjsKesTambahanTotal(kary, periode) {
-            const list = normalizeBpjsKesTambahanList(kary);
-            const periodeNorm = normalizePeriode(periode);
-            let total = 0;
-            list.forEach(item => {
-                const mulaiNorm = normalizePeriode(item.mulai);
-                if (mulaiNorm && periodeNorm >= mulaiNorm) {
-                    total += Number(item.nominal || 0);
-                }
-            });
-            return total;
-        }
+        function normalizePeriode(value) { return value ? String(value).substring(0, 7) : ''; }
 
         function populateYearDropdown() {
             const yearSelect = document.getElementById('pph-akhir-year');
@@ -702,7 +827,8 @@
         }
 
         function getSelectedPeriode() {
-            const filter = document.getElementById('filter-month').value;
+            const el = document.getElementById('filter-month');
+            const filter = el ? el.value : '';
             if (filter) return filter;
             const now = new Date();
             return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -721,9 +847,8 @@
             }
         }
 
-        function normalizePeriode(value) { return value ? String(value).substring(0, 7) : ''; }
-
         function isKaryawanActiveInPeriode(kary, selectedPeriod) {
+            if (kary.arsip === true) return false;
             const periode = normalizePeriode(selectedPeriod);
             if (!periode) return false;
             const start = normalizePeriode(kary.startKerja) || '0000-01';
@@ -748,6 +873,28 @@
             return { startMonth, endMonth, masaKerjaAktif: endMonth - startMonth + 1 };
         }
 
+        function isLastTaxMonthFor(kary, periode) {
+            const per = normalizePeriode(periode);
+            const year = per.substring(0, 4);
+            const emp = getEmploymentMonthsInYear(kary, year);
+            if (!emp) return false;
+            return `${year}-${String(emp.endMonth).padStart(2, '0')}` === per;
+        }
+
+        function getPrevEmployer(kary, year) {
+            const map = kary.penghasilanSebelumnya || {};
+            const d = map[String(year)];
+            if (!d) return null;
+            const out = {
+                nama: d.nama || '', bpa1: d.bpa1 || '',
+                masaBulan: Math.max(0, Math.min(11, Number(d.masaBulan) || 0)),
+                bruto: Number(d.bruto) || 0, biayaJabatan: Number(d.biayaJabatan) || 0,
+                iuran: Number(d.iuran) || 0, neto: Number(d.neto) || 0, pph21: Number(d.pph21) || 0
+            };
+            if (!out.neto && !out.pph21 && !out.bruto) return null;
+            return out;
+        }
+
         function formatNPWPDisplay(raw) {
             if (!raw) return '02.101.399.5-212.000';
             const clean = raw.replace(/\D/g, '');
@@ -757,7 +904,7 @@
         }
 
         function escapeXml(unsafe) {
-            if (!unsafe) return '';
+            if (unsafe === null || unsafe === undefined) return '';
             return unsafe.toString().replace(/[<>&'"]/g, function (c) {
                 switch (c) { case '<': return '&lt;'; case '>': return '&gt;'; case '&': return '&amp;'; case '\'': return '&apos;'; case '"': return '&quot;'; }
             });
@@ -771,12 +918,72 @@
             setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
         }
 
+        function formatRibuan(val) { return new Intl.NumberFormat('id-ID').format(Math.round(val) || 0); }
+        function formatInputRibuan(el) {
+            const raw = String(el.value || '').trim();
+            const isNegative = raw.startsWith('-');
+            const num = raw.replace(/\D/g, '');
+            if (!num) { el.value = isNegative ? '-' : ''; return; }
+            el.value = isNegative ? `-${new Intl.NumberFormat('id-ID').format(Number(num))}` : new Intl.NumberFormat('id-ID').format(Number(num));
+        }
+        function cleanNumber(str) {
+            if (!str) return 0;
+            const s = str.toString().trim();
+            const neg = s.startsWith('-');
+            const v = parseFloat(s.replace(/\./g, '').replace(/,/g, '.').replace('-', '')) || 0;
+            return neg ? -v : v;
+        }
+
+        function getTerCategory(ptkp) {
+            if (['TK/0', 'TK/1', 'K/0'].includes(ptkp)) return 'A';
+            if (['TK/2', 'TK/3', 'K/1', 'K/2'].includes(ptkp)) return 'B';
+            if (['K/3'].includes(ptkp)) return 'C';
+            return 'A';
+        }
+
+        // ---------- Hash SHA-256 (untuk login lama; tanpa password polos di kode) ----------
+        function sha256Hex(msg) {
+            const K = [0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+            const bytes = [];
+            const utf8 = unescape(encodeURIComponent(msg));
+            for (let i = 0; i < utf8.length; i++) bytes.push(utf8.charCodeAt(i));
+            const bitLen = bytes.length * 8;
+            bytes.push(0x80);
+            while (bytes.length % 64 !== 56) bytes.push(0);
+            const hi = Math.floor(bitLen / 0x100000000), lo = bitLen >>> 0;
+            [hi, lo].forEach(w => { bytes.push((w >>> 24) & 255, (w >>> 16) & 255, (w >>> 8) & 255, w & 255); });
+            let H = [0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
+            const rotr = (x, n) => (x >>> n) | (x << (32 - n));
+            for (let i = 0; i < bytes.length; i += 64) {
+                const w = new Array(64);
+                for (let t = 0; t < 16; t++) w[t] = (bytes[i+t*4] << 24) | (bytes[i+t*4+1] << 16) | (bytes[i+t*4+2] << 8) | bytes[i+t*4+3];
+                for (let t = 16; t < 64; t++) {
+                    const s0 = rotr(w[t-15], 7) ^ rotr(w[t-15], 18) ^ (w[t-15] >>> 3);
+                    const s1 = rotr(w[t-2], 17) ^ rotr(w[t-2], 19) ^ (w[t-2] >>> 10);
+                    w[t] = (w[t-16] + s0 + w[t-7] + s1) | 0;
+                }
+                let [a,b,c,d,e,f,g,h] = H;
+                for (let t = 0; t < 64; t++) {
+                    const S1 = rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25);
+                    const ch = (e & f) ^ (~e & g);
+                    const t1 = (h + S1 + ch + K[t] + w[t]) | 0;
+                    const S0 = rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22);
+                    const maj = (a & b) ^ (a & c) ^ (b & c);
+                    const t2 = (S0 + maj) | 0;
+                    h = g; g = f; f = e; e = (d + t1) | 0; d = c; c = b; b = a; a = (t1 + t2) | 0;
+                }
+                H = [(H[0]+a)|0,(H[1]+b)|0,(H[2]+c)|0,(H[3]+d)|0,(H[4]+e)|0,(H[5]+f)|0,(H[6]+g)|0,(H[7]+h)|0];
+            }
+            return H.map(x => (x >>> 0).toString(16).padStart(8, '0')).join('');
+        }
+
+        // ---------- Tarif ----------
         function getTerRateFull(category, bruto) {
             const x = Math.max(0, Number(bruto) || 0);
             const tables = {
                 A: [[5400000,0],[5650000,.0025],[5950000,.005],[6300000,.0075],[6750000,.01],[7500000,.0125],[8550000,.015],[9650000,.0175],[10050000,.02],[10350000,.0225],[10700000,.025],[11050000,.03],[11600000,.035],[12500000,.04],[13750000,.05],[15100000,.06],[16950000,.07],[19750000,.08],[24150000,.09],[26450000,.10],[28000000,.11],[30050000,.12],[32400000,.13],[35400000,.14],[39100000,.15],[43850000,.16],[47800000,.17],[51400000,.18],[56300000,.19],[62200000,.20],[68600000,.21],[77500000,.22],[89000000,.23],[103000000,.24],[125000000,.25],[157000000,.26],[206000000,.27],[337000000,.28],[454000000,.29],[550000000,.30],[695000000,.31],[910000000,.32],[1400000000,.33],[Infinity,.34]],
                 B: [[6200000,0],[6500000,.0025],[6850000,.005],[7300000,.0075],[9200000,.01],[10750000,.015],[11250000,.02],[11600000,.025],[12600000,.03],[13600000,.04],[14950000,.05],[16400000,.06],[18450000,.07],[21850000,.08],[26000000,.09],[27700000,.10],[29350000,.11],[31450000,.12],[33950000,.13],[37100000,.14],[41100000,.15],[45800000,.16],[49500000,.17],[53800000,.18],[58500000,.19],[64000000,.20],[71000000,.21],[80000000,.22],[93000000,.23],[109000000,.24],[129000000,.25],[163000000,.26],[211000000,.27],[374000000,.28],[459000000,.29],[555000000,.30],[704000000,.31],[957000000,.32],[1405000000,.33],[Infinity,.34]],
-                C: [[6600000,0],[6950000,.0025],[7350000,.005],[7800000,.0075],[8850000,.01],[9800000,.0125],[10950000,.015],[11200000,.0175],[12050000,.02],[12950000,.03],[14150000,.04],[15550000,.05],[17050000,.06],[19500000,.07],[22700000,.08],[26600000,.09],[28100000,.10],[30100000,.11],[32600000,.12],[35400000,.13],[38900000,.14],[43000000,.15],[47400000,.16],[51200000,.17],[55800000,.18],[60400000,.19],[66700000,.20],[74500000,.21],[83200000,.22],[95600000,.23],[110000000,.24],[134000000,.25],[169000000,.26],[221000000,.27],[390000000,.28],[463000000,.29],[561000000,.30],[709000000,.31],[965000000,.32],[Infinity,.34]]
+                C: [[6600000,0],[6950000,.0025],[7350000,.005],[7800000,.0075],[8850000,.01],[9800000,.0125],[10950000,.015],[11200000,.0175],[12050000,.02],[12950000,.03],[14150000,.04],[15550000,.05],[17050000,.06],[19500000,.07],[22700000,.08],[26600000,.09],[28100000,.10],[30100000,.11],[32600000,.12],[35400000,.13],[38900000,.14],[43000000,.15],[47400000,.16],[51200000,.17],[55800000,.18],[60400000,.19],[66700000,.20],[74500000,.21],[83200000,.22],[95600000,.23],[110000000,.24],[134000000,.25],[169000000,.26],[221000000,.27],[390000000,.28],[463000000,.29],[561000000,.30],[709000000,.31],[965000000,.32],[1419000000,.33],[Infinity,.34]]
             };
             const rows = tables[category] || tables.A;
             for (const [limit, rate] of rows) { if (x <= limit) return rate; }
@@ -815,21 +1022,204 @@
             return tax;
         }
 
-        function handleLogin(e) {
-            e.preventDefault();
-            const u = document.getElementById('login-username').value.trim().toUpperCase();
-            const p = document.getElementById('login-password').value.trim().toUpperCase();
-            if (u === 'WILSON' && p === '945766') { currentUser = { name: 'WILSON', role: 'SUPERUSER' }; } 
-            else if (u === 'ADMIN' && p === 'ADMIN') { currentUser = { name: 'ADMIN', role: 'ADMIN' }; } 
-            else { alert('Username / Password Salah!'); return; }
+        function calculatePph21BagianTahun({ brutoSetahun, biayaJabatan, bpjsKarySetahun, ptkp, masaBulan, annualizePartYear = false, netoSebelumnya = 0 }) {
+            const months = Math.max(1, Number(masaBulan) || 1);
+            const netoSaatIni = Math.max(0, brutoSetahun - biayaJabatan - bpjsKarySetahun);
+            const prevNeto = Math.max(0, Number(netoSebelumnya) || 0);
+            if (annualizePartYear && months < 12 && prevNeto === 0) {
+                const netoDisetahunkan = netoSaatIni * 12 / months;
+                const pkpDisetahunkan = Math.max(0, netoDisetahunkan - ptkp);
+                const pphDisetahunkan = calculatePajakPasal17Tahunan(pkpDisetahunkan);
+                return { neto: netoSaatIni, netoSaatIni, netoDisetahunkan, pkp: Math.floor(pkpDisetahunkan / 1000) * 1000, pphDisetahunkan, pphBagianTahun: pphDisetahunkan * months / 12 };
+            }
+            const neto = netoSaatIni + prevNeto;
+            const pkpRaw = Math.max(0, neto - ptkp);
+            const tax = calculatePajakPasal17Tahunan(pkpRaw);
+            return { neto, netoSaatIni, netoDisetahunkan: neto, pkp: Math.floor(pkpRaw / 1000) * 1000, pphDisetahunkan: tax, pphBagianTahun: tax };
+        }
+
+        // ---------- Data payroll & BPJS ----------
+        function getPayrollData(karyId) { return globalPayrollMap[karyId] || { gajiPokok: 0, tunjJab: 0, tunjMakan: 0, tunjPulsa: 0, tunjLain: 0, gratifikasi: 0, thr: 0, potGaji: 0, bpjsTkBaseSnapshot: null, bpjsKesBaseSnapshot: null }; }
+        function isBpjsTkActive(kary, selectedPeriod) { return !kary.bpjsTkStart || selectedPeriod >= kary.bpjsTkStart; }
+        function isBpjsKesActive(kary, selectedPeriod) { return !kary.bpjsKesStart || selectedPeriod >= kary.bpjsKesStart; }
+
+        function getBpjsTkComponents(kary, selectedPeriod, customPayroll = null) {
+            if (!isBpjsTkActive(kary, selectedPeriod)) return { jht: 0, jkk: 0, jkm: 0, jp: 0 };
+            const p = customPayroll || getPayrollData(kary.id);
+            let base = 0;
+            if (p.bpjsTkBaseSnapshot !== undefined && p.bpjsTkBaseSnapshot !== null) base = p.bpjsTkBaseSnapshot;
+            else base = (kary.bpjsTkAuto !== false) ? (p.gajiPokok || 0) : (kary.bpjsTkBase || 0);
+            return { jht: base, jkk: base, jkm: base, jp: Math.min(base, getMaxDasarJp(selectedPeriod)) };
+        }
+
+        function getDasarBpjsKes(kary, selectedPeriod, customPayroll = null) {
+            if (!isBpjsKesActive(kary, selectedPeriod)) return 0;
+            const p = customPayroll || getPayrollData(kary.id);
+            let base = 0;
+            if (p.bpjsKesBaseSnapshot !== undefined && p.bpjsKesBaseSnapshot !== null) base = p.bpjsKesBaseSnapshot;
+            else base = (kary.bpjsKesAuto !== false) ? (p.gajiPokok || 0) : (kary.bpjsKesBase || 0);
+            return Math.min(base, MAX_DASAR_BPJS_KES);
+        }
+
+        function normalizeBpjsKesTambahanList(kary) {
+            if (Array.isArray(kary.bpjsKesTambahanList)) {
+                return kary.bpjsKesTambahanList.filter(item => item && item.nominal > 0);
+            }
+            if (kary.bpjsKesTambahan && Number(kary.bpjsKesTambahan) > 0) {
+                return [{ nominal: Number(kary.bpjsKesTambahan), mulai: kary.bpjsKesStart || getSelectedPeriode() }];
+            }
+            return [];
+        }
+
+        function getBpjsKesTambahanTotal(kary, periode) {
+            const list = normalizeBpjsKesTambahanList(kary);
+            const periodeNorm = normalizePeriode(periode);
+            let total = 0;
+            list.forEach(item => {
+                const mulaiNorm = normalizePeriode(item.mulai);
+                if (mulaiNorm && periodeNorm >= mulaiNorm) total += Number(item.nominal || 0);
+            });
+            return total;
+        }
+
+        // ---------- Pinjaman ----------
+        function cicilanDocForPeriode(d, periode) {
+            if (!d || d.arsip === true) return 0;
+            const per = normalizePeriode(periode);
+            const mulai = normalizePeriode(d.mulaiPeriode);
+            if (mulai && per < mulai) return 0;
+            const last = normalizePeriode(d.lastPeriode);
+            if (last && per === last) return Number(d.lastPotong || 0);
+            if (last && per < last) return Number(d.cicilan || 0);
+            const sisa = Number(d.sisa || 0);
+            if (sisa <= 0) return 0;
+            return Math.min(Number(d.cicilan || 0), sisa);
+        }
+
+        function getCicilanPinjamanKaryawan(karyId, periode) {
+            const list = globalPinjamanByKary[karyId] || [];
+            const per = periode || getSelectedPeriode();
+            return list.reduce((sum, d) => sum + cicilanDocForPeriode(d, per), 0);
+        }
+
+        // ---------- Perhitungan satu periode (SATU sumber untuk semua tampilan) ----------
+        function getAnnual(karyId, periode) {
+            const y = normalizePeriode(periode).substring(0, 4);
+            return (annualCache[y] || {})[karyId] || null;
+        }
+
+        function calcPeriod(k, periode, customPayroll = null) {
+            const per = normalizePeriode(periode);
+            const p = customPayroll || getPayrollData(k.id);
+            const gp = Number(p.gajiPokok) || 0;
+            const tunjLainnya = (Number(p.tunjJab) || 0) + (Number(p.tunjMakan) || 0) + (Number(p.tunjPulsa) || 0) + (Number(p.tunjLain) || 0);
+            const gratifikasi = Number(p.gratifikasi) || 0;
+            const thr = Number(p.thr) || 0;
+            const potGaji = Number(p.potGaji) || 0;
+            const tunjSemua = tunjLainnya + gratifikasi + thr;
+
+            const tk = getBpjsTkComponents(k, per, p);
+            const dasarKes = getDasarBpjsKes(k, per, p);
+            const bpjsPersTk = (tk.jkk * BPJS_RATE.TK.JKK) + (tk.jkm * BPJS_RATE.TK.JKM);
+            const bpjsPersKes = dasarKes * BPJS_RATE.KES.PERUSAHAAN;
+            const bpjsKenaPajak = bpjsPersTk + bpjsPersKes;
+            const brutoTHP = gp + tunjSemua;
+            const brutoDasar = brutoTHP + bpjsKenaPajak;
+
+            const metode = k.pajakMetode || 'NET';
+            const aData = getAnnual(k.id, per);
+            const lastMonthByDate = isLastTaxMonthFor(k, per);
+            const isLast = lastMonthByDate && !!aData && aData.lastTaxMonth === per && !aData.finalPayrollMissing;
+            const pendingFinal = lastMonthByDate && !isLast;
+
+            let category = getTerCategory(k.ptkp), rate = 0, brutoPajakFinal = brutoDasar, pphMasa = 0;
+            if (isLast) {
+                brutoPajakFinal = aData.brutoPajakMasaTerakhir;
+                pphMasa = Number(aData.pph21MasaTerakhir || 0);
+            } else {
+                const c = calculatePajakKaryawan(k.ptkp, brutoDasar, metode);
+                category = c.category; rate = c.rate; brutoPajakFinal = c.brutoPajakFinal; pphMasa = c.pph21;
+            }
+
+            const nilaiPph = Math.max(0, pphMasa);
+            const tunjPajak = metode === 'GROSS_UP' ? nilaiPph : 0;
+            const potPajak = nilaiPph;
+            const lb = (metode === 'NET' && pphMasa < 0) ? Math.abs(pphMasa) : 0;
+
+            const bpjsKesKary = dasarKes * BPJS_RATE.KES.KARYAWAN;
+            const bpjsJhtKary = tk.jht * BPJS_RATE.TK.JHT_KARYAWAN;
+            const bpjsJpKary = tk.jp * BPJS_RATE.TK.JP_KARYAWAN;
+            const bpjsTkKary = bpjsJhtKary + bpjsJpKary;
+            const bpjsKesTambahan = getBpjsKesTambahanTotal(k, per);
+            const cicilan = getCicilanPinjamanKaryawan(k.id, per);
+
+            const totalPenerimaan = gp + tunjSemua + tunjPajak + lb;
+            const totalPotongan = potGaji + bpjsKesKary + bpjsTkKary + potPajak + cicilan + bpjsKesTambahan;
+            const thp = totalPenerimaan - totalPotongan;
+
+            const setoranTk = tk.jht * (BPJS_RATE.TK.JHT_KARYAWAN + BPJS_RATE.TK.JHT_PERUSAHAAN)
+                + tk.jp * (BPJS_RATE.TK.JP_KARYAWAN + BPJS_RATE.TK.JP_PERUSAHAAN)
+                + tk.jkk * BPJS_RATE.TK.JKK + tk.jkm * BPJS_RATE.TK.JKM;
+            const setoranKes = dasarKes * (BPJS_RATE.KES.KARYAWAN + BPJS_RATE.KES.PERUSAHAAN) + bpjsKesTambahan;
+
+            return {
+                p, gp, tunjLainnya, gratifikasi, thr, potGaji, tunjSemua, tk, dasarKes,
+                bpjsPersTk, bpjsPersKes, bpjsKenaPajak, brutoTHP, brutoDasar,
+                metode, category, rate, brutoPajakFinal, pphMasa, isLast, pendingFinal,
+                tunjPajak, potPajak, lb, bpjsKesKary, bpjsJhtKary, bpjsJpKary, bpjsTkKary,
+                bpjsKesTambahan, cicilan, totalPenerimaan, totalPotongan, thp, setoranTk, setoranKes
+            };
+        }
+
+        // ---------- Autentikasi ----------
+        function enterApp(name, role) {
+            currentUser = { name: name, role: role };
             document.getElementById('login-modal').classList.add('hidden');
             document.getElementById('app-content').classList.remove('hidden');
-            document.getElementById('user-badge').innerText = `${currentUser.name} (${currentUser.role})`;
-            if (currentUser.role === 'SUPERUSER') document.querySelectorAll('.superuser-only').forEach(el => el.classList.remove('hidden'));
+            document.getElementById('user-badge').innerText = `${name} (${role})`;
+            if (role === 'SUPERUSER') document.querySelectorAll('.superuser-only').forEach(el => el.classList.remove('hidden'));
             populateYearDropdown(); setDefaultPeriodeFilter(); syncDefaultWithholdingDate(); loadGlobalData();
         }
 
-        function handleLogout() { location.reload(); }
+        function showLoginError(msg) {
+            const el = document.getElementById('login-error');
+            el.innerText = msg; el.classList.remove('hidden');
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            document.getElementById('login-error').classList.add('hidden');
+            const uRaw = document.getElementById('login-username').value.trim();
+            const pRaw = document.getElementById('login-password').value;
+            if (uRaw.includes('@')) {
+                try {
+                    const cred = await auth.signInWithEmailAndPassword(uRaw, pRaw);
+                    const email = (cred.user.email || '').toLowerCase();
+                    const isSuper = SUPERUSER_EMAILS.map(x => x.toLowerCase()).includes(email);
+                    enterApp(email, isSuper ? 'SUPERUSER' : 'ADMIN');
+                } catch (err) {
+                    showLoginError('Email / password salah, atau akun belum dibuat di Firebase Authentication.');
+                }
+                return;
+            }
+            if (!LEGACY_LOGIN_ENABLED) { showLoginError('Login username dinonaktifkan. Gunakan email Firebase.'); return; }
+            const u = uRaw.toUpperCase();
+            const rec = LEGACY_USERS[u];
+            const h = sha256Hex('pam|' + pRaw.trim().toUpperCase());
+            if (!rec || rec.hash !== h) { showLoginError('Username / Password Salah!'); return; }
+            enterApp(u, rec.role);
+        }
+
+        function handleLogout() {
+            auth.signOut().catch(() => {}).then(() => location.reload());
+        }
+
+        auth.onAuthStateChanged(user => {
+            if (user && !currentUser && user.email) {
+                const isSuper = SUPERUSER_EMAILS.map(x => x.toLowerCase()).includes(user.email.toLowerCase());
+                enterApp(user.email.toLowerCase(), isSuper ? 'SUPERUSER' : 'ADMIN');
+            }
+        });
 
         function switchTab(tabId) {
             activeTab = tabId;
@@ -842,78 +1232,80 @@
             if (tabId === 'audit') renderAuditLogs();
         }
 
-        function formatRibuan(val) { return new Intl.NumberFormat('id-ID').format(Math.round(val) || 0); }
-        function formatInputRibuan(el) {
-            const raw = String(el.value || '').trim();
-            const isNegative = raw.startsWith('-');
-            const num = raw.replace(/\D/g, '');
-            if (!num) { el.value = isNegative ? '-' : ''; return; }
-            el.value = isNegative ? `-${new Intl.NumberFormat('id-ID').format(Number(num))}` : new Intl.NumberFormat('id-ID').format(Number(num));
-        }
-        function cleanNumber(str) { if (!str) return 0; return parseFloat(str.toString().replace(/\./g, '').replace(/,/g, '.')) || 0; }
-        function getTerCategory(ptkp) {
-            if (['TK/0', 'TK/1', 'K/0'].includes(ptkp)) return 'A';
-            if (['TK/2', 'TK/3', 'K/1', 'K/2'].includes(ptkp)) return 'B';
-            if (['K/3'].includes(ptkp)) return 'C';
-            return 'A';
-        }
-
         async function logAudit(action, detail) {
-            if (currentUser) await db.collection('audit_logs').add({ timestamp: new Date().toISOString(), user: currentUser.name, action: action, detail: detail });
+            try {
+                if (currentUser) await db.collection('audit_logs').add({ timestamp: new Date().toISOString(), user: currentUser.name, action: action, detail: detail });
+            } catch (err) { console.error('Audit log gagal:', err); }
         }
 
-        function getPayrollData(karyId) { return globalPayrollMap[karyId] || { gajiPokok: 0, tunjJab: 0, tunjMakan: 0, tunjPulsa: 0, tunjLain: 0, gratifikasi: 0, thr: 0, potGaji: 0, bpjsTkBaseSnapshot: null, bpjsKesBaseSnapshot: null }; }
-        function isBpjsTkActive(kary, selectedPeriod) { return !kary.bpjsTkStart || selectedPeriod >= kary.bpjsTkStart; }
-        function isBpjsKesActive(kary, selectedPeriod) { return !kary.bpjsKesStart || selectedPeriod >= kary.bpjsKesStart; }
-
-        function getBpjsTkComponents(kary, selectedPeriod, customPayroll = null) {
-            if (!isBpjsTkActive(kary, selectedPeriod)) return { jht: 0, jkk: 0, jkm: 0, jp: 0 };
-            const p = customPayroll || getPayrollData(kary.id);
-            let base = 0;
-            if (p.bpjsTkBaseSnapshot !== undefined && p.bpjsTkBaseSnapshot !== null) base = p.bpjsTkBaseSnapshot;
-            else base = (kary.bpjsTkAuto !== false) ? (p.gajiPokok || 0) : (kary.bpjsTkBase || 0);
-            return { jht: base, jkk: base, jkm: base, jp: Math.min(base, MAX_DASAR_BPJS_JP) };
+        // ---------- Backup ----------
+        async function buildBackupObject() {
+            const out = { app: 'payroll-pam', version: APP_VERSION, createdAt: new Date().toISOString(), karyawan: [], pinjaman: [], settings: {}, audit_logs: [] };
+            const karySnap = await db.collection('karyawan').get();
+            for (const doc of karySnap.docs) {
+                const pay = await db.collection('karyawan').doc(doc.id).collection('payroll').get();
+                const payroll = {};
+                pay.forEach(p => { payroll[p.id] = p.data(); });
+                out.karyawan.push({ id: doc.id, data: doc.data(), payroll });
+            }
+            const pj = await db.collection('pinjaman').get();
+            pj.forEach(d => out.pinjaman.push({ id: d.id, data: d.data() }));
+            const st = await db.collection('settings').get();
+            st.forEach(d => { out.settings[d.id] = d.data(); });
+            try {
+                const al = await db.collection('audit_logs').get();
+                al.forEach(d => out.audit_logs.push({ id: d.id, data: d.data() }));
+            } catch (err) { console.warn('Audit log tidak ikut backup:', err); }
+            return out;
         }
 
-        function getDasarBpjsKes(kary, selectedPeriod, customPayroll = null) {
-            if (!isBpjsKesActive(kary, selectedPeriod)) return 0;
-            const p = customPayroll || getPayrollData(kary.id);
-            let base = 0;
-            if (p.bpjsKesBaseSnapshot !== undefined && p.bpjsKesBaseSnapshot !== null) base = p.bpjsKesBaseSnapshot;
-            else base = (kary.bpjsKesAuto !== false) ? (p.gajiPokok || 0) : (kary.bpjsKesBase || 0);
-            return Math.min(base, MAX_DASAR_BPJS_KES);
+        async function downloadBackup(silent = false) {
+            try {
+                const obj = await buildBackupObject();
+                const d = new Date();
+                const stamp = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}_${String(d.getHours()).padStart(2, '0')}${String(d.getMinutes()).padStart(2, '0')}`;
+                downloadBlob(JSON.stringify(obj, null, 2), `Backup_Payroll_PT_PAM_${stamp}.json`, 'application/json;charset=UTF-8');
+                await logAudit('BACKUP_DATA', `Unduh backup: ${obj.karyawan.length} karyawan, ${obj.pinjaman.length} pinjaman`);
+                if (!silent) alert(`Backup berhasil diunduh (${obj.karyawan.length} karyawan, ${obj.pinjaman.length} data pinjaman). Simpan file ini di tempat aman.`);
+                return true;
+            } catch (err) {
+                console.error(err);
+                alert('Backup gagal: ' + err.message);
+                return false;
+            }
         }
 
-        function getCicilanPinjamanKaryawan(karyId) {
-            const pinjaman = globalPinjamanMap[karyId];
-            if (!pinjaman) return 0;
-            return pinjaman.sisa > 0 ? (pinjaman.cicilan || 0) : 0;
+        // ---------- Memuat data ----------
+        async function ensureAnnualForPeriode(periode) {
+            const year = normalizePeriode(periode).substring(0, 4);
+            const needs = globalKaryawan.some(k => isKaryawanActiveInPeriode(k, periode) && isLastTaxMonthFor(k, periode));
+            if (needs) await buildAnnualCalculations(year);
         }
 
         async function loadGlobalData() {
+            const seq = ++loadSeq;
             const periode = getSelectedPeriode();
+            annualCache = {};
             const karySnap = await db.collection('karyawan').get();
             globalKaryawan = karySnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             globalKaryawan.sort((a, b) => (a.nama || '').trim().toUpperCase().localeCompare((b.nama || '').trim().toUpperCase(), 'id', { sensitivity: 'base' }));
-            globalPayrollMap = {};
+            const newPayrollMap = {};
             const activeForPeriod = globalKaryawan.filter(k => isKaryawanActiveInPeriode(k, periode));
             await Promise.all(activeForPeriod.map(async k => {
                 const pSnap = await db.collection('karyawan').doc(k.id).collection('payroll').doc(periode).get();
-                if (pSnap.exists) globalPayrollMap[k.id] = pSnap.data();
+                if (pSnap.exists) newPayrollMap[k.id] = pSnap.data();
             }));
-            
+            if (seq !== loadSeq) return;
+            globalPayrollMap = newPayrollMap;
+
             try {
                 const pinjamSnap = await db.collection('pinjaman').get();
-                globalPinjamanMap = {};
-                pinjamSnap.forEach(doc => {
-                    const pData = doc.data();
-                    const kId = pData.karyawanId;
-                    if (!globalPinjamanMap[kId]) {
-                        globalPinjamanMap[kId] = { cicilan: 0, sisa: 0, totalPlafon: 0 };
-                    }
-                    globalPinjamanMap[kId].cicilan += (pData.cicilan || 0);
-                    globalPinjamanMap[kId].sisa += (pData.sisa || 0);
-                    globalPinjamanMap[kId].totalPlafon += (pData.plafon || 0);
+                globalPinjamanDocs = pinjamSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+                globalPinjamanByKary = {};
+                globalPinjamanDocs.forEach(d => {
+                    if (d.arsip === true) return;
+                    if (!globalPinjamanByKary[d.karyawanId]) globalPinjamanByKary[d.karyawanId] = [];
+                    globalPinjamanByKary[d.karyawanId].push(d);
                 });
             } catch (err) {
                 console.error("Gagal memuat data pinjaman:", err);
@@ -929,73 +1321,58 @@
                     document.getElementById('dir-kota').value = globalDirektur.kota || 'Pekanbaru';
                 }
             } catch (err) { console.error("Gagal memuat data direktur:", err); }
-            renderKaryawanTable(); renderGajiTable(); renderPinjamanTable(); await renderLaporPPhTable(); renderDashboard(); populateDropdowns();
+
+            try { await ensureAnnualForPeriode(periode); } catch (err) { console.error('Gagal hitung tahunan:', err); }
+            if (seq !== loadSeq) return;
+            renderKaryawanTable(); renderGajiTable(); renderPinjamanTable(); renderLaporPPhTable(); renderDashboard(); populateDropdowns();
+            if (activeTab === 'slip') renderSlipGaji();
+            if (activeTab === 'pph-akhir') renderPphAkhirTahunTable();
         }
 
+        // ---------- Dashboard ----------
         function renderDashboard() {
             const tbody = document.getElementById('table-dashboard-body');
             tbody.innerHTML = '';
             const periode = getSelectedPeriode();
-            let totalTHP = 0, totalSetorBpjsTK = 0, totalSetorBpjsKes = 0, totalPPhDitanggung = 0, totalActiveCount = 0;
-
+            let totalTHP = 0, totalSetorBpjsTK = 0, totalSetorBpjsKes = 0, totalPPh = 0, totalActiveCount = 0;
+            let html = '';
             globalKaryawan.forEach(k => {
                 if (!isKaryawanActiveInPeriode(k, periode)) return;
                 totalActiveCount++;
-                const p = getPayrollData(k.id);
-                const gp = p.gajiPokok || 0;
-                const tk = getBpjsTkComponents(k, periode);
-                const dasarKes = getDasarBpjsKes(k, periode);
-                const tunj = (p.tunjJab || 0) + (p.tunjMakan || 0) + (p.tunjPulsa || 0) + (p.tunjLain || 0) + (p.gratifikasi || 0) + (p.thr || 0);
-
-                const bpjsKesPribadi = dasarKes * BPJS_RATE.KES.KARYAWAN;
-                const bpjsTkPribadi = (tk.jht * BPJS_RATE.TK.JHT_KARYAWAN) + (tk.jp * BPJS_RATE.TK.JP_KARYAWAN);
-                const bpjsTkPerusahaan = (tk.jht * BPJS_RATE.TK.JHT_PERUSAHAAN) + (tk.jkk * BPJS_RATE.TK.JKK) + (tk.jkm * BPJS_RATE.TK.JKM) + (tk.jp * BPJS_RATE.TK.JP_PERUSAHAAN);
-                const bpjsKesPerusahaan = dasarKes * BPJS_RATE.KES.PERUSAHAAN;
-                const bpjsKenaPajakPerusahaan = getBpjsPerusahaanKenaPajak(k, periode);
-                const bpjsKesTambahan = getBpjsKesTambahanTotal(k, periode);
-
-                const metode = k.pajakMetode || 'NET';
-                const calcPajak = calculatePajakKaryawan(k.ptkp, gp + tunj + bpjsKenaPajakPerusahaan, metode);
-                const aData = globalAnnualCalculations[k.id];
-                const isLastTaxMonth = !!aData && aData.lastTaxMonth === periode;
-                const pphMasa = isLastTaxMonth ? Number(aData.pph21MasaTerakhir || 0) : calcPajak.pph21;
-
-                const tunjPph = (metode === 'GROSS_UP') ? pphMasa : 0;
-                const lb = (metode === 'NET' && pphMasa < 0) ? Math.abs(pphMasa) : 0;
-                const potGaji = p.potGaji || 0;
-                const cicilanPinjaman = getCicilanPinjamanKaryawan(k.id);
-
-                const potPphFinal = (metode === 'GROSS_UP') ? pphMasa : (pphMasa > 0 ? pphMasa : 0);
-                const thp = gp + tunj + tunjPph + lb - potGaji - bpjsKesPribadi - bpjsTkPribadi - potPphFinal - cicilanPinjaman - bpjsKesTambahan;
-
-                totalTHP += thp;
-                totalPPhDitanggung += pphMasa;
-                totalSetorBpjsTK += bpjsTkPerusahaan + bpjsTkPribadi;
-                totalSetorBpjsKes += bpjsKesPerusahaan + bpjsKesPribadi + bpjsKesTambahan;
-
-                const metodeLabel = calcPajak.metode === 'GROSS UP' ? 'Gross Up' : 'Net (Auto)';
-                tbody.innerHTML += `<tr class="border-b bg-white hover:bg-slate-50">
-                    <td class="p-3 font-semibold text-slate-800">${k.nama}</td>
-                    <td class="p-3">${k.jabatan || '-'}</td>
-                    <td class="p-3 font-bold text-emerald-600">Rp ${formatRibuan(thp)}</td>
-                    <td class="p-3">Rp ${formatRibuan(tk.jht)}</td>
-                    <td class="p-3">Rp ${formatRibuan(dasarKes)}</td>
-                    <td class="p-3">${bpjsKesTambahan > 0 ? `<span class="bg-amber-100 text-amber-800 px-2 py-0.5 rounded text-xs font-semibold">Rp ${formatRibuan(bpjsKesTambahan)}</span>` : '<span class="text-slate-400">-</span>'}</td>
-                    <td class="p-3"><span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-semibold">${metodeLabel} (TER ${calcPajak.category})</span></td>
+                const r = calcPeriod(k, periode);
+                totalTHP += r.thp;
+                totalPPh += r.pphMasa;
+                totalSetorBpjsTK += r.setoranTk;
+                totalSetorBpjsKes += r.setoranKes;
+                const metodeLabel = r.metode === 'GROSS_UP' ? 'Gross Up' : 'Net (Auto)';
+                const tag = r.isLast ? ' · Pasal 17' : `TER ${r.category}`;
+                html += `<tr class="border-b bg-white">
+                    <td class="p-3 font-semibold text-slate-800">${esc(k.nama)}</td>
+                    <td class="p-3">${esc(k.jabatan || '-')}</td>
+                    <td class="p-3 font-bold text-emerald-700">Rp ${formatRibuan(r.thp)}</td>
+                    <td class="p-3">Rp ${formatRibuan(r.tk.jht)}</td>
+                    <td class="p-3">Rp ${formatRibuan(r.dasarKes)}</td>
+                    <td class="p-3">${r.bpjsKesTambahan > 0 ? `<span class="bg-amber-100 text-amber-800 px-2 py-0.5 rounded text-xs font-semibold">Rp ${formatRibuan(r.bpjsKesTambahan)}</span>` : '<span class="text-slate-400">-</span>'}</td>
+                    <td class="p-3"><span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-semibold">${metodeLabel} (${tag})</span></td>
                 </tr>`;
             });
-
+            tbody.innerHTML = html || '<tr><td colspan="7" class="p-4 text-center text-slate-500">Belum ada karyawan aktif pada periode ini.</td></tr>';
             document.getElementById('dash-total-karyawan').innerText = totalActiveCount;
             document.getElementById('dash-total-bruto').innerText = `Rp ${formatRibuan(totalTHP)}`;
-            document.getElementById('dash-total-pph').innerText = `Rp ${formatRibuan(totalPPhDitanggung)}`;
+            document.getElementById('dash-total-pph').innerText = `Rp ${formatRibuan(totalPPh)}`;
             document.getElementById('dash-total-bpjs-tk').innerText = `Rp ${formatRibuan(totalSetorBpjsTK)}`;
             document.getElementById('dash-total-bpjs-kes').innerText = `Rp ${formatRibuan(totalSetorBpjsKes)}`;
         }
 
+        // ---------- Karyawan (form) ----------
+        let modalPrevMap = {};
+        let modalPrevYear = '';
+        let prevNetoManual = false;
+
         function toggleActiveStatusInput() {
             const isActive = document.getElementById('kary-is-active').checked;
             const endInput = document.getElementById('kary-end');
-            if (isActive) { endInput.value = ''; endInput.disabled = true; endInput.classList.add('bg-slate-100', 'cursor-not-allowed'); } 
+            if (isActive) { endInput.value = ''; endInput.disabled = true; endInput.classList.add('bg-slate-100', 'cursor-not-allowed'); }
             else { endInput.disabled = false; endInput.classList.remove('bg-slate-100', 'cursor-not-allowed'); }
         }
 
@@ -1012,8 +1389,7 @@
                 setTimeout(() => document.getElementById('bpjs-kes-tambahan-warning').classList.add('hidden'), 2000);
                 return;
             }
-            const rowIndex = currentRows.length;
-            const rowId = `bpjs-tambahan-${rowIndex}`;
+            const rowId = `bpjs-tambahan-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
             const row = document.createElement('div');
             row.className = 'bpjs-tambahan-row flex items-center gap-2 p-2 bg-white border border-teal-200 rounded';
             row.id = rowId;
@@ -1024,7 +1400,7 @@
                 </div>
                 <div class="flex-1">
                     <label class="text-[10px] font-semibold text-slate-600 block">Berlaku Mulai</label>
-                    <input type="month" class="bpjs-tambahan-mulai w-full border rounded p-1 text-xs" value="${mulai}" required>
+                    <input type="month" class="bpjs-tambahan-mulai w-full border rounded p-1 text-xs" value="${esc(mulai)}" required>
                 </div>
                 <div class="flex items-end">
                     <button type="button" onclick="removeBpjsKesTambahanRow('${rowId}')" class="bg-red-500 hover:bg-red-600 text-white text-xs px-2 py-1 rounded font-bold" title="Hapus">
@@ -1045,75 +1421,130 @@
             const container = document.getElementById('bpjs-kes-tambahan-container');
             const currentRows = container.querySelectorAll('.bpjs-tambahan-row');
             const btnAdd = document.getElementById('btn-add-bpjs-kes');
-            if (currentRows.length >= MAX_BPJS_KES_TAMBAHAN) {
-                btnAdd.disabled = true; btnAdd.classList.add('opacity-50', 'cursor-not-allowed');
-            } else {
-                btnAdd.disabled = false; btnAdd.classList.remove('opacity-50', 'cursor-not-allowed');
-            }
+            if (currentRows.length >= MAX_BPJS_KES_TAMBAHAN) { btnAdd.disabled = true; btnAdd.classList.add('opacity-50', 'cursor-not-allowed'); }
+            else { btnAdd.disabled = false; btnAdd.classList.remove('opacity-50', 'cursor-not-allowed'); }
         }
 
         function getBpjsKesTambahanFromForm() {
-            const container = document.getElementById('bpjs-kes-tambahan-container');
-            const rows = container.querySelectorAll('.bpjs-tambahan-row');
+            const rows = document.getElementById('bpjs-kes-tambahan-container').querySelectorAll('.bpjs-tambahan-row');
             const result = [];
             rows.forEach(row => {
                 const nominal = cleanNumber(row.querySelector('.bpjs-tambahan-nominal').value);
                 const mulai = row.querySelector('.bpjs-tambahan-mulai').value;
-                if (nominal > 0 && mulai) { result.push({ nominal: nominal, mulai: mulai }); }
+                if (nominal > 0 && mulai) result.push({ nominal: nominal, mulai: mulai });
             });
             return result;
         }
+
+        // --- Pemberi kerja sebelumnya (form) ---
+        function populatePrevYearSelect(selectedYear) {
+            const sel = document.getElementById('kary-prev-year');
+            const now = new Date().getFullYear();
+            sel.innerHTML = '';
+            for (let y = Math.max(now + 1, 2030); y >= 2020; y--) {
+                const o = document.createElement('option'); o.value = String(y); o.innerText = String(y);
+                if (String(y) === String(selectedYear)) o.selected = true;
+                sel.appendChild(o);
+            }
+        }
+
+        function readPrevForm() {
+            const g = id => document.getElementById(id).value;
+            return {
+                nama: g('kary-prev-nama').trim(), bpa1: g('kary-prev-bpa1').trim(),
+                masaBulan: Math.max(0, Math.min(11, parseInt(g('kary-prev-masa'), 10) || 0)),
+                bruto: cleanNumber(g('kary-prev-bruto')), biayaJabatan: cleanNumber(g('kary-prev-bj')),
+                iuran: cleanNumber(g('kary-prev-iuran')), neto: cleanNumber(g('kary-prev-neto')), pph21: cleanNumber(g('kary-prev-pph'))
+            };
+        }
+
+        function writePrevForm(d) {
+            const set = (id, v) => { document.getElementById(id).value = v; };
+            const num = v => (v ? formatRibuan(v) : '');
+            d = d || {};
+            set('kary-prev-nama', d.nama || ''); set('kary-prev-bpa1', d.bpa1 || '');
+            set('kary-prev-masa', d.masaBulan ? String(d.masaBulan) : '');
+            set('kary-prev-bruto', num(d.bruto)); set('kary-prev-bj', num(d.biayaJabatan));
+            set('kary-prev-iuran', num(d.iuran)); set('kary-prev-neto', num(d.neto)); set('kary-prev-pph', num(d.pph21));
+            prevNetoManual = !!d.neto && (d.neto !== Math.max(0, (d.bruto || 0) - (d.biayaJabatan || 0) - (d.iuran || 0)));
+        }
+
+        function recalcPrevNeto() {
+            if (prevNetoManual) return;
+            const bruto = cleanNumber(document.getElementById('kary-prev-bruto').value);
+            const bj = cleanNumber(document.getElementById('kary-prev-bj').value);
+            const iuran = cleanNumber(document.getElementById('kary-prev-iuran').value);
+            const neto = Math.max(0, bruto - bj - iuran);
+            document.getElementById('kary-prev-neto').value = neto ? formatRibuan(neto) : '';
+        }
+
+        function commitPrevForm() {
+            if (!modalPrevYear) return;
+            const d = readPrevForm();
+            const hasData = d.bruto || d.neto || d.pph21 || d.masaBulan || d.nama || d.bpa1;
+            if (hasData) modalPrevMap[modalPrevYear] = d; else delete modalPrevMap[modalPrevYear];
+        }
+
+        function onPrevYearChange() {
+            commitPrevForm();
+            modalPrevYear = document.getElementById('kary-prev-year').value;
+            writePrevForm(modalPrevMap[modalPrevYear]);
+        }
+
+        document.addEventListener('input', function (ev) {
+            if (ev.target && ev.target.id === 'kary-prev-neto') prevNetoManual = true;
+        });
 
         function openModalKaryawan(editId = null) {
             document.getElementById('modal-karyawan').classList.remove('hidden');
             document.getElementById('modal-karyawan').classList.add('flex');
             const currPeriode = getSelectedPeriode();
             document.getElementById('bpjs-kes-tambahan-container').innerHTML = '';
-            if (editId) {
-                const k = globalKaryawan.find(item => item.id === editId);
-                if (k) {
-                    document.getElementById('modal-karyawan-title').innerText = "Edit Data Master Karyawan";
-                    document.getElementById('kary-id-edit').value = k.id;
-                    document.getElementById('kary-nik').value = k.nik || '';
-                    document.getElementById('kary-nama').value = k.nama || '';
-                    document.getElementById('kary-jabatan').value = k.jabatan || '';
-                    document.getElementById('kary-npwp').value = k.npwp || '';
-                    let displayStartDate = k.startKerja || '';
-                    if (displayStartDate && displayStartDate.length === 7) displayStartDate += '-01';
-                    document.getElementById('kary-start').value = displayStartDate;
-                    document.getElementById('kary-is-active').checked = (k.isActive !== false);
-                    document.getElementById('kary-end').value = k.endKerja || '';
-                    document.getElementById('kary-ptkp').value = k.ptkp || 'TK/0';
-                    document.getElementById('kary-pajak-metode').value = k.pajakMetode || 'NET';
-                    document.getElementById('kary-pajak-subjektif-bagian-tahun').checked = (k.pajakSubjektifBagianTahun === true);
-                    document.getElementById('kary-bpjs-tk-auto').checked = (k.bpjsTkAuto !== false);
-                    document.getElementById('kary-bpjs-tk-base').value = formatRibuan(k.bpjsTkBase || 0);
-                    document.getElementById('kary-bpjs-tk-start').value = k.bpjsTkStart || currPeriode;
-                    document.getElementById('kary-bpjs-kes-auto').checked = (k.bpjsKesAuto !== false);
-                    document.getElementById('kary-bpjs-kes-base').value = formatRibuan(k.bpjsKesBase || 0);
-                    document.getElementById('kary-bpjs-kes-start').value = k.bpjsKesStart || currPeriode;
-                    const tambahanList = normalizeBpjsKesTambahanList(k);
-                    if (tambahanList.length === 0) addBpjsKesTambahanRow(0, currPeriode);
-                    else tambahanList.forEach(item => addBpjsKesTambahanRow(item.nominal, item.mulai));
-                }
+            const periodeYear = currPeriode.substring(0, 4);
+            const k = editId ? globalKaryawan.find(item => item.id === editId) : null;
+            modalPrevMap = JSON.parse(JSON.stringify((k && k.penghasilanSebelumnya) || {}));
+            modalPrevYear = periodeYear;
+            populatePrevYearSelect(periodeYear);
+            writePrevForm(modalPrevMap[periodeYear]);
+            if (k) {
+                document.getElementById('modal-karyawan-title').innerText = "Edit Data Master Karyawan";
+                document.getElementById('kary-id-edit').value = k.id;
+                document.getElementById('kary-nik').value = k.nik || '';
+                document.getElementById('kary-nama').value = k.nama || '';
+                document.getElementById('kary-jabatan').value = k.jabatan || '';
+                document.getElementById('kary-npwp').value = k.npwp || '';
+                document.getElementById('kary-status-kerja').value = k.statusKerja || 'PKWTT';
+                document.getElementById('kary-status-pegawai').value = k.statusPegawai === 'Foreign' ? 'Foreign' : 'Resident';
+                let displayStartDate = k.startKerja || '';
+                if (displayStartDate && displayStartDate.length === 7) displayStartDate += '-01';
+                document.getElementById('kary-start').value = displayStartDate;
+                document.getElementById('kary-is-active').checked = (k.isActive !== false);
+                document.getElementById('kary-end').value = k.endKerja || '';
+                document.getElementById('kary-ptkp').value = k.ptkp || 'TK/0';
+                document.getElementById('kary-pajak-metode').value = k.pajakMetode || 'NET';
+                document.getElementById('kary-pajak-subjektif-bagian-tahun').checked = (k.pajakSubjektifBagianTahun === true);
+                document.getElementById('kary-bpjs-tk-auto').checked = (k.bpjsTkAuto !== false);
+                document.getElementById('kary-bpjs-tk-base').value = formatRibuan(k.bpjsTkBase || 0);
+                document.getElementById('kary-bpjs-tk-start').value = k.bpjsTkStart || currPeriode;
+                document.getElementById('kary-bpjs-kes-auto').checked = (k.bpjsKesAuto !== false);
+                document.getElementById('kary-bpjs-kes-base').value = formatRibuan(k.bpjsKesBase || 0);
+                document.getElementById('kary-bpjs-kes-start').value = k.bpjsKesStart || currPeriode;
+                const tambahanList = normalizeBpjsKesTambahanList(k);
+                if (tambahanList.length === 0) addBpjsKesTambahanRow(0, currPeriode);
+                else tambahanList.forEach(item => addBpjsKesTambahanRow(item.nominal, item.mulai));
             } else {
                 document.getElementById('modal-karyawan-title').innerText = "Tambah Master Karyawan Baru";
                 document.getElementById('kary-id-edit').value = "";
-                document.getElementById('kary-nik').value = "";
-                document.getElementById('kary-nama').value = "";
-                document.getElementById('kary-jabatan').value = "";
-                document.getElementById('kary-npwp').value = "";
-                document.getElementById('kary-start').value = "";
+                ['kary-nik', 'kary-nama', 'kary-jabatan', 'kary-npwp', 'kary-start', 'kary-end', 'kary-bpjs-tk-base', 'kary-bpjs-kes-base'].forEach(id => { document.getElementById(id).value = ''; });
+                document.getElementById('kary-status-kerja').value = 'PKWTT';
+                document.getElementById('kary-status-pegawai').value = 'Resident';
                 document.getElementById('kary-is-active').checked = true;
-                document.getElementById('kary-end').value = '';
                 document.getElementById('kary-ptkp').value = "TK/0";
                 document.getElementById('kary-pajak-metode').value = "NET";
                 document.getElementById('kary-pajak-subjektif-bagian-tahun').checked = false;
                 document.getElementById('kary-bpjs-tk-auto').checked = true;
-                document.getElementById('kary-bpjs-tk-base').value = "";
                 document.getElementById('kary-bpjs-tk-start').value = currPeriode;
                 document.getElementById('kary-bpjs-kes-auto').checked = true;
-                document.getElementById('kary-bpjs-kes-base').value = "";
                 document.getElementById('kary-bpjs-kes-start').value = currPeriode;
                 addBpjsKesTambahanRow(0, currPeriode);
             }
@@ -1133,17 +1564,21 @@
             const endKerjaInput = normalizePeriode(document.getElementById('kary-end').value);
             if (!startKerja) { alert('Tanggal mulai kerja wajib diisi.'); return; }
             if (!isActive && !endKerjaInput) { alert('Untuk karyawan RESIGN, Masa Kerja Akhir wajib diisi.'); return; }
+            commitPrevForm();
             const data = {
                 nik: document.getElementById('kary-nik').value.trim(),
                 nama: document.getElementById('kary-nama').value.trim(),
                 jabatan: document.getElementById('kary-jabatan').value.trim(),
                 npwp: document.getElementById('kary-npwp').value.trim(),
+                statusKerja: document.getElementById('kary-status-kerja').value,
+                statusPegawai: document.getElementById('kary-status-pegawai').value,
                 startKerja: startKerja,
                 isActive: isActive,
                 endKerja: isActive ? null : endKerjaInput,
                 ptkp: document.getElementById('kary-ptkp').value,
                 pajakMetode: document.getElementById('kary-pajak-metode').value,
                 pajakSubjektifBagianTahun: document.getElementById('kary-pajak-subjektif-bagian-tahun').checked,
+                penghasilanSebelumnya: modalPrevMap,
                 bpjsTkAuto: document.getElementById('kary-bpjs-tk-auto').checked,
                 bpjsTkBase: cleanNumber(document.getElementById('kary-bpjs-tk-base').value),
                 bpjsTkStart: document.getElementById('kary-bpjs-tk-start').value,
@@ -1164,44 +1599,61 @@
             } catch (err) { console.error(err); alert('Gagal menyimpan data karyawan: ' + err.message); }
         }
 
-        async function deleteKaryawan(id) {
-            if (confirm('Apakah Anda yakin ingin menghapus data karyawan ini?')) {
-                const k = globalKaryawan.find(item => item.id === id);
-                await db.collection('karyawan').doc(id).delete();
-                await logAudit('HAPUS_KARYAWAN', `Menghapus karyawan: ${k ? k.nama : id}`);
-                loadGlobalData();
-            }
+        // Arsip (bukan hapus): riwayat gaji & pinjaman tetap tersimpan.
+        async function arsipkanKaryawan(id) {
+            const k = globalKaryawan.find(item => item.id === id);
+            if (!k) return;
+            if (!confirm(`Arsipkan karyawan "${k.nama}"?\n\nData TIDAK dihapus. Karyawan disembunyikan dari payroll bulanan, riwayat gaji tetap ada dan masih dihitung di PPh 21 Akhir Tahun. Bisa dipulihkan kapan saja.`)) return;
+            await db.collection('karyawan').doc(id).update({ arsip: true, arsipAt: new Date().toISOString(), arsipBy: currentUser ? currentUser.name : '' });
+            await logAudit('ARSIP_KARYAWAN', `Mengarsipkan karyawan: ${k.nama}`);
+            loadGlobalData();
+        }
+
+        async function pulihkanKaryawan(id) {
+            const k = globalKaryawan.find(item => item.id === id);
+            if (!k) return;
+            await db.collection('karyawan').doc(id).update({ arsip: false });
+            await logAudit('PULIHKAN_KARYAWAN', `Memulihkan karyawan: ${k.nama}`);
+            loadGlobalData();
         }
 
         function renderKaryawanTable() {
             const tbody = document.getElementById('table-karyawan-body');
             tbody.innerHTML = '';
             const searchQuery = (document.getElementById('search-karyawan')?.value || '').trim().toLowerCase();
-            const filteredList = globalKaryawan.filter(k => (k.nama || '').toLowerCase().includes(searchQuery));
+            const filteredList = globalKaryawan.filter(k => (k.nama || '').toLowerCase().includes(searchQuery))
+                .sort((a, b) => (a.arsip === true ? 1 : 0) - (b.arsip === true ? 1 : 0));
             if (filteredList.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="9" class="p-4 text-center text-slate-500 font-semibold">Tidak ada karyawan yang cocok dengan pencarian.</td></tr>';
                 return;
             }
+            let html = '';
             filteredList.forEach(k => {
+                const arsip = k.arsip === true;
                 const metode = (k.pajakMetode || 'NET') === 'GROSS_UP' ? 'GROSS UP' : 'NET (Auto)';
-                const statusBadge = (k.isActive !== false) ? '<span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold">AKTIF</span>' : '<span class="bg-red-100 text-red-800 px-2 py-0.5 rounded font-bold">RESIGN</span>';
-                tbody.innerHTML += `<tr class="border-b bg-white hover:bg-slate-50">
-                    <td class="p-3 font-semibold">${k.nik}</td>
-                    <td class="p-3 font-bold text-slate-800">${k.nama}</td>
-                    <td class="p-3">${k.jabatan}</td>
+                const statusBadge = arsip ? '<span class="bg-slate-200 text-slate-700 px-2 py-0.5 rounded font-bold">ARSIP</span>'
+                    : (k.isActive !== false) ? '<span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold">AKTIF</span>' : '<span class="bg-red-100 text-red-800 px-2 py-0.5 rounded font-bold">RESIGN</span>';
+                const aksi = arsip
+                    ? `<button onclick="openModalKaryawan('${k.id}')" class="text-blue-600 hover:underline font-semibold">Edit</button>
+                       <button onclick="pulihkanKaryawan('${k.id}')" class="text-emerald-700 hover:underline font-semibold">Pulihkan</button>`
+                    : `<button onclick="openModalKaryawan('${k.id}')" class="text-blue-600 hover:underline font-semibold">Edit</button>
+                       <button onclick="arsipkanKaryawan('${k.id}')" class="text-red-600 hover:underline font-semibold">Arsipkan</button>`;
+                html += `<tr class="border-b bg-white ${arsip ? 'row-arsip' : ''}">
+                    <td class="p-3 font-semibold">${esc(k.nik)}</td>
+                    <td class="p-3 font-bold text-slate-800">${esc(k.nama)}</td>
+                    <td class="p-3">${esc(k.jabatan)}</td>
                     <td class="p-3">${statusBadge}</td>
-                    <td class="p-3"><span class="bg-slate-100 px-2 py-0.5 rounded border">${k.ptkp}</span></td>
+                    <td class="p-3"><span class="bg-slate-100 px-2 py-0.5 rounded border">${esc(k.ptkp)}</span></td>
                     <td class="p-3"><span class="bg-blue-50 text-blue-700 px-2 py-0.5 rounded font-bold border border-blue-200">${metode}</span></td>
-                    <td class="p-3 text-slate-600 font-semibold">${k.startKerja || '-'}</td>
-                    <td class="p-3 font-bold bg-slate-50 px-2 py-1 rounded border">${k.endKerja || 'MASIH AKTIF'}</td>
-                    <td class="p-3 text-right flex justify-end gap-2">
-                        <button onclick="openModalKaryawan('${k.id}')" class="text-blue-600 hover:underline font-semibold">Edit</button>
-                        <button onclick="deleteKaryawan('${k.id}')" class="text-red-600 hover:underline font-semibold">Hapus</button>
-                    </td>
+                    <td class="p-3 text-slate-600 font-semibold">${esc(k.startKerja || '-')}</td>
+                    <td class="p-3 font-bold bg-slate-50 px-2 py-1 rounded border">${esc(k.endKerja || 'MASIH AKTIF')}</td>
+                    <td class="p-3 text-right flex justify-end gap-3">${aksi}</td>
                 </tr>`;
             });
+            tbody.innerHTML = html;
         }
 
+        // ---------- Gaji & THR ----------
         function renderGajiTable() {
             const tbody = document.getElementById('table-gaji-body');
             tbody.innerHTML = '';
@@ -1212,12 +1664,13 @@
                 tbody.innerHTML = '<tr><td colspan="11" class="p-4 text-center text-slate-500 font-semibold">Tidak ada karyawan aktif yang cocok dengan pencarian.</td></tr>';
                 return;
             }
+            let html = '';
             activeKaryawan.forEach(k => {
                 const p = getPayrollData(k.id);
                 const tkComp = getBpjsTkComponents(k, periode);
                 const kesBaseVal = getDasarBpjsKes(k, periode);
-                tbody.innerHTML += `<tr class="border-b bg-white font-semibold transition-colors duration-100">
-                    <td class="p-2 border font-bold text-slate-800">${k.nama}</td>
+                html += `<tr class="border-b bg-white font-semibold transition-colors duration-100">
+                    <td class="p-2 border font-bold text-slate-800">${esc(k.nama)}</td>
                     <td class="p-2 border"><input type="text" value="${formatRibuan(p.gajiPokok || 0)}" onkeyup="formatInputRibuan(this)" class="w-24 border rounded p-1 text-right" id="gp-${k.id}"></td>
                     <td class="p-2 border bg-indigo-50/50"><input type="text" value="${formatRibuan(tkComp.jht)}" onkeyup="formatInputRibuan(this)" class="w-24 border border-indigo-200 rounded p-1 text-right font-bold text-indigo-700 bg-white" id="bpjs-tk-base-${k.id}"></td>
                     <td class="p-2 border bg-teal-50/50"><input type="text" value="${formatRibuan(kesBaseVal)}" onkeyup="formatInputRibuan(this)" class="w-24 border border-teal-200 rounded p-1 text-right font-bold text-teal-700 bg-white" id="bpjs-kes-base-${k.id}"></td>
@@ -1230,6 +1683,18 @@
                     <td class="p-2 border"><input type="text" value="${formatRibuan(p.potGaji || 0)}" onkeyup="formatInputRibuan(this)" class="w-20 border rounded p-1 text-right text-red-600" id="pot-${k.id}"></td>
                 </tr>`;
             });
+            tbody.innerHTML = html;
+        }
+
+        function readGajiInputs(k) {
+            const elGp = document.getElementById(`gp-${k.id}`);
+            if (!elGp) return null;
+            const v = id => cleanNumber(document.getElementById(`${id}-${k.id}`).value);
+            return {
+                gajiPokok: cleanNumber(elGp.value), bpjsTkBaseSnapshot: v('bpjs-tk-base'), bpjsKesBaseSnapshot: v('bpjs-kes-base'),
+                tunjJab: v('tj'), tunjMakan: v('tm'), tunjPulsa: v('tp'), tunjLain: v('tl'),
+                gratifikasi: v('gr'), thr: v('thr'), potGaji: v('pot')
+            };
         }
 
         function exportGajiToExcel() {
@@ -1237,19 +1702,12 @@
             const activeKaryawan = globalKaryawan.filter(k => isKaryawanActiveInPeriode(k, periode));
             if (activeKaryawan.length === 0) { alert('Tidak ada data karyawan aktif untuk periode ini.'); return; }
             const dataToExport = activeKaryawan.map(k => {
-                const elGp = document.getElementById(`gp-${k.id}`);
+                const fromForm = readGajiInputs(k);
                 let gp, tkBase, kesBase, tj, tm, tp, tl, gr, thr, pot;
-                if (elGp) {
-                    gp = cleanNumber(elGp.value);
-                    tkBase = cleanNumber(document.getElementById(`bpjs-tk-base-${k.id}`).value);
-                    kesBase = cleanNumber(document.getElementById(`bpjs-kes-base-${k.id}`).value);
-                    tj = cleanNumber(document.getElementById(`tj-${k.id}`).value);
-                    tm = cleanNumber(document.getElementById(`tm-${k.id}`).value);
-                    tp = cleanNumber(document.getElementById(`tp-${k.id}`).value);
-                    tl = cleanNumber(document.getElementById(`tl-${k.id}`).value);
-                    gr = cleanNumber(document.getElementById(`gr-${k.id}`).value);
-                    thr = cleanNumber(document.getElementById(`thr-${k.id}`).value);
-                    pot = cleanNumber(document.getElementById(`pot-${k.id}`).value);
+                if (fromForm) {
+                    gp = fromForm.gajiPokok; tkBase = fromForm.bpjsTkBaseSnapshot; kesBase = fromForm.bpjsKesBaseSnapshot;
+                    tj = fromForm.tunjJab; tm = fromForm.tunjMakan; tp = fromForm.tunjPulsa; tl = fromForm.tunjLain;
+                    gr = fromForm.gratifikasi; thr = fromForm.thr; pot = fromForm.potGaji;
                 } else {
                     const p = getPayrollData(k.id);
                     const tkComp = getBpjsTkComponents(k, periode);
@@ -1257,17 +1715,15 @@
                     tj = p.tunjJab || 0; tm = p.tunjMakan || 0; tp = p.tunjPulsa || 0;
                     tl = p.tunjLain || 0; gr = p.gratifikasi || 0; thr = p.thr || 0; pot = p.potGaji || 0;
                 }
-                const bpjsKesTambahan = getBpjsKesTambahanTotal(k, periode);
                 return {
                     "Nama Karyawan": k.nama, "NIK": k.nik, "Jabatan": k.jabatan, "Gaji Pokok": gp,
-                    "Dasar BPJS TK": tkBase, "Dasar BPJS Kes": kesBase, "BPJS Kes Tambahan (Pribadi)": bpjsKesTambahan,
+                    "Dasar BPJS TK": tkBase, "Dasar BPJS Kes": kesBase, "BPJS Kes Tambahan (Pribadi)": getBpjsKesTambahanTotal(k, periode),
                     "Tunjangan Jabatan": tj, "Tunjangan Makan": tm, "Tunjangan Pulsa/KDR": tp,
                     "Tunjangan Lain-lain": tl, "Gratifikasi": gr, "THR": thr, "Potongan Gaji": pot
                 };
             });
             const ws = XLSX.utils.json_to_sheet(dataToExport);
-            const colWidths = Object.keys(dataToExport[0]).map(key => ({ wch: Math.max(key.length, 15) }));
-            ws['!cols'] = colWidths;
+            ws['!cols'] = Object.keys(dataToExport[0]).map(key => ({ wch: Math.max(key.length, 15) }));
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, `Gaji_${periode}`);
             XLSX.writeFile(wb, `Data_Gaji_THR_PT_PAM_${periode}.xlsx`);
@@ -1277,96 +1733,175 @@
             const periode = getSelectedPeriode();
             const activeKaryawan = globalKaryawan.filter(k => isKaryawanActiveInPeriode(k, periode));
             if (activeKaryawan.length === 0) { alert('Tidak ada data karyawan aktif untuk disimpan!'); return; }
-            const batch = db.batch();
+            if (!confirm(`Simpan data gaji periode ${periode} untuk ${activeKaryawan.length} karyawan?\n\nNilai lama otomatis disimpan sebagai "riwayatSebelumnya" di tiap dokumen.\n\nTekan OK untuk lanjut. (Disarankan unduh Backup Data lebih dulu lewat tombol di kanan atas.)`)) return;
+
+            const ops = [];
+            const now = new Date().toISOString();
             activeKaryawan.forEach(k => {
-                const elGp = document.getElementById(`gp-${k.id}`);
-                const oldP = getPayrollData(k.id);
-                let gp = oldP.gajiPokok || 0, bpjsTkBaseVal = oldP.bpjsTkBaseSnapshot !== undefined ? oldP.bpjsTkBaseSnapshot : null;
-                let bpjsKesBaseVal = oldP.bpjsKesBaseSnapshot !== undefined ? oldP.bpjsKesBaseSnapshot : null;
-                let tj = oldP.tunjJab || 0, tm = oldP.tunjMakan || 0, tp = oldP.tunjPulsa || 0, tl = oldP.tunjLain || 0;
-                let gr = oldP.gratifikasi || 0, thr = oldP.thr || 0, pot = oldP.potGaji || 0;
-                if (elGp) {
-                    gp = cleanNumber(elGp.value);
-                    bpjsTkBaseVal = cleanNumber(document.getElementById(`bpjs-tk-base-${k.id}`).value);
-                    bpjsKesBaseVal = cleanNumber(document.getElementById(`bpjs-kes-base-${k.id}`).value);
-                    tj = cleanNumber(document.getElementById(`tj-${k.id}`).value);
-                    tm = cleanNumber(document.getElementById(`tm-${k.id}`).value);
-                    tp = cleanNumber(document.getElementById(`tp-${k.id}`).value);
-                    tl = cleanNumber(document.getElementById(`tl-${k.id}`).value);
-                    gr = cleanNumber(document.getElementById(`gr-${k.id}`).value);
-                    thr = cleanNumber(document.getElementById(`thr-${k.id}`).value);
-                    pot = cleanNumber(document.getElementById(`pot-${k.id}`).value);
-                }
-                const docRef = db.collection('karyawan').doc(k.id).collection('payroll').doc(periode);
-                batch.set(docRef, { gajiPokok: gp, bpjsTkBaseSnapshot: bpjsTkBaseVal, bpjsKesBaseSnapshot: bpjsKesBaseVal, tunjJab: tj, tunjMakan: tm, tunjPulsa: tp, tunjLain: tl, gratifikasi: gr, thr: thr, potGaji: pot });
+                const oldP = globalPayrollMap[k.id] || null;
+                const inputs = readGajiInputs(k);
+                const base = oldP ? { ...oldP } : getPayrollData(k.id);
+                const pObj = inputs ? { ...inputs } : {
+                    gajiPokok: base.gajiPokok || 0, bpjsTkBaseSnapshot: base.bpjsTkBaseSnapshot !== undefined ? base.bpjsTkBaseSnapshot : null,
+                    bpjsKesBaseSnapshot: base.bpjsKesBaseSnapshot !== undefined ? base.bpjsKesBaseSnapshot : null,
+                    tunjJab: base.tunjJab || 0, tunjMakan: base.tunjMakan || 0, tunjPulsa: base.tunjPulsa || 0, tunjLain: base.tunjLain || 0,
+                    gratifikasi: base.gratifikasi || 0, thr: base.thr || 0, potGaji: base.potGaji || 0
+                };
+                const isLast = isLastTaxMonthFor(k, periode);
+                const ter = calculatePajakKaryawan(k.ptkp, (function () {
+                    const tk = getBpjsTkComponents(k, periode, pObj);
+                    const dk = getDasarBpjsKes(k, periode, pObj);
+                    const tunj = pObj.tunjJab + pObj.tunjMakan + pObj.tunjPulsa + pObj.tunjLain + pObj.gratifikasi + pObj.thr;
+                    return pObj.gajiPokok + tunj + tk.jkk * BPJS_RATE.TK.JKK + tk.jkm * BPJS_RATE.TK.JKM + dk * BPJS_RATE.KES.PERUSAHAAN;
+                })(), k.pajakMetode || 'NET');
+                const payload = {
+                    ...pObj,
+                    pph21Dipotong: isLast ? null : Math.round(ter.pph21 * 100) / 100,
+                    brutoPajakSnapshot: isLast ? null : Math.round(ter.brutoPajakFinal * 100) / 100,
+                    updatedAt: now, updatedBy: currentUser ? currentUser.name : ''
+                };
+                if (oldP) { const { riwayatSebelumnya, ...oldClean } = oldP; payload.riwayatSebelumnya = oldClean; }
+                ops.push({ ref: db.collection('karyawan').doc(k.id).collection('payroll').doc(periode), data: payload });
             });
+
+            // Potong sisa pinjaman: satu kali per periode (aman jika disimpan berulang).
+            const pinjamanUpdates = [];
+            const activeIds = new Set(activeKaryawan.map(k => k.id));
+            globalPinjamanDocs.forEach(d => {
+                if (d.arsip === true || !activeIds.has(d.karyawanId)) return;
+                const mulai = normalizePeriode(d.mulaiPeriode);
+                const last = normalizePeriode(d.lastPeriode);
+                if (mulai && periode < mulai) return;
+                if (last && periode <= last) return;
+                const sisa = Number(d.sisa || 0);
+                if (sisa <= 0) return;
+                const jumlah = Math.min(Number(d.cicilan || 0), sisa);
+                if (jumlah <= 0) return;
+                pinjamanUpdates.push({ ref: db.collection('pinjaman').doc(d.id), data: {
+                    sisa: sisa - jumlah, lastPeriode: periode, lastPotong: jumlah,
+                    riwayat: firebase.firestore.FieldValue.arrayUnion({ periode: periode, jumlah: jumlah })
+                } });
+            });
+
             try {
-                await batch.commit();
-                await logAudit('UPDATE_GAJI_BATCH', `Simpan data gaji & snapshot BPJS ${activeKaryawan.length} karyawan aktif periode ${periode}`);
-                alert(`Seluruh data gaji & BPJS ${activeKaryawan.length} karyawan aktif periode ${periode} berhasil disimpan!`);
+                for (let i = 0; i < ops.length; i += 400) {
+                    const batch = db.batch();
+                    ops.slice(i, i + 400).forEach(o => batch.set(o.ref, o.data, { merge: true }));
+                    await batch.commit();
+                }
+                for (let i = 0; i < pinjamanUpdates.length; i += 400) {
+                    const batch = db.batch();
+                    pinjamanUpdates.slice(i, i + 400).forEach(o => batch.update(o.ref, o.data));
+                    await batch.commit();
+                }
+                await logAudit('UPDATE_GAJI_BATCH', `Simpan data gaji & snapshot BPJS ${activeKaryawan.length} karyawan aktif periode ${periode}${pinjamanUpdates.length ? `; potong cicilan ${pinjamanUpdates.length} pinjaman` : ''}`);
+                alert(`Seluruh data gaji & BPJS ${activeKaryawan.length} karyawan aktif periode ${periode} berhasil disimpan!${pinjamanUpdates.length ? `\nSisa pinjaman diperbarui untuk ${pinjamanUpdates.length} pinjaman.` : ''}`);
                 loadGlobalData();
-            } catch (err) { console.error("Gagal simpan batch gaji:", err); alert('Terjadi kesalahan saat menyimpan data gaji.'); }
+            } catch (err) { console.error("Gagal simpan batch gaji:", err); alert('Terjadi kesalahan saat menyimpan data gaji: ' + err.message); }
         }
 
-        async function renderLaporPPhTable() {
-            const tbody = document.getElementById('table-lapor-pph-body');
-            tbody.innerHTML = '';
+        // ---------- Pinjaman ----------
+        async function savePinjaman(e) {
+            e.preventDefault();
+            const idKary = document.getElementById('pinjam-karyawan-id').value;
+            const k = globalKaryawan.find(item => item.id === idKary);
+            const plafon = cleanNumber(document.getElementById('pinjam-plafon').value);
+            const cicilan = cleanNumber(document.getElementById('pinjam-cicilan').value);
+            if (!idKary || plafon <= 0 || cicilan <= 0) { alert('Pilih karyawan, isi plafon dan cicilan.'); return; }
+            await db.collection('pinjaman').add({ karyawanId: idKary, nama: k ? k.nama : '', plafon: plafon, cicilan: cicilan, sisa: plafon, mulaiPeriode: getSelectedPeriode(), lastPeriode: null, lastPotong: 0, riwayat: [], arsip: false });
+            await logAudit('TAMBAH_PINJAMAN', `Input pinjaman untuk ${k ? k.nama : ''} sebesar Rp ${formatRibuan(plafon)}`);
+            document.getElementById('form-pinjaman').reset();
+            await loadGlobalData();
+        }
+
+        async function arsipkanPinjaman(id) {
+            if (!confirm('Arsipkan data pinjaman ini? Data tidak dihapus dan cicilan berhenti dipotong. Bisa dipulihkan.')) return;
+            await db.collection('pinjaman').doc(id).update({ arsip: true, arsipAt: new Date().toISOString() });
+            await logAudit('ARSIP_PINJAMAN', `Mengarsipkan pinjaman ID: ${id}`);
+            await loadGlobalData();
+        }
+
+        async function pulihkanPinjaman(id) {
+            await db.collection('pinjaman').doc(id).update({ arsip: false });
+            await logAudit('PULIHKAN_PINJAMAN', `Memulihkan pinjaman ID: ${id}`);
+            await loadGlobalData();
+        }
+
+        function renderPinjamanTable() {
+            const tbody = document.getElementById('table-pinjaman-body');
+            if (!globalPinjamanDocs.length) {
+                tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-slate-500">Belum ada data pinjaman.</td></tr>';
+                return;
+            }
+            const sorted = [...globalPinjamanDocs].sort((a, b) => (a.arsip === true ? 1 : 0) - (b.arsip === true ? 1 : 0) || String(a.nama || '').localeCompare(String(b.nama || '')));
+            tbody.innerHTML = sorted.map(p => {
+                const arsip = p.arsip === true;
+                const lunas = Number(p.sisa || 0) <= 0;
+                return `<tr class="border-b bg-white ${arsip ? 'row-arsip' : ''}">
+                    <td class="p-3 font-semibold">${esc(p.nama)} ${arsip ? '<span class="bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded text-[10px] font-bold">ARSIP</span>' : (lunas ? '<span class="bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded text-[10px] font-bold">LUNAS</span>' : '')}</td>
+                    <td class="p-3">Rp ${formatRibuan(p.plafon)}</td>
+                    <td class="p-3">Rp ${formatRibuan(p.cicilan)}</td>
+                    <td class="p-3 font-bold text-red-600">Rp ${formatRibuan(p.sisa)}</td>
+                    <td class="p-3 text-slate-500">${p.lastPeriode ? esc(p.lastPeriode) + ' (Rp ' + formatRibuan(p.lastPotong || 0) + ')' : '-'}</td>
+                    <td class="p-3 text-right">${arsip
+                        ? `<button onclick="pulihkanPinjaman('${p.id}')" class="text-emerald-700 hover:underline font-semibold text-xs">Pulihkan</button>`
+                        : `<button onclick="arsipkanPinjaman('${p.id}')" class="text-red-600 hover:underline font-semibold text-xs">Arsipkan</button>`}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        function populateDropdowns() {
+            const pinjamSelect = document.getElementById('pinjam-karyawan-id');
+            const slipSelect = document.getElementById('slip-select-karyawan');
             const periode = getSelectedPeriode();
-            const year = periode.substring(0, 4);
-            const needFinalCalc = periode.endsWith('-12') || globalKaryawan.some(k => normalizePeriode(k.endKerja) === periode && k.isActive === false);
-            if (needFinalCalc) await buildAnnualCalculations(year);
-            let totalBrutoPajakAcc = 0, totalPPhAcc = 0;
+            const keepSlip = slipSelect.value;
+            pinjamSelect.innerHTML = ''; slipSelect.innerHTML = '';
+            globalKaryawan.forEach(k => {
+                if (isKaryawanActiveInPeriode(k, periode)) {
+                    pinjamSelect.innerHTML += `<option value="${k.id}">${esc(k.nama)}</option>`;
+                    slipSelect.innerHTML += `<option value="${k.id}">${esc(k.nama)}</option>`;
+                }
+            });
+            if (keepSlip && [...slipSelect.options].some(o => o.value === keepSlip)) slipSelect.value = keepSlip;
+        }
+
+        // ---------- Lapor PPh 21 bulanan ----------
+        function renderLaporPPhTable() {
+            const tbody = document.getElementById('table-lapor-pph-body');
+            const tfoot = document.getElementById('table-lapor-pph-foot');
+            const periode = getSelectedPeriode();
+            let html = '', totBrutoTHP = 0, totBpjs = 0, totBrutoPajak = 0, totPph = 0;
             globalKaryawan.forEach(k => {
                 if (!isKaryawanActiveInPeriode(k, periode)) return;
-                const p = getPayrollData(k.id);
-                const gp = p.gajiPokok || 0;
-                const tunj = (p.tunjJab || 0) + (p.tunjMakan || 0) + (p.tunjPulsa || 0) + (p.tunjLain || 0) + (p.gratifikasi || 0) + (p.thr || 0);
-                const brutoTHP = gp + tunj;
-                const bpjsKenaPajakPerusahaan = getBpjsPerusahaanKenaPajak(k, periode);
-                const brutoAwalTanpaPajak = brutoTHP + bpjsKenaPajakPerusahaan;
-                const aData = globalAnnualCalculations[k.id];
-                const isLast = !!aData && aData.lastTaxMonth === periode;
-                let calc;
-                if (isLast) {
-                    calc = { category: getTerCategory(k.ptkp), metode: (k.pajakMetode || 'NET') === 'GROSS_UP' ? 'GROSS UP' : 'NET', brutoPajakFinal: aData.brutoPajakMasaTerakhir, pph21: Number(aData.pph21MasaTerakhir || 0), rate: 0 };
-                } else {
-                    calc = calculatePajakKaryawan(k.ptkp, brutoAwalTanpaPajak, k.pajakMetode || 'NET');
-                }
-                totalBrutoPajakAcc += brutoTHP; totalPPhAcc += calc.pph21;
-                const rateLabel = isLast ? 'MASA TERAKHIR' : `${(calc.rate * 100).toFixed(2)}%`;
-                tbody.innerHTML += `<tr class="border-b bg-white">
-                    <td class="p-3 font-semibold">${k.nama}</td>
-                    <td class="p-3">${k.ptkp}</td>
-                    <td class="p-3 font-bold ${calc.metode === 'GROSS UP' ? 'text-amber-600' : 'text-blue-600'}">${calc.metode}</td>
-                    <td class="p-3 font-bold text-slate-700">TER ${calc.category}</td>
-                    <td class="p-3">Rp ${formatRibuan(brutoTHP)}</td>
-                    <td class="p-3">Rp ${formatRibuan(bpjsKenaPajakPerusahaan)}</td>
-                    <td class="p-3 font-semibold text-slate-900">Rp ${formatRibuan(calc.brutoPajakFinal)}</td>
+                const r = calcPeriod(k, periode);
+                totBrutoTHP += r.brutoTHP; totBpjs += r.bpjsKenaPajak; totBrutoPajak += r.brutoPajakFinal; totPph += r.pphMasa;
+                let rateLabel = `${(r.rate * 100).toFixed(2)}%`;
+                if (r.isLast) rateLabel = 'MASA TERAKHIR (Pasal 17 · BPA1)';
+                else if (r.pendingFinal) rateLabel = 'MASA TERAKHIR · simpan gaji dulu';
+                html += `<tr class="border-b bg-white">
+                    <td class="p-3 font-semibold">${esc(k.nama)}</td>
+                    <td class="p-3">${esc(k.ptkp)}</td>
+                    <td class="p-3 font-bold ${r.metode === 'GROSS_UP' ? 'text-amber-600' : 'text-blue-600'}">${r.metode === 'GROSS_UP' ? 'GROSS UP' : 'NET'}</td>
+                    <td class="p-3 font-bold text-slate-700">${r.isLast ? 'Pasal 17' : 'TER ' + r.category}</td>
+                    <td class="p-3">Rp ${formatRibuan(r.brutoTHP)}</td>
+                    <td class="p-3">Rp ${formatRibuan(r.bpjsKenaPajak)}</td>
+                    <td class="p-3 font-semibold text-slate-900">Rp ${formatRibuan(r.brutoPajakFinal)}</td>
                     <td class="p-3 font-bold text-blue-700">${rateLabel}</td>
-                    <td class="p-3 font-bold text-emerald-600">Rp ${formatRibuan(calc.pph21)}</td>
+                    <td class="p-3 font-bold ${r.pphMasa < 0 ? 'text-red-600' : 'text-emerald-700'}">Rp ${formatRibuan(r.pphMasa)}</td>
                 </tr>`;
             });
-            document.getElementById('dash-total-bruto').innerText = `Rp ${formatRibuan(totalBrutoPajakAcc)}`;
-            document.getElementById('dash-total-pph').innerText = `Rp ${formatRibuan(totalPPhAcc)}`;
+            tbody.innerHTML = html || '<tr><td colspan="9" class="p-4 text-center text-slate-500">Tidak ada karyawan aktif pada periode ini.</td></tr>';
+            tfoot.innerHTML = html ? `<tr><td colspan="4" class="p-3">TOTAL</td><td class="p-3">Rp ${formatRibuan(totBrutoTHP)}</td><td class="p-3">Rp ${formatRibuan(totBpjs)}</td><td class="p-3">Rp ${formatRibuan(totBrutoPajak)}</td><td class="p-3"></td><td class="p-3">Rp ${formatRibuan(totPph)}</td></tr>` : '';
         }
 
-        function calculatePph21BagianTahun({ brutoSetahun, biayaJabatan, bpjsKarySetahun, ptkp, masaBulan, annualizePartYear = false }) {
-            const months = Math.max(1, Number(masaBulan) || 1);
-            const neto = Math.max(0, brutoSetahun - biayaJabatan - bpjsKarySetahun);
-            if (annualizePartYear && months < 12) {
-                const netoDisetahunkan = neto * 12 / months;
-                const pkpDisetahunkan = Math.max(0, netoDisetahunkan - ptkp);
-                const pphDisetahunkan = calculatePajakPasal17Tahunan(pkpDisetahunkan);
-                return { neto, netoDisetahunkan, pkp: Math.max(0, Math.floor((pkpDisetahunkan || 0) / 1000) * 1000), pphDisetahunkan, pphBagianTahun: pphDisetahunkan * months / 12 };
-            }
-            const pkp = Math.max(0, neto - ptkp);
-            return { neto, netoDisetahunkan: neto, pkp: Math.max(0, Math.floor((pkp || 0) / 1000) * 1000), pphDisetahunkan: calculatePajakPasal17Tahunan(pkp), pphBagianTahun: calculatePajakPasal17Tahunan(pkp) };
-        }
-
-        async function buildAnnualCalculations(selectedYear) {
+        // ---------- PPh 21 Akhir Tahun ----------
+        async function buildAnnualCalculations(selectedYear, force = false) {
+            const year = String(selectedYear);
+            if (!force && annualCache[year]) return annualCache[year];
             const annualMap = {};
             const fetchPromises = [];
-            const year = String(selectedYear);
+            const fp = firebase.firestore.FieldPath.documentId();
+
             globalKaryawan.forEach(k => {
                 const employment = getEmploymentMonthsInYear(k, year);
                 if (!employment) return;
@@ -1375,70 +1910,94 @@
                     brutoSetahun: 0, biayaJabatanSetahun: 0, bpjsKarySetahun: 0, pphTerSetahun: 0, pphSebelumMasaTerakhir: 0,
                     pph21TerutangBagianTahun: 0, pph21MasaTerakhir: 0, brutoPajakMasaTerakhir: 0,
                     startMonth: employment.startMonth, endMonth: employment.endMonth, masaKerjaAktif: employment.masaKerjaAktif,
-                    lastTaxMonth, finalPayrollMissing: false, dataTersediaSampai: null, monthlyRecords: []
+                    lastTaxMonth, finalPayrollMissing: false, dataTersediaSampai: null, monthlyRecords: [], missingMonths: [],
+                    prev: getPrevEmployer(k, year), netoPrev: 0, pphPrev: 0, netoSaatIni: 0, netoSetahun: 0
                 };
-                for (let m = employment.startMonth; m <= employment.endMonth; m++) {
-                    const periodeMonth = `${year}-${String(m).padStart(2, '0')}`;
-                    const currentSelectedPeriod = getSelectedPeriode();
-                    fetchPromises.push(db.collection('karyawan').doc(k.id).collection('payroll').doc(periodeMonth).get().then(pSnap => {
-                        let p = null;
-                        if (pSnap.exists) p = pSnap.data();
-                        else if (periodeMonth === currentSelectedPeriod && globalPayrollMap[k.id]) p = globalPayrollMap[k.id];
-                        if (!p) return;
-                        const gp = Number(p.gajiPokok) || 0;
-                        const tk = getBpjsTkComponents(k, periodeMonth, p);
-                        const dasarKes = getDasarBpjsKes(k, periodeMonth, p);
-                        const tunj = (Number(p.tunjJab) || 0) + (Number(p.tunjMakan) || 0) + (Number(p.tunjPulsa) || 0) + (Number(p.tunjLain) || 0) + (Number(p.gratifikasi) || 0) + (Number(p.thr) || 0);
-                        const brutoBulan = gp + tunj;
-                        if (brutoBulan === 0) return;
-                        const bpjsPerusahaanKenaPajak = (tk.jkk * BPJS_RATE.TK.JKK) + (tk.jkm * BPJS_RATE.TK.JKM) + (dasarKes * BPJS_RATE.KES.PERUSAHAAN);
-                        const bpjsKaryawanBulan = (tk.jht * BPJS_RATE.TK.JHT_KARYAWAN) + (tk.jp * BPJS_RATE.TK.JP_KARYAWAN);
-                        const brutoPajakDasar = brutoBulan + bpjsPerusahaanKenaPajak;
-                        annualMap[k.id].monthlyRecords.push({ periode: periodeMonth, brutoPajakDasar, bpjsKaryawanBulan, p, brutoBulan });
-                    }));
-                }
+                fetchPromises.push(
+                    db.collection('karyawan').doc(k.id).collection('payroll')
+                        .where(fp, '>=', `${year}-01`).where(fp, '<=', `${year}-12`).get()
+                        .then(snap => {
+                            snap.forEach(doc => {
+                                const periodeMonth = doc.id;
+                                const mnum = Number(periodeMonth.substring(5, 7));
+                                if (mnum < employment.startMonth || mnum > employment.endMonth) return;
+                                const p = doc.data();
+                                const gp = Number(p.gajiPokok) || 0;
+                                const tk = getBpjsTkComponents(k, periodeMonth, p);
+                                const dasarKes = getDasarBpjsKes(k, periodeMonth, p);
+                                const tunj = (Number(p.tunjJab) || 0) + (Number(p.tunjMakan) || 0) + (Number(p.tunjPulsa) || 0) + (Number(p.tunjLain) || 0) + (Number(p.gratifikasi) || 0) + (Number(p.thr) || 0);
+                                const brutoBulan = gp + tunj;
+                                if (brutoBulan === 0) return;
+                                const bpjsPerusahaanKenaPajak = (tk.jkk * BPJS_RATE.TK.JKK) + (tk.jkm * BPJS_RATE.TK.JKM) + (dasarKes * BPJS_RATE.KES.PERUSAHAAN);
+                                const bpjsKaryawanBulan = (tk.jht * BPJS_RATE.TK.JHT_KARYAWAN) + (tk.jp * BPJS_RATE.TK.JP_KARYAWAN);
+                                annualMap[k.id].monthlyRecords.push({
+                                    periode: periodeMonth, brutoPajakDasar: brutoBulan + bpjsPerusahaanKenaPajak, bpjsKaryawanBulan, p, brutoBulan,
+                                    storedPph: (typeof p.pph21Dipotong === 'number') ? p.pph21Dipotong : null,
+                                    storedBruto: (typeof p.brutoPajakSnapshot === 'number') ? p.brutoPajakSnapshot : null
+                                });
+                            });
+                        })
+                );
             });
             await Promise.all(fetchPromises);
+
             Object.entries(annualMap).forEach(([id, aData]) => {
                 const k = globalKaryawan.find(x => x.id === id);
                 if (!k) return;
                 aData.monthlyRecords.sort((a, b) => a.periode.localeCompare(b.periode));
+                for (let m = aData.startMonth; m <= aData.endMonth; m++) {
+                    const per = `${year}-${String(m).padStart(2, '0')}`;
+                    if (!aData.monthlyRecords.some(r => r.periode === per)) aData.missingMonths.push(per);
+                }
                 const last = aData.monthlyRecords.find(rec => rec.periode === aData.lastTaxMonth);
                 const priorRecords = aData.monthlyRecords.filter(rec => rec.periode !== aData.lastTaxMonth);
                 aData.finalPayrollMissing = !last;
                 const metode = k.pajakMetode || 'NET';
-                const annualizePartYear = k.pajakSubjektifBagianTahun === true;
+                const prev = aData.prev;
+                const hasPrev = !!prev && (prev.neto > 0 || prev.pph21 > 0 || prev.bruto > 0);
+                const netoPrev = hasPrev ? prev.neto : 0;
+                const pphPrev = hasPrev ? prev.pph21 : 0;
+                const biayaJabatanPrev = hasPrev ? prev.biayaJabatan : 0;
+                aData.netoPrev = netoPrev; aData.pphPrev = pphPrev;
+                const annualizePartYear = k.pajakSubjektifBagianTahun === true && !(hasPrev && prev.masaBulan > 0);
+                const ptkp = PTKP_DICT[k.ptkp] || 54000000;
+                const bjCap = Math.max(0, BIAYA_JABATAN_MAX_TAHUN - biayaJabatanPrev);
+                const hitungBiayaJabatan = (bruto, bulan) => Math.min(bruto * BIAYA_JABATAN_RATE, bulan * BIAYA_JABATAN_MAX_BULAN, bjCap);
+
                 let priorPph = 0, priorBrutoPajak = 0, priorBpjsKary = 0;
                 priorRecords.forEach(rec => {
                     const calc = calculatePajakKaryawan(k.ptkp, rec.brutoPajakDasar, metode);
-                    rec.pph21 = calc.pph21; rec.brutoPajakFinal = calc.brutoPajakFinal;
-                    priorPph += calc.pph21; priorBrutoPajak += calc.brutoPajakFinal; priorBpjsKary += rec.bpjsKaryawanBulan;
+                    rec.pph21 = rec.storedPph !== null ? rec.storedPph : calc.pph21;
+                    rec.brutoPajakFinal = rec.storedBruto !== null ? rec.storedBruto : calc.brutoPajakFinal;
+                    priorPph += rec.pph21; priorBrutoPajak += rec.brutoPajakFinal; priorBpjsKary += rec.bpjsKaryawanBulan;
                 });
+
                 if (!last) {
                     aData.brutoSetahun = priorBrutoPajak; aData.bpjsKarySetahun = priorBpjsKary;
-                    const dataMonths = aData.monthlyRecords.length;
-                    aData.biayaJabatanSetahun = Math.min(aData.brutoSetahun * 0.05, dataMonths * 500000);
-                    const netoYtd = Math.max(0, aData.brutoSetahun - aData.biayaJabatanSetahun - aData.bpjsKarySetahun);
-                    const ptkp = PTKP_DICT[k.ptkp] || 54000000;
+                    aData.biayaJabatanSetahun = hitungBiayaJabatan(aData.brutoSetahun, aData.monthlyRecords.length);
+                    const netoCur = Math.max(0, aData.brutoSetahun - aData.biayaJabatanSetahun - aData.bpjsKarySetahun);
+                    const netoYtd = netoCur + netoPrev;
                     const pkpSementara = Math.max(0, netoYtd - ptkp);
                     aData.pphSebelumMasaTerakhir = priorPph; aData.pph21TerutangBagianTahun = 0; aData.pph21MasaTerakhir = 0;
-                    aData.pphTerSetahun = priorPph; aData.brutoPajakMasaTerakhir = 0; aData.netoSetahun = netoYtd;
+                    aData.pphTerSetahun = priorPph; aData.brutoPajakMasaTerakhir = 0;
+                    aData.netoSaatIni = netoCur; aData.netoSetahun = netoYtd;
                     aData.netoDisetahunkan = netoYtd; aData.pkpMasa = Math.floor(pkpSementara / 1000) * 1000;
                     aData.dataTersediaSampai = aData.monthlyRecords.length ? aData.monthlyRecords[aData.monthlyRecords.length - 1].periode : null;
                     aData.annualizePartYear = annualizePartYear;
                     aData.monthlyRecords.forEach(rec => { rec.isLastTaxMonth = false; });
                     return;
                 }
+
                 const months = aData.masaKerjaAktif;
-                const ptkp = PTKP_DICT[k.ptkp] || 54000000;
+                const bpjsTotal = priorBpjsKary + last.bpjsKaryawanBulan;
+                const kreditSebelumnya = priorPph + pphPrev;
                 if (metode === 'GROSS_UP') {
                     let x = 0;
                     for (let i = 0; i < 50; i++) {
                         const brutoTotal = priorBrutoPajak + last.brutoPajakDasar + x;
-                        const biayaJab = Math.min(brutoTotal * 0.05, months * 500000);
-                        const bpjsTotal = priorBpjsKary + last.bpjsKaryawanBulan;
-                        const annualTax = calculatePph21BagianTahun({ brutoSetahun: brutoTotal, biayaJabatan: biayaJab, bpjsKarySetahun: bpjsTotal, ptkp, masaBulan: months, annualizePartYear }).pphBagianTahun;
-                        const nextX = Math.max(0, annualTax - priorPph);
+                        const biayaJab = hitungBiayaJabatan(brutoTotal, months);
+                        const annualTax = calculatePph21BagianTahun({ brutoSetahun: brutoTotal, biayaJabatan: biayaJab, bpjsKarySetahun: bpjsTotal, ptkp, masaBulan: months, annualizePartYear, netoSebelumnya: netoPrev }).pphBagianTahun;
+                        const nextX = Math.max(0, annualTax - kreditSebelumnya);
                         if (Math.abs(nextX - x) < 0.01) { x = nextX; break; }
                         x = nextX;
                     }
@@ -1447,65 +2006,66 @@
                     last.pph21 = 0; last.brutoPajakFinal = last.brutoPajakDasar;
                 }
                 aData.brutoSetahun = priorBrutoPajak + last.brutoPajakFinal;
-                aData.bpjsKarySetahun = priorBpjsKary + last.bpjsKaryawanBulan;
-                aData.biayaJabatanSetahun = Math.min(aData.brutoSetahun * 0.05, months * 500000);
-                const finalTax = calculatePph21BagianTahun({ brutoSetahun: aData.brutoSetahun, biayaJabatan: aData.biayaJabatanSetahun, bpjsKarySetahun: aData.bpjsKarySetahun, ptkp, masaBulan: months, annualizePartYear });
-                if (metode !== 'GROSS_UP') last.pph21 = finalTax.pphBagianTahun - priorPph;
+                aData.bpjsKarySetahun = bpjsTotal;
+                aData.biayaJabatanSetahun = hitungBiayaJabatan(aData.brutoSetahun, months);
+                const finalTax = calculatePph21BagianTahun({ brutoSetahun: aData.brutoSetahun, biayaJabatan: aData.biayaJabatanSetahun, bpjsKarySetahun: aData.bpjsKarySetahun, ptkp, masaBulan: months, annualizePartYear, netoSebelumnya: netoPrev });
+                if (metode !== 'GROSS_UP') last.pph21 = finalTax.pphBagianTahun - kreditSebelumnya;
                 aData.pphSebelumMasaTerakhir = priorPph;
                 aData.pph21TerutangBagianTahun = finalTax.pphBagianTahun;
                 aData.pph21MasaTerakhir = last.pph21;
                 aData.pphTerSetahun = priorPph + last.pph21;
                 aData.brutoPajakMasaTerakhir = last.brutoPajakFinal;
-                aData.netoSetahun = finalTax.neto; aData.netoDisetahunkan = finalTax.netoDisetahunkan; aData.pkpMasa = finalTax.pkp;
+                aData.netoSaatIni = finalTax.netoSaatIni; aData.netoSetahun = finalTax.neto; aData.netoDisetahunkan = finalTax.netoDisetahunkan; aData.pkpMasa = finalTax.pkp;
                 aData.annualizePartYear = annualizePartYear;
                 aData.monthlyRecords.forEach(rec => { rec.isLastTaxMonth = rec.periode === aData.lastTaxMonth; });
             });
-            globalAnnualCalculations = annualMap;
+            annualCache[year] = annualMap;
             return annualMap;
         }
 
-        async function renderPphAkhirTahunTable() {
+        async function renderPphAkhirTahunTable(force = false) {
             const tbody = document.getElementById('table-pph-akhir-body');
-            tbody.innerHTML = '<tr><td colspan="11" class="p-4 text-center text-slate-500 font-semibold">Memuat & mengkalkulasi data tahunan...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="13" class="p-4 text-center text-slate-500 font-semibold">Memuat & mengkalkulasi data tahunan...</td></tr>';
             const selectedYear = document.getElementById('pph-akhir-year').value || new Date().getFullYear().toString();
-            const annualMap = await buildAnnualCalculations(selectedYear);
-            tbody.innerHTML = '';
-            const employees = globalKaryawan.filter(k => annualMap[k.id] && annualMap[k.id].monthlyRecords.length > 0);
+            let annualMap;
+            try { annualMap = await buildAnnualCalculations(selectedYear, force); }
+            catch (err) { console.error(err); tbody.innerHTML = `<tr><td colspan="13" class="p-4 text-center text-red-600">Gagal memuat data: ${esc(err.message)}</td></tr>`; return; }
+            const employees = globalKaryawan.filter(k => annualMap[k.id] && (annualMap[k.id].monthlyRecords.length > 0 || annualMap[k.id].prev));
             if (employees.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="11" class="p-4 text-center text-slate-500">Tidak ada karyawan yang mempunyai penghasilan pada tahun terpilih.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="13" class="p-4 text-center text-slate-500">Tidak ada karyawan yang mempunyai penghasilan pada tahun terpilih.</td></tr>';
                 return;
             }
+            let html = '';
             employees.forEach(k => {
                 const aData = annualMap[k.id];
-                const brutoMasa = aData.brutoSetahun;
-                const biayaJabatan = aData.biayaJabatanSetahun;
-                const iuranBpjsKary = aData.bpjsKarySetahun;
-                const netoMasa = Math.max(0, brutoMasa - biayaJabatan - iuranBpjsKary);
                 const ptkpAnnual = PTKP_DICT[k.ptkp] || 54000000;
-                const pkpMasa = aData.pkpMasa;
-                const pph21Pasal17Annual = aData.pph21TerutangBagianTahun;
-                const pph21Sebelum = aData.pphSebelumMasaTerakhir;
                 const pph21MasaTerakhir = aData.pph21MasaTerakhir;
                 let statusBadge = '<span class="bg-slate-100 text-slate-700 px-2 py-1 rounded font-bold">Nihil</span>';
-                if (aData.finalPayrollMissing) statusBadge = `<span class="bg-amber-100 text-amber-800 px-2 py-1 rounded font-bold">Menunggu ${aData.lastTaxMonth}</span>`;
+                if (aData.finalPayrollMissing) statusBadge = `<span class="bg-amber-100 text-amber-800 px-2 py-1 rounded font-bold">Menunggu ${esc(aData.lastTaxMonth)}</span>`;
                 else if (pph21MasaTerakhir < -0.5) statusBadge = `<span class="bg-emerald-100 text-emerald-800 px-2 py-1 rounded font-bold">Lebih Bayar (LB): Rp ${formatRibuan(Math.abs(pph21MasaTerakhir))}</span>`;
                 else if (pph21MasaTerakhir > 0.5) statusBadge = `<span class="bg-red-100 text-red-800 px-2 py-1 rounded font-bold">Kurang Bayar (KB): Rp ${formatRibuan(pph21MasaTerakhir)}</span>`;
-                tbody.innerHTML += `<tr class="border-b bg-white hover:bg-slate-50">
-                    <td class="p-2.5 border font-bold text-slate-800">${k.nama}</td>
-                    <td class="p-2.5 border font-bold text-center text-blue-700 bg-blue-50">${aData.masaKerjaAktif} Bln (${aData.startMonth}-${aData.endMonth})</td>
-                    <td class="p-2.5 border">Rp ${formatRibuan(brutoMasa)}</td>
-                    <td class="p-2.5 border text-slate-600">Rp ${formatRibuan(biayaJabatan)}</td>
-                    <td class="p-2.5 border text-slate-600">Rp ${formatRibuan(iuranBpjsKary)}</td>
-                    <td class="p-2.5 border font-semibold">Rp ${formatRibuan(netoMasa)}</td>
-                    <td class="p-2.5 border"><span class="bg-slate-100 px-1.5 py-0.5 rounded text-[10px] font-bold">${k.ptkp}</span> (Rp ${formatRibuan(ptkpAnnual)})</td>
-                    <td class="p-2.5 border font-semibold text-slate-900">Rp ${formatRibuan(pkpMasa)}</td>
-                    <td class="p-2.5 border font-bold text-indigo-700">${aData.finalPayrollMissing ? '<span class="text-amber-700">Belum final</span>' : `Rp ${formatRibuan(pph21Pasal17Annual)}`}</td>
-                    <td class="p-2.5 border font-bold text-blue-700">Rp ${formatRibuan(pph21Sebelum)}</td>
+                const warn = aData.missingMonths.length ? `<div class="text-[10px] text-amber-700 font-semibold mt-0.5">${aData.missingMonths.length} bln belum ada data gaji</div>` : '';
+                const prevInfo = aData.prev ? `<div class="text-[10px] text-slate-500 mt-0.5">+ PK lama ${aData.prev.masaBulan} bln${aData.prev.bpa1 ? ' · A1 ' + esc(aData.prev.bpa1) : ''}</div>` : '';
+                html += `<tr class="border-b bg-white hover:bg-slate-50">
+                    <td class="p-2.5 border font-bold text-slate-800">${esc(k.nama)}<div><button onclick="openModalKaryawan('${k.id}')" class="text-[10px] text-blue-600 hover:underline font-semibold">Data pemberi kerja lama</button></div></td>
+                    <td class="p-2.5 border font-bold text-center text-blue-700 bg-blue-50">${aData.masaKerjaAktif} Bln (${aData.startMonth}-${aData.endMonth})${warn}${prevInfo}</td>
+                    <td class="p-2.5 border">Rp ${formatRibuan(aData.brutoSetahun)}</td>
+                    <td class="p-2.5 border text-slate-600">Rp ${formatRibuan(aData.biayaJabatanSetahun)}</td>
+                    <td class="p-2.5 border text-slate-600">Rp ${formatRibuan(aData.bpjsKarySetahun)}</td>
+                    <td class="p-2.5 border text-slate-600">Rp ${formatRibuan(aData.netoPrev)}</td>
+                    <td class="p-2.5 border font-semibold">Rp ${formatRibuan(aData.netoSetahun)}</td>
+                    <td class="p-2.5 border"><span class="bg-slate-100 px-1.5 py-0.5 rounded text-[10px] font-bold">${esc(k.ptkp)}</span> (Rp ${formatRibuan(ptkpAnnual)})</td>
+                    <td class="p-2.5 border font-semibold text-slate-900">Rp ${formatRibuan(aData.pkpMasa)}</td>
+                    <td class="p-2.5 border font-bold text-indigo-700">${aData.finalPayrollMissing ? '<span class="text-amber-700">Belum final</span>' : `Rp ${formatRibuan(aData.pph21TerutangBagianTahun)}`}</td>
+                    <td class="p-2.5 border font-bold text-blue-700">Rp ${formatRibuan(aData.pphSebelumMasaTerakhir)}</td>
+                    <td class="p-2.5 border font-bold text-slate-700">Rp ${formatRibuan(aData.pphPrev)}</td>
                     <td class="p-2.5 border text-center">${statusBadge}</td>
                 </tr>`;
             });
+            tbody.innerHTML = html;
         }
 
+        // ---------- Export ----------
         async function exportToCoretaxXML() {
             const periode = getSelectedPeriode();
             const [year, month] = periode.split('-');
@@ -1513,38 +2073,31 @@
             const npwpFromGlobal = globalDirektur.npwpPemotong || '';
             const npwpRaw = npwpFromForm || npwpFromGlobal || '0210139952122000';
             const npwpPemotong = normalizeTin16(npwpRaw);
-            const nitkuFromForm = document.getElementById('dir-nitku')?.value || '';
-            const nitkuFromFormClean = nitkuFromForm.replace(/\D/g, '');
-            const nitkuPemotong = nitkuFromFormClean.length === 22 
-                ? nitkuFromFormClean 
-                : (npwpPemotong + '000000').substring(0, 22);
+            const nitkuFromFormClean = (document.getElementById('dir-nitku')?.value || '').replace(/\D/g, '');
+            const nitkuPemotong = nitkuFromFormClean.length === 22 ? nitkuFromFormClean : (npwpPemotong + '000000').substring(0, 22);
             syncDefaultWithholdingDate();
             const dateXml = document.getElementById('filter-withholding-date').value || '';
-            const annualMap = await buildAnnualCalculations(year);
+            await ensureAnnualForPeriode(periode);
             const bpmpEmployees = [];
+            const excluded = [];
             globalKaryawan.forEach(k => {
                 if (!isKaryawanActiveInPeriode(k, periode)) return;
-                const p = getPayrollData(k.id);
-                const gp = p.gajiPokok || 0;
-                const tunj = (p.tunjJab || 0) + (p.tunjMakan || 0) + (p.tunjPulsa || 0) + (p.tunjLain || 0) + (p.gratifikasi || 0) + (p.thr || 0);
-                const bpjsPerusahaanKenaPajak = getBpjsPerusahaanKenaPajak(k, periode);
-                const bruto = gp + tunj + bpjsPerusahaanKenaPajak;
-                if (bruto <= 0) return;
-                const calc = calculatePajakKaryawan(k.ptkp, bruto, k.pajakMetode || 'NET');
+                if (isLastTaxMonthFor(k, periode)) { excluded.push(k.nama); return; }
+                const r = calcPeriod(k, periode);
+                if (r.brutoDasar <= 0) return;
                 const cp = getBpmpCounterpart(k);
                 if (!cp.tin) return;
-                bpmpEmployees.push({ k, calc, cp, bruto });
+                bpmpEmployees.push({ k, r, cp });
             });
-            if (!bpmpEmployees.length) { 
-                alert(`Tidak ada data MmPayroll (BPMP) untuk periode ${periode}.`); 
-                return; 
+            if (!bpmpEmployees.length) {
+                alert(`Tidak ada data MmPayroll (BPMP) untuk periode ${periode}.${excluded.length ? '\n\nKaryawan masa pajak terakhir (' + excluded.join(', ') + ') dibuatkan bukti potong A1, bukan BPMP.' : ''}`);
+                return;
             }
             let xml = `<?xml version="1.0" encoding="utf-8"?>\n`;
             xml += `<MmPayrollBulk xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">\n`;
             xml += `  <TIN>${escapeXml(npwpPemotong)}</TIN>\n`;
             xml += `  <ListOfMmPayroll>\n`;
-            bpmpEmployees.forEach(({k, calc, cp, bruto}) => {
-                const taxRatePercent = calc.rate * 100;
+            bpmpEmployees.forEach(({ k, r, cp }) => {
                 xml += `    <MmPayroll>\n`;
                 xml += `      <TaxPeriodMonth>${Number(month)}</TaxPeriodMonth>\n`;
                 xml += `      <TaxPeriodYear>${Number(year)}</TaxPeriodYear>\n`;
@@ -1555,8 +2108,8 @@
                 xml += `      <Position>${escapeXml(k.jabatan || '')}</Position>\n`;
                 xml += `      <TaxCertificate>N/A</TaxCertificate>\n`;
                 xml += `      <TaxObjectCode>21-100-01</TaxObjectCode>\n`;
-                xml += `      <Gross>${Math.round(calc.brutoPajakFinal || bruto)}</Gross>\n`;
-                xml += `      <Rate>${Number(taxRatePercent.toFixed(8))}</Rate>\n`;
+                xml += `      <Gross>${Math.round(r.brutoPajakFinal || r.brutoDasar)}</Gross>\n`;
+                xml += `      <Rate>${Number((r.rate * 100).toFixed(8))}</Rate>\n`;
                 xml += `      <IDPlaceOfBusinessActivity>${escapeXml(nitkuPemotong)}</IDPlaceOfBusinessActivity>\n`;
                 xml += `      <WithholdingDate>${dateXml}</WithholdingDate>\n`;
                 xml += `    </MmPayroll>\n`;
@@ -1564,118 +2117,76 @@
             xml += `  </ListOfMmPayroll>\n`;
             xml += `</MmPayrollBulk>`;
             downloadBlob(xml, `MmPayroll_Coretax_PT_PAM_${periode}.xml`, 'application/xml;charset=UTF-8');
-            alert('Export XML MmPayroll berhasil! File telah diunduh.');
+            alert(`Export XML MmPayroll berhasil (${bpmpEmployees.length} karyawan).` + (excluded.length ? `\n\nTidak diikutkan (masa pajak terakhir → bukti potong A1): ${excluded.join(', ')}` : ''));
         }
 
-        async function exportAnnualCoretaxXML() {
+        async function exportAnnualRekapExcel() {
             const selectedYear = document.getElementById('pph-akhir-year').value || new Date().getFullYear().toString();
-            await buildAnnualCalculations(selectedYear);
-            const npwpPemotong = globalDirektur.npwpPemotong || '0210139952122000';
-            let xml = `<?xml version="1.0" encoding="UTF-8"?>\n<CoretaxPPh21Tahunan1721A1 xmlns="http://www.pajak.go.id/coretax/pph21/1721A1">\n  <Header>\n    <NpwpPemotong>${npwpPemotong}</NpwpPemotong>\n    <NamaPemotong>PT PRIMA ANUGERAH MAKMUR</NamaPemotong>\n    <TahunPajak>${selectedYear}</TahunPajak>\n  </Header>\n  <ListBuktiPotong1721A1>\n`;
+            const annualMap = await buildAnnualCalculations(selectedYear);
+            const rows = [];
             globalKaryawan.forEach(k => {
-                const aData = globalAnnualCalculations[k.id];
-                if (!aData) return;
-                const bruto = aData.brutoSetahun;
-                const biayaJab = aData.biayaJabatanSetahun;
-                const iuranBpjs = aData.bpjsKarySetahun;
-                const neto = Math.max(0, bruto - biayaJab - iuranBpjs);
-                const ptkp = PTKP_DICT[k.ptkp] || 54000000;
-                const pkp = aData.pkpMasa ?? Math.max(0, neto - ptkp);
-                const pph21Terutang = aData.pph21TerutangBagianTahun ?? calculatePajakPasal17Tahunan(pkp);
-                const pph21TerDipotong = aData.pphTerSetahun;
-                const selisih = pph21Terutang - pph21TerDipotong;
-                const status = selisih < 0 ? 'LEBIH_BAYAR' : selisih > 0 ? 'KURANG_BAYAR' : 'NIHIL';
-                xml += `    <BuktiPotong1721A1>\n      <Nik>${k.nik || ''}</Nik>\n      <Nama>${escapeXml(k.nama || '')}</Nama>\n      <NpwpPegawai>${k.npwp || ''}</NpwpPegawai>\n      <MasaPerolehanAwal>${aData.startMonth}</MasaPerolehanAwal>\n      <MasaPerolehanAkhir>${aData.endMonth}</MasaPerolehanAkhir>\n      <KodePTKP>${k.ptkp}</KodePTKP>\n      <MetodePajak>${k.pajakMetode || 'NET'}</MetodePajak>\n      <BrutoMasaKerja>${Math.round(bruto)}</BrutoMasaKerja>\n      <BiayaJabatan>${Math.round(biayaJab)}</BiayaJabatan>\n      <BpjsKaryawanSetahun>${Math.round(iuranBpjs)}</BpjsKaryawanSetahun>\n      <NetoMasaKerja>${Math.round(neto)}</NetoMasaKerja>\n      <PKP>${Math.round(pkp)}</PKP>\n      <PPh21Pasal17Terutang>${Math.round(pph21Terutang)}</PPh21Pasal17Terutang>\n      <PPh21TerDipotong>${Math.round(pph21TerDipotong)}</PPh21TerDipotong>\n      <Selisih>${Math.round(selisih)}</Selisih>\n      <StatusSelisih>${status}</StatusSelisih>\n    </BuktiPotong1721A1>\n`;
+                const a = annualMap[k.id];
+                if (!a || (!a.monthlyRecords.length && !a.prev)) return;
+                const selisih = a.pph21MasaTerakhir;
+                rows.push({
+                    "Nama": k.nama, "NIK": k.nik, "NPWP/NIK Pajak": k.npwp || '', "Jabatan": k.jabatan || '',
+                    "Status PTKP": k.ptkp, "Metode": (k.pajakMetode || 'NET') === 'GROSS_UP' ? 'GROSS UP' : 'NET',
+                    "Masa Perolehan Awal (bln)": a.startMonth, "Masa Perolehan Akhir (bln)": a.endMonth,
+                    "Pemberi Kerja Lama": a.prev ? a.prev.nama : '', "No. BPA1 Lama": a.prev ? a.prev.bpa1 : '',
+                    "Masa Kerja PK Lama (bln)": a.prev ? a.prev.masaBulan : 0,
+                    "Bruto Pemberi Kerja Ini": Math.round(a.brutoSetahun), "Biaya Jabatan": Math.round(a.biayaJabatanSetahun),
+                    "Iuran Pensiun/JHT/JP Karyawan": Math.round(a.bpjsKarySetahun), "Neto Pemberi Kerja Ini": Math.round(a.netoSaatIni),
+                    "Neto Pemberi Kerja Lama": Math.round(a.netoPrev), "Neto Setahun": Math.round(a.netoSetahun),
+                    "PTKP": PTKP_DICT[k.ptkp] || 54000000, "PKP": Math.round(a.pkpMasa),
+                    "PPh 21 Terutang (Pasal 17)": a.finalPayrollMissing ? '' : Math.round(a.pph21TerutangBagianTahun),
+                    "PPh 21 Dipotong Pemberi Kerja Lama": Math.round(a.pphPrev),
+                    "PPh 21 Dipotong s.d. Sebelum Masa Terakhir": Math.round(a.pphSebelumMasaTerakhir),
+                    "PPh 21 Masa Pajak Terakhir": a.finalPayrollMissing ? '' : Math.round(selisih),
+                    "Status": a.finalPayrollMissing ? `Menunggu data ${a.lastTaxMonth}` : (selisih < -0.5 ? 'Lebih Bayar (LB)' : selisih > 0.5 ? 'Kurang Bayar (KB)' : 'Nihil'),
+                    "Bulan Tanpa Data Gaji": a.missingMonths.join(', ')
+                });
             });
-            xml += `  </ListBuktiPotong1721A1>\n</CoretaxPPh21Tahunan1721A1>`;
-            downloadBlob(xml, `Rekap_PPh21_Tahunan_PT_PAM_${selectedYear}.xml`, 'application/xml;charset=UTF-8');
-            alert('Export XML 1721-A1 berhasil! File telah diunduh.');
+            if (!rows.length) { alert('Tidak ada data untuk tahun terpilih.'); return; }
+            const ws = XLSX.utils.json_to_sheet(rows);
+            ws['!cols'] = Object.keys(rows[0]).map(key => ({ wch: Math.max(key.length, 14) }));
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, `PPh21_Tahunan_${selectedYear}`);
+            XLSX.writeFile(wb, `Rekap_PPh21_Tahunan_PT_PAM_${selectedYear}.xlsx`);
         }
 
-        // =====================================================================
-        // PERBAIKAN v2.1.8: Print Rekap PDF - Auto-fit kolom, font 8px, header group 9px
-        // =====================================================================
+        // ---------- Print Rekap ----------
         async function printRekapPDF() {
             const periode = getSelectedPeriode();
             const periodeUpper = periode.toUpperCase();
-
-            if (periode.endsWith('-12') || globalKaryawan.some(k => normalizePeriode(k.endKerja) === periode && k.isActive === false)) {
-                await buildAnnualCalculations(periode.substring(0, 4));
-            }
-
-            let sumBrutoAwal = 0, sumBpjsTkPers = 0, sumBpjsKesPers = 0, sumTunjPph = 0;
-            let sumTotalGajiBruto = 0, sumPotPph21 = 0, sumPotBpjsTkKary = 0, sumPotBpjsKesKary = 0, sumPinjaman = 0, sumTHP = 0;
-            let sumTotalBpjsTk = 0, sumTotalBpjsKes = 0;
-            let rowsHTML = '';
-            let no = 1;
-
+            await ensureAnnualForPeriode(periode);
+            const S = { bruto: 0, tk: 0, kes: 0, tunjPph: 0, totBruto: 0, pph: 0, tkKary: 0, kesKary: 0, pot: 0, thp: 0, setTk: 0, setKes: 0 };
+            let rowsHTML = '', no = 1;
             globalKaryawan.forEach(k => {
                 if (!isKaryawanActiveInPeriode(k, periode)) return;
-                const p = getPayrollData(k.id);
-                const gp = p.gajiPokok || 0;
-                const tk = getBpjsTkComponents(k, periode);
-                const dasarKes = getDasarBpjsKes(k, periode);
-                const tunj = (p.tunjJab || 0) + (p.tunjMakan || 0) + (p.tunjPulsa || 0) + (p.tunjLain || 0) + (p.gratifikasi || 0) + (p.thr || 0);
-                const potGajiLain = p.potGaji || 0;
-                const totalBrutoAwal = Math.max(0, gp + tunj);
-                
-                const bpjsTkPers = (tk.jkk * BPJS_RATE.TK.JKK) + (tk.jkm * BPJS_RATE.TK.JKM);
-                const bpjsKesPers = dasarKes * BPJS_RATE.KES.PERUSAHAAN;
-                const brutoAwalTanpaPajak = (gp + tunj) + (tk.jkk * BPJS_RATE.TK.JKK) + (tk.jkm * BPJS_RATE.TK.JKM) + bpjsKesPers;
-                
-                const metode = k.pajakMetode || 'NET';
-                const calcPajak = calculatePajakKaryawan(k.ptkp, brutoAwalTanpaPajak, metode);
-                const aData = globalAnnualCalculations[k.id];
-                const isLastTaxMonth = !!aData && aData.lastTaxMonth === periode;
-                const pphMasa = isLastTaxMonth ? Number(aData.pph21MasaTerakhir || 0) : calcPajak.pph21;
-
-                const tunjPph = (metode === 'GROSS_UP') ? pphMasa : 0;
-                const potPph21 = pphMasa > 0 ? pphMasa : 0;
-                const totalGajiBrutoAkhir = totalBrutoAwal + bpjsTkPers + bpjsKesPers + tunjPph;
-                const potBpjsTkKary = (tk.jht * BPJS_RATE.TK.JHT_KARYAWAN) + (tk.jp * BPJS_RATE.TK.JP_KARYAWAN);
-                const potBpjsKesKary = dasarKes * BPJS_RATE.KES.KARYAWAN;
-                const bpjsKesTambahan = getBpjsKesTambahanTotal(k, periode);
-                const potBpjsKesTotal = potBpjsKesKary + bpjsKesTambahan;
-                const lb = (metode === 'NET' && pphMasa < 0) ? Math.abs(pphMasa) : 0;
-                const thp = (totalBrutoAwal + tunjPph + lb) - (potGajiLain + potPph21 + potBpjsTkKary + potBpjsKesTotal);
-
-                const totalSetoranBpjsTk = getTotalSetoranBpjsTk(k, periode);
-                const totalSetoranBpjsKes = getTotalSetoranBpjsKes(k, periode);
-
-                sumBrutoAwal += totalBrutoAwal; 
-                sumBpjsTkPers += bpjsTkPers; 
-                sumBpjsKesPers += bpjsKesPers; 
-                sumTunjPph += tunjPph;
-                sumTotalGajiBruto += totalGajiBrutoAkhir; 
-                sumPotPph21 += potPph21; 
-                sumPotBpjsTkKary += potBpjsTkKary; 
-                sumPotBpjsKesKary += potBpjsKesTotal; 
-                sumPinjaman += potGajiLain;
-                sumTHP += thp;
-                sumTotalBpjsTk += totalSetoranBpjsTk;
-                sumTotalBpjsKes += totalSetoranBpjsKes;
-
+                const r = calcPeriod(k, periode);
+                const totalBrutoAkhir = r.brutoTHP + r.bpjsPersTk + r.bpjsPersKes + r.tunjPajak;
+                const potKes = r.bpjsKesKary + r.bpjsKesTambahan;
+                const potLain = r.potGaji + r.cicilan;
+                S.bruto += r.brutoTHP; S.tk += r.bpjsPersTk; S.kes += r.bpjsPersKes; S.tunjPph += r.tunjPajak; S.totBruto += totalBrutoAkhir;
+                S.pph += r.potPajak; S.tkKary += r.bpjsTkKary; S.kesKary += potKes; S.pot += potLain; S.thp += r.thp; S.setTk += r.setoranTk; S.setKes += r.setoranKes;
                 rowsHTML += `<tr>
-                    <td>${no++}</td>
-                    <td>${k.nik || '-'}</td>
-                    <td class="left font-bold">${k.nama}</td>
-                    <td class="right">Rp ${formatRibuan(totalBrutoAwal)}</td>
-                    <td class="right">Rp ${formatRibuan(bpjsTkPers)}</td>
-                    <td class="right">Rp ${formatRibuan(bpjsKesPers)}</td>
-                    <td class="right">${tunjPph > 0 ? 'Rp ' + formatRibuan(tunjPph) : '-'}</td>
-                    <td class="right font-bold">Rp ${formatRibuan(totalGajiBrutoAkhir)}</td>
-                    <td class="right">${potPph21 > 0 ? 'Rp ' + formatRibuan(potPph21) : '-'}</td>
-                    <td class="right">Rp ${formatRibuan(potBpjsTkKary)}</td>
-                    <td class="right">${potBpjsKesTotal > 0 ? 'Rp ' + formatRibuan(potBpjsKesTotal) : '-'}</td>
-                    <td class="right">${potGajiLain > 0 ? 'Rp ' + formatRibuan(potGajiLain) : '-'}</td>
-                    <td class="right font-bold text-emerald">Rp ${formatRibuan(thp)}</td>
-                    <td class="right">Rp ${formatRibuan(totalSetoranBpjsTk)}</td>
-                    <td class="right">Rp ${formatRibuan(totalSetoranBpjsKes)}</td>
+                    <td>${no++}</td><td>${esc(k.nik || '-')}</td><td class="left font-bold">${esc(k.nama)}</td>
+                    <td class="right">Rp ${formatRibuan(r.brutoTHP)}</td>
+                    <td class="right">Rp ${formatRibuan(r.bpjsPersTk)}</td>
+                    <td class="right">Rp ${formatRibuan(r.bpjsPersKes)}</td>
+                    <td class="right">${r.tunjPajak > 0 ? 'Rp ' + formatRibuan(r.tunjPajak) : '-'}</td>
+                    <td class="right font-bold">Rp ${formatRibuan(totalBrutoAkhir)}</td>
+                    <td class="right">${r.potPajak > 0 ? 'Rp ' + formatRibuan(r.potPajak) : '-'}</td>
+                    <td class="right">Rp ${formatRibuan(r.bpjsTkKary)}</td>
+                    <td class="right">${potKes > 0 ? 'Rp ' + formatRibuan(potKes) : '-'}</td>
+                    <td class="right">${potLain > 0 ? 'Rp ' + formatRibuan(potLain) : '-'}</td>
+                    <td class="right font-bold text-emerald">Rp ${formatRibuan(r.thp)}</td>
+                    <td class="right">Rp ${formatRibuan(r.setoranTk)}</td>
+                    <td class="right">Rp ${formatRibuan(r.setoranKes)}</td>
                 </tr>`;
             });
-
-            // PERBAIKAN v2.1.8: CSS untuk auto-fit kolom
-            const printHTML = `<!DOCTYPE html><html><head><title>Rekapitulasi Penggajian - ${periodeUpper}</title>
+            const f = n => 'Rp ' + formatRibuan(n);
+            const printHTML = `<!DOCTYPE html><html><head><title>Rekapitulasi Penggajian - ${esc(periodeUpper)}</title>
                 <style>
                     @page { size: A4 landscape; margin: 4mm; }
                     body { font-family: Arial, sans-serif; margin: 4px; color: #000; }
@@ -1683,229 +2194,89 @@
                     .header h1 { margin: 0; font-size: 14px; text-transform: uppercase; }
                     .header h2 { margin: 3px 0 0 0; font-size: 11px; font-weight: normal; }
                     .header p { margin: 2px 0 0 0; font-size: 9px; }
-                    
-                    /* PERBAIKAN v2.1.8: Table auto-fit, font 8px */
-                    table { 
-                        border-collapse: collapse; 
-                        font-size: 8px;
-                    }
-                    th, td { 
-                        border: 1px solid #000; 
-                        padding: 2px 3px; 
-                        text-align: center;
-                        /* Hapus white-space: nowrap agar bisa wrap */
-                    }
-                    th { 
-                        background-color: #fef08a; 
-                        font-weight: bold; 
-                    }
-                    th.group-header { 
-                        background-color: #facc15; 
-                        font-size: 9px;
-                    }
-                    .left { text-align: left; }
-                    .right { text-align: right; }
-                    .font-bold { font-weight: bold; }
-                    .text-emerald { color: #047857; }
+                    table { border-collapse: collapse; font-size: 8px; }
+                    th, td { border: 1px solid #000; padding: 2px 3px; text-align: center; }
+                    th { background-color: #fef08a; font-weight: bold; }
+                    th.group-header { background-color: #facc15; font-size: 9px; }
+                    .left { text-align: left; } .right { text-align: right; }
+                    .font-bold { font-weight: bold; } .text-emerald { color: #047857; }
                     tfoot tr { background-color: #fef08a; font-weight: bold; }
                     tfoot td { border: 1px solid #000; padding: 2px 3px; }
                 </style></head><body>
                 <div class="header">
                     <h1>PT PRIMA ANUGERAH MAKMUR</h1>
-                    <h2>REKAPITULASI PENGGAJIAN & PPH 21 - PERIODE ${periodeUpper}</h2>
-                    <p>NPWP Pemotong: ${formatNPWPDisplay(globalDirektur.npwpPemotong)}</p>
+                    <h2>REKAPITULASI PENGGAJIAN & PPH 21 - PERIODE ${esc(periodeUpper)}</h2>
+                    <p>NPWP Pemotong: ${esc(formatNPWPDisplay(globalDirektur.npwpPemotong))}</p>
                 </div>
                 <table>
                     <thead>
                         <tr>
-                            <th rowspan="2" class="group-header">No.</th>
-                            <th rowspan="2" class="group-header">NIK</th>
-                            <th rowspan="2" class="group-header">Nama Karyawan</th>
-                            <th colspan="5" class="group-header">PENERIMAAN</th>
-                            <th colspan="4" class="group-header">POTONGAN</th>
-                            <th rowspan="2" class="group-header">THP</th>
-                            <th colspan="2" class="group-header">TOTAL SETORAN BPJS</th>
+                            <th rowspan="2" class="group-header">No.</th><th rowspan="2" class="group-header">NIK</th><th rowspan="2" class="group-header">Nama Karyawan</th>
+                            <th colspan="5" class="group-header">PENERIMAAN</th><th colspan="4" class="group-header">POTONGAN</th>
+                            <th rowspan="2" class="group-header">THP</th><th colspan="2" class="group-header">TOTAL SETORAN BPJS</th>
                         </tr>
                         <tr>
-                            <th>Total<br>Bruto</th>
-                            <th>Tunj BPJS TK<br>(JKK+JKM)</th>
-                            <th>Tunj BPJS Kes</th>
-                            <th>Tunj PPh 21</th>
-                            <th>Total Bruto</th>
-                            <th>Pot PPh 21</th>
-                            <th>Pot BPJS TK<br>(Kary)</th>
-                            <th>Pot BPJS Kes<br>(Kary + Pribadi)</th>
-                            <th>Pinjaman<br>(Pot. Gaji)</th>
-                            <th>BPJS TK</th>
-                            <th>BPJS Kes</th>
+                            <th>Total<br>Bruto</th><th>Tunj BPJS TK<br>(JKK+JKM)</th><th>Tunj BPJS Kes</th><th>Tunj PPh 21</th><th>Total Bruto<br>+ Tunjangan</th>
+                            <th>Pot PPh 21</th><th>Pot BPJS TK<br>(Kary)</th><th>Pot BPJS Kes<br>(Kary + Pribadi)</th><th>Pot. Gaji<br>+ Pinjaman</th>
+                            <th>BPJS TK</th><th>BPJS Kes</th>
                         </tr>
                     </thead>
                     <tbody>${rowsHTML}</tbody>
-                    <tfoot>
-                        <tr>
-                            <td colspan="3" class="left font-bold">TOTAL</td>
-                            <td class="right">Rp ${formatRibuan(sumBrutoAwal)}</td>
-                            <td class="right">Rp ${formatRibuan(sumBpjsTkPers)}</td>
-                            <td class="right">Rp ${formatRibuan(sumBpjsKesPers)}</td>
-                            <td class="right">Rp ${formatRibuan(sumTunjPph)}</td>
-                            <td class="right">Rp ${formatRibuan(sumTotalGajiBruto)}</td>
-                            <td class="right">Rp ${formatRibuan(sumPotPph21)}</td>
-                            <td class="right">Rp ${formatRibuan(sumPotBpjsTkKary)}</td>
-                            <td class="right">Rp ${formatRibuan(sumPotBpjsKesKary)}</td>
-                            <td class="right">Rp ${formatRibuan(sumPinjaman)}</td>
-                            <td class="right">Rp ${formatRibuan(sumTHP)}</td>
-                            <td class="right">Rp ${formatRibuan(sumTotalBpjsTk)}</td>
-                            <td class="right">Rp ${formatRibuan(sumTotalBpjsKes)}</td>
-                        </tr>
-                    </tfoot>
+                    <tfoot><tr>
+                        <td colspan="3" class="left font-bold">TOTAL</td>
+                        <td class="right">${f(S.bruto)}</td><td class="right">${f(S.tk)}</td><td class="right">${f(S.kes)}</td><td class="right">${f(S.tunjPph)}</td><td class="right">${f(S.totBruto)}</td>
+                        <td class="right">${f(S.pph)}</td><td class="right">${f(S.tkKary)}</td><td class="right">${f(S.kesKary)}</td><td class="right">${f(S.pot)}</td>
+                        <td class="right">${f(S.thp)}</td><td class="right">${f(S.setTk)}</td><td class="right">${f(S.setKes)}</td>
+                    </tr></tfoot>
                 </table></body></html>`;
-
-            // PERBAIKAN v2.1.8: Window lebih lebar untuk 15 kolom
             const printWin = window.open('', '_blank', 'width=1600,height=700');
+            if (!printWin) { alert('Pop-up diblokir browser. Izinkan pop-up untuk mencetak rekap.'); return; }
             printWin.document.open(); printWin.document.write(printHTML); printWin.document.close();
-            printWin.onload = function() { printWin.focus(); printWin.print(); printWin.close(); };
+            setTimeout(() => { printWin.focus(); printWin.print(); }, 500);
         }
 
-        async function savePinjaman(e) {
-            e.preventDefault();
-            const idKary = document.getElementById('pinjam-karyawan-id').value;
-            const k = globalKaryawan.find(item => item.id === idKary);
-            const plafon = cleanNumber(document.getElementById('pinjam-plafon').value);
-            const cicilan = cleanNumber(document.getElementById('pinjam-cicilan').value);
-            await db.collection('pinjaman').add({ karyawanId: idKary, nama: k ? k.nama : '', plafon: plafon, cicilan: cicilan, sisa: plafon });
-            await logAudit('TAMBAH_PINJAMAN', `Input pinjaman untuk ${k ? k.nama : ''} sebesar Rp ${formatRibuan(plafon)}`);
-            document.getElementById('form-pinjaman').reset(); 
-            await loadGlobalData();
-        }
-
-        async function deletePinjaman(id) {
-            if (confirm('Apakah Anda yakin ingin menghapus data pinjaman ini?')) {
-                await db.collection('pinjaman').doc(id).delete();
-                await logAudit('HAPUS_PINJAMAN', `Menghapus data pinjaman ID: ${id}`);
-                await loadGlobalData();
-            }
-        }
-
-        function renderPinjamanTable() {
-            const tbody = document.getElementById('table-pinjaman-body');
-            tbody.innerHTML = '';
-            db.collection('pinjaman').get().then(snap => {
-                if (snap.empty) {
-                    tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-slate-500">Belum ada data pinjaman.</td></tr>';
-                    return;
-                }
-                snap.forEach(doc => {
-                    const p = doc.data();
-                    tbody.innerHTML += `<tr class="border-b bg-white">
-                        <td class="p-3 font-semibold">${p.nama}</td>
-                        <td class="p-3">Rp ${formatRibuan(p.plafon)}</td>
-                        <td class="p-3">Rp ${formatRibuan(p.cicilan)}</td>
-                        <td class="p-3 font-bold text-red-600">Rp ${formatRibuan(p.sisa)}</td>
-                        <td class="p-3 text-right">
-                            <button onclick="deletePinjaman('${doc.id}')" class="text-red-600 hover:underline font-semibold text-xs">Hapus</button>
-                        </td>
-                    </tr>`;
-                });
-            });
-        }
-
-        function populateDropdowns() {
-            const pinjamSelect = document.getElementById('pinjam-karyawan-id');
-            const slipSelect = document.getElementById('slip-select-karyawan');
-            const periode = getSelectedPeriode();
-            pinjamSelect.innerHTML = ''; slipSelect.innerHTML = '';
-            globalKaryawan.forEach(k => {
-                if (isKaryawanActiveInPeriode(k, periode)) {
-                    pinjamSelect.innerHTML += `<option value="${k.id}">${k.nama}</option>`;
-                    slipSelect.innerHTML += `<option value="${k.id}">${k.nama}</option>`;
-                }
-            });
-        }
-
+        // ---------- Slip gaji ----------
         async function renderSlipGaji() {
             const id = document.getElementById('slip-select-karyawan').value;
             const k = globalKaryawan.find(item => item.id === id);
             if (!k) return;
             const periode = getSelectedPeriode();
-            const yearStr = periode.split('-')[0];
-            let aData = globalAnnualCalculations[k.id];
-            if (periode.endsWith('-12') || normalizePeriode(k.endKerja) === periode) {
-                const annualMap = await buildAnnualCalculations(yearStr);
-                aData = annualMap[k.id];
-            }
-            const isEndMonthOfKaryawan = !!aData && aData.lastTaxMonth === periode;
-            const p = getPayrollData(k.id);
-            const gp = p.gajiPokok || 0;
-            const tk = getBpjsTkComponents(k, periode);
-            const dasarKes = getDasarBpjsKes(k, periode);
-            const tunj = (p.tunjJab || 0) + (p.tunjMakan || 0) + (p.tunjPulsa || 0) + (p.tunjLain || 0);
-            const gratifikasi = p.gratifikasi || 0;
-            const thr = p.thr || 0;
-            const potGaji = p.potGaji || 0;
-            const bpjsKes = dasarKes * BPJS_RATE.KES.KARYAWAN;
-            const bpjsJht = tk.jht * BPJS_RATE.TK.JHT_KARYAWAN;
-            const bpjsJp = tk.jp * BPJS_RATE.TK.JP_KARYAWAN;
-            const totalBpjsPribadi = bpjsKes + bpjsJht + bpjsJp;
-            const bpjsPerusahaanKenaPajak = (tk.jkk * BPJS_RATE.TK.JKK) + (tk.jkm * BPJS_RATE.TK.JKM) + (dasarKes * BPJS_RATE.KES.PERUSAHAAN);
-            const brutoAwal = gp + tunj + gratifikasi + thr + bpjsPerusahaanKenaPajak;
-            const metode = k.pajakMetode || 'NET';
-            const calcPajak = calculatePajakKaryawan(k.ptkp, brutoAwal, metode);
-            let potPajak = 0, tunjPajak = 0, lbVal = 0, kbVal = 0;
-            let pphMasa = 0;
-            if (isEndMonthOfKaryawan && aData) { pphMasa = Number(aData.pph21MasaTerakhir || 0); }
-            else { pphMasa = calcPajak.pph21; }
-            if (metode === 'NET') {
-                if (pphMasa < 0) { lbVal = Math.abs(pphMasa); potPajak = 0; }
-                else { potPajak = pphMasa; lbVal = 0; }
-                tunjPajak = 0;
-            } else if (metode === 'GROSS_UP') {
-                const nilaiPph = Math.max(0, pphMasa);
-                potPajak = nilaiPph; tunjPajak = nilaiPph;
-            }
-            const cicilanPinjaman = getCicilanPinjamanKaryawan(k.id);
-            const bpjsKesTambahan = getBpjsKesTambahanTotal(k, periode);
-            const totalPenerimaan = gp + tunj + gratifikasi + thr + tunjPajak + lbVal;
-            const totalPotongan = potGaji + totalBpjsPribadi + potPajak + kbVal + cicilanPinjaman + bpjsKesTambahan;
-            const thp = totalPenerimaan - totalPotongan;
-            document.getElementById('slip-nama').innerText = k.nama;
-            document.getElementById('slip-jabatan').innerText = k.jabatan;
-            document.getElementById('slip-nik').innerText = k.nik;
-            document.getElementById('slip-gaji-pokok').innerText = `Rp ${formatRibuan(gp)}`;
-            document.getElementById('slip-tunjangan').innerText = `Rp ${formatRibuan(tunj)}`;
-            document.getElementById('slip-gratifikasi').innerText = `Rp ${formatRibuan(gratifikasi)}`;
-            document.getElementById('slip-thr').innerText = `Rp ${formatRibuan(thr)}`;
-            document.getElementById('slip-tunj-pajak-row').style.display = (tunjPajak > 0) ? 'flex' : 'none';
-            document.getElementById('slip-tunj-pajak').innerText = `Rp ${formatRibuan(tunjPajak)}`;
-            document.getElementById('slip-lb-row').style.display = (lbVal > 0.005) ? 'flex' : 'none';
-            document.getElementById('slip-lb-val').innerText = `Rp ${formatRibuan(lbVal)}`;
-            document.getElementById('slip-pot-gaji').innerText = `Rp ${formatRibuan(potGaji)}`;
-            document.getElementById('slip-bpjs-kes').innerText = `Rp ${formatRibuan(bpjsKes)}`;
-            document.getElementById('slip-bpjs-jht').innerText = `Rp ${formatRibuan(bpjsJht)}`;
-            document.getElementById('slip-bpjs-jp').innerText = `Rp ${formatRibuan(bpjsJp)}`;
-            document.getElementById('slip-bpjs-kes-tambahan-row').style.display = (bpjsKesTambahan > 0) ? 'flex' : 'none';
-            document.getElementById('slip-bpjs-kes-tambahan').innerText = `Rp ${formatRibuan(bpjsKesTambahan)}`;
-            document.getElementById('slip-pot-pajak-row').style.display = (potPajak > 0) ? 'flex' : 'none';
-            document.getElementById('slip-pot-pajak').innerText = `Rp ${formatRibuan(potPajak)}`;
-            document.getElementById('slip-kb-row').style.display = 'none';
-            document.getElementById('slip-pinjaman').innerText = `Rp ${formatRibuan(cicilanPinjaman)}`;
-            document.getElementById('slip-thp-total').innerText = `Rp ${formatRibuan(thp)}`;
-            document.getElementById('slip-nama-karyawan-ttd').innerText = `( ${k.nama} )`;
-            document.getElementById('slip-nama-direktur').innerText = `( ${globalDirektur.nama || 'ABDUL HALEK'} )`;
+            await ensureAnnualForPeriode(periode);
+            const r = calcPeriod(k, periode);
+            const set = (el, v) => { document.getElementById(el).innerText = v; };
+            const rp = v => `Rp ${formatRibuan(v)}`;
+            set('slip-nama', k.nama); set('slip-jabatan', k.jabatan || '-'); set('slip-nik', k.nik || '-');
+            set('slip-status-kerja', k.statusKerja === 'PKWT' ? 'Kontrak (PKWT)' : 'Tetap (PKWTT)');
+            set('slip-gaji-pokok', rp(r.gp)); set('slip-tunjangan', rp(r.tunjLainnya));
+            set('slip-gratifikasi', rp(r.gratifikasi)); set('slip-thr', rp(r.thr));
+            document.getElementById('slip-tunj-pajak-row').style.display = (r.tunjPajak > 0) ? 'flex' : 'none';
+            set('slip-tunj-pajak', rp(r.tunjPajak));
+            document.getElementById('slip-lb-row').style.display = (r.lb > 0.005) ? 'flex' : 'none';
+            set('slip-lb-val', rp(r.lb));
+            set('slip-pot-gaji', rp(r.potGaji)); set('slip-bpjs-kes', rp(r.bpjsKesKary));
+            set('slip-bpjs-jht', rp(r.bpjsJhtKary)); set('slip-bpjs-jp', rp(r.bpjsJpKary));
+            document.getElementById('slip-bpjs-kes-tambahan-row').style.display = (r.bpjsKesTambahan > 0) ? 'flex' : 'none';
+            set('slip-bpjs-kes-tambahan', rp(r.bpjsKesTambahan));
+            document.getElementById('slip-pot-pajak-row').style.display = (r.potPajak > 0) ? 'flex' : 'none';
+            set('slip-pot-pajak-label', r.isLast ? 'PPh 21 Masa Terakhir (Pasal 17):' : 'PPh 21 TER:');
+            set('slip-pot-pajak', rp(r.potPajak));
+            set('slip-pinjaman', rp(r.cicilan));
+            set('slip-thp-total', rp(r.thp));
+            set('slip-nama-karyawan-ttd', `( ${k.nama} )`);
+            set('slip-nama-direktur', `( ${globalDirektur.nama || 'ABDUL HALEK'} )`);
+
             const bulanIndo = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
-            const withholdingDateStr = document.getElementById('filter-withholding-date').value;
-            if (withholdingDateStr) {
-                const [y, m, d] = withholdingDateStr.split('-');
-                const namaBulan = bulanIndo[parseInt(m, 10) - 1] || m;
-                document.getElementById('slip-periode-text').innerText = `${namaBulan.toUpperCase()} ${y}`;
-                document.getElementById('slip-ttd-kota-tgl').innerText = `${globalDirektur.kota || 'Pekanbaru'}, ${parseInt(d, 10)} ${namaBulan} ${y}`;
-            } else {
-                const [yP, mP] = periode.split('-');
-                const namaBulanP = bulanIndo[parseInt(mP, 10) - 1] || mP;
-                document.getElementById('slip-periode-text').innerText = `${namaBulanP.toUpperCase()} ${yP}`;
-                document.getElementById('slip-ttd-kota-tgl').innerText = `${globalDirektur.kota || 'Pekanbaru'}, ${namaBulanP} ${yP}`;
-            }
+            const [yP, mP] = periode.split('-');
+            const namaBulanP = bulanIndo[parseInt(mP, 10) - 1] || mP;
+            set('slip-periode-text', `${namaBulanP.toUpperCase()} ${yP}`);
+            const wd = document.getElementById('filter-withholding-date').value;
+            let tgl;
+            if (wd && wd.substring(0, 7) === periode) tgl = parseInt(wd.split('-')[2], 10);
+            else tgl = new Date(Number(yP), Number(mP), 0).getDate();
+            set('slip-ttd-kota-tgl', `${globalDirektur.kota || 'Pekanbaru'}, ${tgl} ${namaBulanP} ${yP}`);
         }
 
+        // ---------- Direktur & Audit ----------
         async function saveDirektur(e) {
             e.preventDefault();
             const namaDir = document.getElementById('dir-nama').value.trim();
@@ -1913,7 +2284,7 @@
             const nitkuDir = document.getElementById('dir-nitku').value.trim();
             const kotaDir = document.getElementById('dir-kota').value.trim();
             globalDirektur.nama = namaDir; globalDirektur.npwpPemotong = npwpDir; globalDirektur.nitkuPemotong = nitkuDir; globalDirektur.kota = kotaDir;
-            await db.collection('settings').doc('direktur').set({ nama: namaDir, npwpPemotong: npwpDir, nitkuPemotong: nitkuDir, kota: kotaDir });
+            await db.collection('settings').doc('direktur').set({ nama: namaDir, npwpPemotong: npwpDir, nitkuPemotong: nitkuDir, kota: kotaDir }, { merge: true });
             await logAudit('UPDATE_DIREKTUR', `Mengubah data direktur & NPWP perusahaan (${npwpDir})`);
             alert('Data Direktur & Perusahaan berhasil disimpan secara permanen!');
             renderSlipGaji();
@@ -1922,29 +2293,36 @@
         function renderAuditLogs() {
             const tbody = document.getElementById('table-audit-body');
             tbody.innerHTML = '';
-            db.collection('audit_logs').orderBy('timestamp', 'desc').get().then(snap => {
+            db.collection('audit_logs').orderBy('timestamp', 'desc').limit(500).get().then(snap => {
+                let html = '';
                 snap.forEach(doc => {
                     const l = doc.data();
                     const dt = new Date(l.timestamp).toLocaleString('id-ID');
-                    tbody.innerHTML += `<tr class="border-b bg-white"><td class="p-3 text-slate-500">${dt}</td><td class="p-3 font-bold">${l.user}</td><td class="p-3"><span class="bg-slate-100 border px-2 py-0.5 rounded">${l.action}</span></td><td class="p-3">${l.detail}</td></tr>`;
+                    html += `<tr class="border-b bg-white"><td class="p-3 text-slate-500">${esc(dt)}</td><td class="p-3 font-bold">${esc(l.user)}</td><td class="p-3"><span class="bg-slate-100 border px-2 py-0.5 rounded">${esc(l.action)}</span></td><td class="p-3">${esc(l.detail)}</td></tr>`;
                 });
+                tbody.innerHTML = html || '<tr><td colspan="4" class="p-4 text-center text-slate-500">Belum ada log.</td></tr>';
             });
         }
 
         async function clearAllAuditLogs() {
             if (!currentUser || currentUser.role !== 'SUPERUSER') { alert('Akses Ditolak! Hanya Superuser yang dapat menghapus audit log.'); return; }
-            if (confirm('Apakah Anda yakin ingin menghapus SELURUH riwayat audit log?')) {
-                try {
-                    const snap = await db.collection('audit_logs').get();
+            if (!confirm('Seluruh riwayat audit log akan DIHAPUS PERMANEN. Log akan diunduh dulu sebagai file cadangan. Lanjutkan?')) return;
+            try {
+                const snap = await db.collection('audit_logs').get();
+                const dump = snap.docs.map(d => ({ id: d.id, data: d.data() }));
+                downloadBlob(JSON.stringify(dump, null, 2), `AuditLog_Backup_${Date.now()}.json`, 'application/json;charset=UTF-8');
+                const typed = prompt('File cadangan log sudah diunduh. Ketik HAPUS (huruf besar) untuk menghapus seluruh log:');
+                if (typed !== 'HAPUS') { alert('Dibatalkan. Log tidak dihapus.'); return; }
+                for (let i = 0; i < snap.docs.length; i += 400) {
                     const batch = db.batch();
-                    snap.forEach(doc => { batch.delete(doc.ref); });
+                    snap.docs.slice(i, i + 400).forEach(doc => batch.delete(doc.ref));
                     await batch.commit();
-                    alert('Seluruh audit log berhasil dihapus!');
-                    renderAuditLogs();
-                } catch (error) {
-                    console.error("Gagal menghapus audit log:", error);
-                    alert('Terjadi kesalahan saat menghapus audit log.');
                 }
+                alert('Seluruh audit log berhasil dihapus!');
+                renderAuditLogs();
+            } catch (error) {
+                console.error("Gagal menghapus audit log:", error);
+                alert('Terjadi kesalahan saat menghapus audit log.');
             }
         }
     </script>
