@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payroll & PPh 21 v2.3.0 - PT Prima Anugerah Makmur</title>
+    <title>Payroll & PPh 21 v2.3.1 - PT Prima Anugerah Makmur</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&display=swap" rel="stylesheet">
@@ -116,7 +116,7 @@
             <div class="text-center mb-6">
                 <span class="brand-mark mb-3">P</span>
                 <h1 class="text-2xl font-semibold text-slate-900">PT Prima Anugerah Makmur</h1>
-                <p class="text-xs text-slate-500 mt-1">Sistem Payroll & PPh 21 TER / Pasal 17 · v2.3.0</p>
+                <p class="text-xs text-slate-500 mt-1">Sistem Payroll & PPh 21 TER / Pasal 17 · v2.3.1</p>
             </div>
             <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
                 <div>
@@ -140,7 +140,7 @@
                 <div class="flex items-center gap-3">
                     <span class="brand-mark">P</span>
                     <div>
-                        <h2 class="text-lg font-semibold text-slate-900">PT Prima Anugerah Makmur <span class="text-xs font-normal text-slate-500 ml-1 font-sans">v2.3.0</span></h2>
+                        <h2 class="text-lg font-semibold text-slate-900">PT Prima Anugerah Makmur <span class="text-xs font-normal text-slate-500 ml-1 font-sans">v2.3.1</span></h2>
                         <p class="text-xs text-slate-500">Payroll & Tax System · NPWP Pemotong: 02.101.399.5-212.000</p>
                     </div>
                 </div>
@@ -401,7 +401,7 @@
                         <button onclick="exportAnnualRekapExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3 py-1.5 rounded-lg font-bold shadow transition">
                             Export Rekap Tahunan (Excel)
                         </button>
-                        <button onclick="exportBpa1XML()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-3 py-1.5 rounded-lg font-bold shadow transition" title="XML BPA1 (A1Bulk) untuk impor ke Coretax, sesuai template resmi DJP">
+                        <button onclick="openBpa1Modal()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-3 py-1.5 rounded-lg font-bold shadow transition" title="XML BPA1 (A1Bulk) untuk impor ke Coretax, sesuai template resmi DJP">
                             Export BPA1 XML (Coretax)
                         </button>
                     </div>
@@ -559,6 +559,35 @@
         </main>
     </div>
 
+    <!-- Modal Pilihan Export BPA1 -->
+    <div id="modal-bpa1" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50">
+        <div class="bg-white p-6 rounded-xl shadow-xl w-full max-w-md border">
+            <h3 class="font-semibold text-slate-800 mb-1 text-xl">Export BPA1 XML</h3>
+            <p class="text-xs text-slate-500 mb-4">Pilih karyawan yang ingin dibuatkan bukti potong A1.</p>
+            <div class="space-y-2">
+                <label class="flex items-start gap-3 p-3 border rounded-lg cursor-pointer hover:bg-slate-50">
+                    <input type="radio" name="bpa1-mode" value="bulan" checked class="mt-1">
+                    <span><span class="block text-sm font-semibold text-slate-800">Bulan berjalan</span>
+                    <span class="block text-xs text-slate-500">Karyawan yang masa pajak terakhirnya <b id="bpa1-label-bulan">-</b> (resign bulan ini; bila Desember, termasuk karyawan akhir tahun).</span></span>
+                </label>
+                <label class="flex items-start gap-3 p-3 border rounded-lg cursor-pointer hover:bg-slate-50">
+                    <input type="radio" name="bpa1-mode" value="resign" class="mt-1">
+                    <span><span class="block text-sm font-semibold text-slate-800">Semua yang resign di tahun <span id="bpa1-label-resign">-</span></span>
+                    <span class="block text-xs text-slate-500">Seluruh karyawan berstatus resign pada tahun terpilih, bulan berapa pun.</span></span>
+                </label>
+                <label class="flex items-start gap-3 p-3 border rounded-lg cursor-pointer hover:bg-slate-50">
+                    <input type="radio" name="bpa1-mode" value="tahunan" class="mt-1">
+                    <span><span class="block text-sm font-semibold text-slate-800">Tahunan, tahun <span id="bpa1-label-tahunan">-</span></span>
+                    <span class="block text-xs text-slate-500">Semua karyawan, termasuk yang masih aktif (masa pajak terakhir Desember). Karyawan yang data Desember-nya belum disimpan akan ditandai belum bisa diexport.</span></span>
+                </label>
+            </div>
+            <div class="flex justify-end gap-2 pt-4">
+                <button type="button" onclick="closeBpa1Modal()" class="px-4 py-2 text-xs border rounded font-medium">Batal</button>
+                <button type="button" onclick="runBpa1Export()" class="px-4 py-2 text-xs bg-blue-600 text-white rounded font-bold hover:bg-blue-700">Export XML</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal Form Karyawan -->
     <div id="modal-karyawan" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50">
         <div class="bg-white p-6 rounded-xl shadow-xl w-full max-w-lg border max-h-[90vh] overflow-y-auto">
@@ -695,6 +724,7 @@
 
     <script>
         /* =========================================================================
+           v2.3.1: Export BPA1 punya pilihan: bulan berjalan / semua resign tahun terpilih / tahunan.
            v2.3.0: Export BPA1 XML (A1Bulk) sesuai template resmi DJP, NPWP/NITKU pemotong dari pengaturan.
            v2.2.1: Gross-Up lebih bayar -> tunjangan PPh 21 masa terakhir boleh negatif (koreksi),
                    kelebihan dikembalikan ke perusahaan; THP karyawan tidak berubah; kolom tunjangan
@@ -716,7 +746,7 @@
                       berkurang otomatis; periode slip dari periode data; escape HTML (XSS);
                       login Firebase Auth (email) + login lama (hash) sementara.
            ========================================================================= */
-        const APP_VERSION = '2.3.0';
+        const APP_VERSION = '2.3.1';
 
         // ---- Login ----
         // Isi email superuser (akses tab Direktur & Audit) untuk login Firebase Auth.
@@ -2202,15 +2232,44 @@
             return { npwp, nitku };
         }
 
-        async function exportBpa1XML() {
-            const year = document.getElementById('pph-akhir-year').value || String(new Date().getFullYear());
+        const BULAN_ID = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+        function labelPeriode(per) { const [y, m] = per.split('-'); return `${BULAN_ID[parseInt(m, 10) - 1]} ${y}`; }
+
+        function openBpa1Modal() {
+            const per = getSelectedPeriode();
+            const yearSel = document.getElementById('pph-akhir-year').value || per.substring(0, 4);
+            document.getElementById('bpa1-label-bulan').innerText = labelPeriode(per);
+            document.getElementById('bpa1-label-resign').innerText = yearSel;
+            document.getElementById('bpa1-label-tahunan').innerText = yearSel;
+            document.getElementById('modal-bpa1').classList.remove('hidden');
+            document.getElementById('modal-bpa1').classList.add('flex');
+        }
+        function closeBpa1Modal() {
+            document.getElementById('modal-bpa1').classList.add('hidden');
+            document.getElementById('modal-bpa1').classList.remove('flex');
+        }
+        function runBpa1Export() {
+            const sel = document.querySelector('input[name="bpa1-mode"]:checked');
+            const mode = sel ? sel.value : 'bulan';
+            closeBpa1Modal();
+            exportBpa1XML(mode);
+        }
+
+        async function exportBpa1XML(mode = 'tahunan') {
+            const periodeSel = getSelectedPeriode();
+            const year = mode === 'bulan' ? periodeSel.substring(0, 4) : (document.getElementById('pph-akhir-year').value || String(new Date().getFullYear()));
+            const modeLabel = mode === 'bulan' ? `bulan ${labelPeriode(periodeSel)}` : (mode === 'resign' ? `karyawan resign tahun ${year}` : `tahunan ${year}`);
             const annualMap = await buildAnnualCalculations(year, true);
             const { npwp, nitku } = getPemotongIds();
             const items = [], skipped = [], warnings = [];
             globalKaryawan.forEach(k => {
                 const a = annualMap[k.id];
-                if (!a || !a.monthlyRecords.length) return;
-                if (a.finalPayrollMissing) { skipped.push(`${k.nama}: data gaji ${a.lastTaxMonth} (masa pajak terakhir) belum disimpan`); return; }
+                if (!a) return;
+                // Filter sesuai pilihan; yang tidak masuk pilihan diabaikan tanpa pesan.
+                if (mode === 'bulan' && a.lastTaxMonth !== periodeSel) return;
+                if (mode === 'resign' && k.isActive !== false) return;
+                if (!a.monthlyRecords.length) return;
+                if (a.finalPayrollMissing) { skipped.push(`${k.nama}: menunggu data gaji ${a.lastTaxMonth} (masa pajak terakhir) disimpan`); return; }
                 const tin = normalizeTin16(k.npwp || k.nik || '');
                 if (tin.length !== 16) { skipped.push(`${k.nama}: NPWP/NIK pajak harus 16 digit`); return; }
                 let gaji = 0, lain = 0, tantiem = 0, premi = 0;
@@ -2235,7 +2294,7 @@
                 const wd = `${lastDay.getFullYear()}-${String(lastDay.getMonth() + 1).padStart(2, '0')}-${String(lastDay.getDate()).padStart(2, '0')}`;
                 items.push({ k, a, tin, gaji, lain, tantiem, premi, tunjPph, status, nMonths, prev, wd, metode });
             });
-            if (!items.length) { alert('Tidak ada data BPA1 yang bisa diexport.' + (skipped.length ? '\n\nDilewati:\n- ' + skipped.join('\n- ') : '')); return; }
+            if (!items.length) { alert(`Tidak ada data BPA1 untuk dieksport (${modeLabel}).` + (skipped.length ? '\n\nBELUM BISA DIEXPORT:\n- ' + skipped.join('\n- ') : '')); return; }
             const r0 = v => Math.round(Number(v) || 0);
             let xml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n`;
             xml += `<A1Bulk xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">\n`;
@@ -2274,10 +2333,11 @@
                 xml += `\t\t</A1>\n`;
             });
             xml += `\t</ListOfA1>\n</A1Bulk>`;
-            downloadBlob(xml, `BPA1_Coretax_PT_PAM_${year}.xml`, 'application/xml;charset=UTF-8');
-            await logAudit('EXPORT_BPA1', `Export BPA1 XML tahun ${year}: ${items.length} karyawan`);
-            let msg = `Export BPA1 XML tahun ${year} berhasil (${items.length} karyawan).\nNPWP pemotong: ${npwp}\nNITKU: ${nitku}`;
-            if (skipped.length) msg += `\n\nDILEWATI:\n- ${skipped.join('\n- ')}`;
+            const fileTag = mode === 'bulan' ? periodeSel : (mode === 'resign' ? `Resign_${year}` : `Tahunan_${year}`);
+            downloadBlob(xml, `BPA1_Coretax_PT_PAM_${fileTag}.xml`, 'application/xml;charset=UTF-8');
+            await logAudit('EXPORT_BPA1', `Export BPA1 XML (${modeLabel}): ${items.length} karyawan`);
+            let msg = `Export BPA1 XML ${modeLabel} berhasil (${items.length} karyawan):\n${items.map(i => '- ' + i.k.nama).join('\n')}\n\nNPWP pemotong: ${npwp}\nNITKU: ${nitku}`;
+            if (skipped.length) msg += `\n\nBELUM BISA DIEXPORT:\n- ${skipped.join('\n- ')}`;
             if (warnings.length) msg += `\n\nPERHATIAN:\n- ${warnings.join('\n- ')}`;
             alert(msg);
         }
