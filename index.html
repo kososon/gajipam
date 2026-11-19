@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payroll & PPh 21 v2.2.1 - PT Prima Anugerah Makmur</title>
+    <title>Payroll & PPh 21 v2.3.0 - PT Prima Anugerah Makmur</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&display=swap" rel="stylesheet">
@@ -116,7 +116,7 @@
             <div class="text-center mb-6">
                 <span class="brand-mark mb-3">P</span>
                 <h1 class="text-2xl font-semibold text-slate-900">PT Prima Anugerah Makmur</h1>
-                <p class="text-xs text-slate-500 mt-1">Sistem Payroll & PPh 21 TER / Pasal 17 · v2.2.1</p>
+                <p class="text-xs text-slate-500 mt-1">Sistem Payroll & PPh 21 TER / Pasal 17 · v2.3.0</p>
             </div>
             <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
                 <div>
@@ -140,7 +140,7 @@
                 <div class="flex items-center gap-3">
                     <span class="brand-mark">P</span>
                     <div>
-                        <h2 class="text-lg font-semibold text-slate-900">PT Prima Anugerah Makmur <span class="text-xs font-normal text-slate-500 ml-1 font-sans">v2.2.1</span></h2>
+                        <h2 class="text-lg font-semibold text-slate-900">PT Prima Anugerah Makmur <span class="text-xs font-normal text-slate-500 ml-1 font-sans">v2.3.0</span></h2>
                         <p class="text-xs text-slate-500">Payroll & Tax System · NPWP Pemotong: 02.101.399.5-212.000</p>
                     </div>
                 </div>
@@ -400,6 +400,9 @@
                         </div>
                         <button onclick="exportAnnualRekapExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3 py-1.5 rounded-lg font-bold shadow transition">
                             Export Rekap Tahunan (Excel)
+                        </button>
+                        <button onclick="exportBpa1XML()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-3 py-1.5 rounded-lg font-bold shadow transition" title="XML BPA1 (A1Bulk) untuk impor ke Coretax, sesuai template resmi DJP">
+                            Export BPA1 XML (Coretax)
                         </button>
                     </div>
                 </div>
@@ -692,6 +695,7 @@
 
     <script>
         /* =========================================================================
+           v2.3.0: Export BPA1 XML (A1Bulk) sesuai template resmi DJP, NPWP/NITKU pemotong dari pengaturan.
            v2.2.1: Gross-Up lebih bayar -> tunjangan PPh 21 masa terakhir boleh negatif (koreksi),
                    kelebihan dikembalikan ke perusahaan; THP karyawan tidak berubah; kolom tunjangan
                    PPh 21 ditambahkan di tab Akhir Tahun, Excel rekap tahunan, slip, dan print rekap.
@@ -712,7 +716,7 @@
                       berkurang otomatis; periode slip dari periode data; escape HTML (XSS);
                       login Firebase Auth (email) + login lama (hash) sementara.
            ========================================================================= */
-        const APP_VERSION = '2.2.1';
+        const APP_VERSION = '2.3.0';
 
         // ---- Login ----
         // Isi email superuser (akses tab Direktur & Audit) untuk login Firebase Auth.
@@ -1946,7 +1950,7 @@
                                 const bpjsPerusahaanKenaPajak = (tk.jkk * BPJS_RATE.TK.JKK) + (tk.jkm * BPJS_RATE.TK.JKM) + (dasarKes * BPJS_RATE.KES.PERUSAHAAN);
                                 const bpjsKaryawanBulan = (tk.jht * BPJS_RATE.TK.JHT_KARYAWAN) + (tk.jp * BPJS_RATE.TK.JP_KARYAWAN);
                                 annualMap[k.id].monthlyRecords.push({
-                                    periode: periodeMonth, brutoPajakDasar: brutoBulan + bpjsPerusahaanKenaPajak, bpjsKaryawanBulan, p, brutoBulan,
+                                    periode: periodeMonth, brutoPajakDasar: brutoBulan + bpjsPerusahaanKenaPajak, premi: bpjsPerusahaanKenaPajak, bpjsKaryawanBulan, p, brutoBulan,
                                     storedPph: (typeof p.pph21Dipotong === 'number') ? p.pph21Dipotong : null,
                                     storedBruto: (typeof p.brutoPajakSnapshot === 'number') ? p.brutoPajakSnapshot : null
                                 });
@@ -2185,6 +2189,97 @@
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, `PPh21_Tahunan_${selectedYear}`);
             XLSX.writeFile(wb, `Rekap_PPh21_Tahunan_PT_PAM_${selectedYear}.xlsx`);
+        }
+
+
+        // ---------- Export BPA1 XML (template resmi DJP: A1Bulk) ----------
+        function getPemotongIds() {
+            // Sama persis dengan BPMP: NPWP & NITKU dari pengaturan Data Direktur & PT.
+            const npwpRaw = document.getElementById('dir-npwp')?.value || globalDirektur.npwpPemotong || '0210139952122000';
+            const npwp = normalizeTin16(npwpRaw);
+            const nitkuForm = (document.getElementById('dir-nitku')?.value || '').replace(/\D/g, '');
+            const nitku = nitkuForm.length === 22 ? nitkuForm : (npwp + '000000').substring(0, 22);
+            return { npwp, nitku };
+        }
+
+        async function exportBpa1XML() {
+            const year = document.getElementById('pph-akhir-year').value || String(new Date().getFullYear());
+            const annualMap = await buildAnnualCalculations(year, true);
+            const { npwp, nitku } = getPemotongIds();
+            const items = [], skipped = [], warnings = [];
+            globalKaryawan.forEach(k => {
+                const a = annualMap[k.id];
+                if (!a || !a.monthlyRecords.length) return;
+                if (a.finalPayrollMissing) { skipped.push(`${k.nama}: data gaji ${a.lastTaxMonth} (masa pajak terakhir) belum disimpan`); return; }
+                const tin = normalizeTin16(k.npwp || k.nik || '');
+                if (tin.length !== 16) { skipped.push(`${k.nama}: NPWP/NIK pajak harus 16 digit`); return; }
+                let gaji = 0, lain = 0, tantiem = 0, premi = 0;
+                a.monthlyRecords.forEach(rec => {
+                    const p = rec.p;
+                    gaji += Number(p.gajiPokok) || 0;
+                    lain += (Number(p.tunjJab) || 0) + (Number(p.tunjMakan) || 0) + (Number(p.tunjPulsa) || 0) + (Number(p.tunjLain) || 0);
+                    tantiem += (Number(p.gratifikasi) || 0) + (Number(p.thr) || 0);
+                    premi += Number(rec.premi) || 0;
+                });
+                const metode = k.pajakMetode || 'NET';
+                const tunjPph = metode === 'GROSS_UP' ? Math.max(0, a.brutoSetahun - (gaji + lain + tantiem + premi)) : 0;
+                const masa = a.masaKerjaAktif;
+                let status = 'PartialYear', nMonths = 0;
+                if (a.annualizePartYear && masa < 12) { status = 'Annualized'; nMonths = masa; }
+                else if (masa === 12) status = 'FullYear';
+                const prev = a.prev;
+                if (prev && !prev.bpa1) warnings.push(`${k.nama}: ada data pemberi kerja lama tetapi nomor BPA1 lama kosong, neto & PPh lama TIDAK terbawa ke Coretax`);
+                if (a.missingMonths.length) warnings.push(`${k.nama}: bulan tanpa data gaji ${a.missingMonths.join(', ')}`);
+                const [yy, mm] = a.lastTaxMonth.split('-').map(Number);
+                const lastDay = new Date(yy, mm, 0);
+                const wd = `${lastDay.getFullYear()}-${String(lastDay.getMonth() + 1).padStart(2, '0')}-${String(lastDay.getDate()).padStart(2, '0')}`;
+                items.push({ k, a, tin, gaji, lain, tantiem, premi, tunjPph, status, nMonths, prev, wd, metode });
+            });
+            if (!items.length) { alert('Tidak ada data BPA1 yang bisa diexport.' + (skipped.length ? '\n\nDilewati:\n- ' + skipped.join('\n- ') : '')); return; }
+            const r0 = v => Math.round(Number(v) || 0);
+            let xml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n`;
+            xml += `<A1Bulk xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">\n`;
+            xml += `\t<TIN>${escapeXml(npwp)}</TIN>\n\t<ListOfA1>\n`;
+            items.forEach(it => {
+                const { k, a, prev } = it;
+                const cp = getBpmpCounterpart(k);
+                xml += `\t\t<A1>\n`;
+                xml += `\t\t\t<WorkForSecondEmployer>${prev ? 'Yes' : 'No'}</WorkForSecondEmployer>\n`;
+                xml += `\t\t\t<TaxPeriodMonthStart>${a.startMonth}</TaxPeriodMonthStart>\n`;
+                xml += `\t\t\t<TaxPeriodMonthEnd>${a.endMonth}</TaxPeriodMonthEnd>\n`;
+                xml += `\t\t\t<TaxPeriodYear>${Number(year)}</TaxPeriodYear>\n`;
+                xml += `\t\t\t<CounterpartOpt>${escapeXml(cp.statusPegawai)}</CounterpartOpt>\n`;
+                xml += `\t\t\t<CounterpartPassport xsi:nil="true"/>\n`;
+                xml += `\t\t\t<CounterpartTin>${escapeXml(it.tin)}</CounterpartTin>\n`;
+                xml += `\t\t\t<TaxExemptOpt>${escapeXml(k.ptkp || 'TK/0')}</TaxExemptOpt>\n`;
+                xml += `\t\t\t<StatusOfWithholding>${it.status}</StatusOfWithholding>\n`;
+                xml += `\t\t\t<CounterpartPosition>${escapeXml(k.jabatan || '')}</CounterpartPosition>\n`;
+                xml += `\t\t\t<TaxObjectCode>21-100-01</TaxObjectCode>\n`;
+                xml += `\t\t\t<NumberOfMonths>${it.nMonths}</NumberOfMonths>\n`;
+                xml += `\t\t\t<SalaryPensionJhtTht>${r0(it.gaji)}</SalaryPensionJhtTht>\n`;
+                xml += `\t\t\t<GrossUpOpt>No</GrossUpOpt>\n`;
+                xml += `\t\t\t<IncomeTaxBenefit>${r0(it.tunjPph)}</IncomeTaxBenefit>\n`;
+                xml += `\t\t\t<OtherBenefit>${r0(it.lain)}</OtherBenefit>\n`;
+                xml += `\t\t\t<Honorarium>0</Honorarium>\n`;
+                xml += `\t\t\t<InsurancePaidByEmployer>${r0(it.premi)}</InsurancePaidByEmployer>\n`;
+                xml += `\t\t\t<Natura>0</Natura>\n`;
+                xml += `\t\t\t<TantiemBonusThr>${r0(it.tantiem)}</TantiemBonusThr>\n`;
+                xml += `\t\t\t<PensionContributionJhtThtFee>${r0(a.bpjsKarySetahun)}</PensionContributionJhtThtFee>\n`;
+                xml += `\t\t\t<Zakat>0</Zakat>\n`;
+                xml += (prev && prev.bpa1) ? `\t\t\t<PrevWhTaxSlip>${escapeXml(prev.bpa1)}</PrevWhTaxSlip>\n` : `\t\t\t<PrevWhTaxSlip xsi:nil="true"/>\n`;
+                xml += `\t\t\t<TaxCertificate>N/A</TaxCertificate>\n`;
+                xml += `\t\t\t<Article21IncomeTax>${r0(a.pphSebelumMasaTerakhir)}</Article21IncomeTax>\n`;
+                xml += `\t\t\t<IDPlaceOfBusinessActivity>${escapeXml(nitku)}</IDPlaceOfBusinessActivity>\n`;
+                xml += `\t\t\t<WithholdingDate>${it.wd}</WithholdingDate>\n`;
+                xml += `\t\t</A1>\n`;
+            });
+            xml += `\t</ListOfA1>\n</A1Bulk>`;
+            downloadBlob(xml, `BPA1_Coretax_PT_PAM_${year}.xml`, 'application/xml;charset=UTF-8');
+            await logAudit('EXPORT_BPA1', `Export BPA1 XML tahun ${year}: ${items.length} karyawan`);
+            let msg = `Export BPA1 XML tahun ${year} berhasil (${items.length} karyawan).\nNPWP pemotong: ${npwp}\nNITKU: ${nitku}`;
+            if (skipped.length) msg += `\n\nDILEWATI:\n- ${skipped.join('\n- ')}`;
+            if (warnings.length) msg += `\n\nPERHATIAN:\n- ${warnings.join('\n- ')}`;
+            alert(msg);
         }
 
         // ---------- Print Rekap ----------
